@@ -43,6 +43,12 @@ function field(form, label, name, type, value) {
 }
 async function refresh() {
   dashboard = await api("dashboard");
+  const selected = new URL(location.href).searchParams.get("booking");
+  if (selected && !dashboard.bookings.some((b) => b.id === selected))
+    dashboard.bookings.unshift(
+      await api("booking?id=" + encodeURIComponent(selected)),
+    );
+  await syncPushStatus(dashboard.vapidPublicKey, false);
   $("#login").hidden = true;
   $("#workspace").hidden = false;
   $("#stats").replaceChildren(
@@ -204,7 +210,17 @@ async function refresh() {
     $("#service-editor").append(f);
   }
   const id = new URL(location.href).searchParams.get("booking");
-  if (id) document.getElementById("booking-" + id)?.scrollIntoView();
+  if (id) {
+    document.getElementById("booking-" + id)?.scrollIntoView();
+    const eventId = new URL(location.href).searchParams.get("event");
+    if (
+      eventId &&
+      dashboard.notifications.some(
+        (n) => n.id === eventId && n.booking_id === id,
+      )
+    )
+      await api("read", "POST", { id: eventId, read: true });
+  }
 }
 $("#login").onsubmit = safe(async (e) => {
   e.preventDefault();
@@ -230,33 +246,90 @@ $("#settings-form").onsubmit = safe(async (e) => {
   await refresh();
   $("#status").textContent = "Settings saved.";
 });
-$("#enable-push").onclick = safe(async () => {
-  if (!("serviceWorker" in navigator) || !("PushManager" in window))
-    throw Error(
-      "Web push unsupported here. On iPhone, open the installed Home Screen app.",
-    );
-  if (!dashboard.vapidPublicKey)
-    throw Error("Configure development VAPID keys on the server first.");
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted")
-    throw Error("Notification permission was not granted.");
+$("#enable-push").onclick = safe(() =>
+  syncPushStatus(dashboard.vapidPublicKey, true),
+);
+refresh().catch((e) => {
+  if (e.status !== 401) $("#status").textContent = e.message;
+});
+async function syncPushStatus(publicKey, interactive = false) {
+  const status = document.querySelector("#push-status");
+  if (
+    !window.isSecureContext ||
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window) ||
+    !("Notification" in window)
+  ) {
+    status.textContent =
+      "Phone alerts are unavailable in this browser. On iPhone use the installed Home Screen web app over HTTPS.";
+    return;
+  }
+  if (!publicKey) {
+    status.textContent =
+      "Phone alerts need development VAPID configuration. Bookings remain saved in your inbox.";
+    return;
+  }
+  if (Notification.permission === "denied") {
+    status.textContent =
+      "Notification permission is blocked. Enable it in your device settings, then refresh phone alerts. Inbox and configured email fallback remain available.";
+    return;
+  }
+  if (interactive && Notification.permission === "default")
+    await Notification.requestPermission();
+  if (Notification.permission !== "granted") {
+    status.textContent =
+      "Phone alerts are not enabled. Tap Enable / refresh phone alerts to grant permission.";
+    return;
+  }
   const reg = await navigator.serviceWorker.register("/sw.js");
   await navigator.serviceWorker.ready;
-  let subscription = await reg.pushManager.getSubscription();
-  if (!subscription) {
-    const key = Uint8Array.from(
-      atob(dashboard.vapidPublicKey.replaceAll("-", "+").replaceAll("_", "/")),
-      (c) => c.charCodeAt(0),
+  let sub = await reg.pushManager.getSubscription(),
+    old = sub?.endpoint;
+  const decode = (key) =>
+    Uint8Array.from(atob(key.replaceAll("-", "+").replaceAll("_", "/")), (c) =>
+      c.charCodeAt(0),
     );
-    subscription = await reg.pushManager.subscribe({
+  const key = decode(publicKey);
+  const previous = sub?.options.applicationServerKey;
+  const mismatch =
+    previous &&
+    Array.from(new Uint8Array(previous)).join(",") !==
+      Array.from(key).join(",");
+  if (
+    sub &&
+    (mismatch ||
+      (sub.expirationTime && sub.expirationTime <= Date.now() + 3600000))
+  ) {
+    if (!interactive) {
+      status.textContent =
+        "Your phone subscription needs renewal. Tap Enable / refresh phone alerts.";
+      return;
+    }
+    await sub.unsubscribe();
+    sub = null;
+  }
+  if (!sub) {
+    if (!interactive) {
+      status.textContent =
+        "Permission is granted, but this device needs a subscription. Tap Enable / refresh phone alerts.";
+      return;
+    }
+    sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: key,
     });
   }
-  await api("subscription", "POST", subscription.toJSON());
-  $("#status").textContent =
-    "Subscription saved. Real-device delivery is still unverified.";
-});
-refresh().catch((e) => {
-  if (e.status !== 401) $("#status").textContent = e.message;
+  await api("subscription", "POST", {
+    subscription: sub.toJSON(),
+    replaces: old,
+  });
+  status.textContent =
+    "Phone subscription is active. Provider acceptance does not prove a notification reached your phone.";
+}
+
+navigator.serviceWorker?.addEventListener("message", () => {
+  if (dashboard)
+    syncPushStatus(dashboard.vapidPublicKey, false).catch((e) => {
+      document.querySelector("#push-status").textContent = e.message;
+    });
 });

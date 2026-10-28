@@ -1,0 +1,10 @@
+CREATE TABLE private_keys(name TEXT PRIMARY KEY,value TEXT NOT NULL);
+INSERT INTO private_keys VALUES('customer-links',lower(hex(randomblob(32))));
+CREATE TABLE subscription_meta(subscription_id TEXT PRIMARY KEY REFERENCES subscriptions(id),owner_id TEXT NOT NULL REFERENCES owners(id),registered_at INTEGER NOT NULL,last_seen INTEGER NOT NULL,expires_at INTEGER,key_fingerprint TEXT NOT NULL);
+ALTER TABLE deliveries ADD COLUMN provider_id TEXT;
+ALTER TABLE deliveries ADD COLUMN payload TEXT;
+ALTER TABLE deliveries ADD COLUMN claimed_until INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX delivery_provider ON deliveries(provider_id);
+CREATE TABLE delivery_attempts(id TEXT PRIMARY KEY,delivery_id TEXT NOT NULL REFERENCES deliveries(id),attempt INTEGER NOT NULL,status TEXT NOT NULL,error TEXT,created_at INTEGER NOT NULL);
+CREATE TABLE webhook_receipts(id TEXT PRIMARY KEY,provider_id TEXT NOT NULL,type TEXT NOT NULL,created_at INTEGER NOT NULL);
+CREATE TABLE worker_errors(id TEXT PRIMARY KEY,message TEXT NOT NULL,created_at INTEGER NOT NULL);

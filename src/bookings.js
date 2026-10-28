@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { transaction } from "./db.js";
 import { BUSINESS, notice } from "./catalog.js";
 import { hash, token, text, requireThat } from "./security.js";
+import { validCustomerToken } from "./customer-links.js";
 export class BookingService {
   constructor(db) {
     this.db = db;
@@ -52,7 +53,8 @@ export class BookingService {
     requireThat(
       typeof secret === "string" &&
         b.access_expires > Date.now() &&
-        hash(secret) === b.access_hash,
+        (hash(secret) === b.access_hash ||
+          validCustomerToken(this.db, b, secret)),
       "Link invalid or expired",
       403,
     );

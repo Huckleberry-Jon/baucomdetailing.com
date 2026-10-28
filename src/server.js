@@ -14,7 +14,11 @@ import {
   requireThat,
   rateLimit,
 } from "./security.js";
-import { NotificationWorker, validateSubscription } from "./notifications.js";
+import {
+  NotificationWorker,
+  saveSubscription,
+  recordEmailReceipt,
+} from "./notifications.js";
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -47,10 +51,11 @@ export function createApplication(db, config = {}) {
       );
       const url = new URL(req.url, origin),
         path = url.pathname;
-      let body = {};
+      let body = {},
+        raw = "";
       if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
         requireThat(
-          req.headers.origin === origin,
+          path === "/api/webhooks/email" || req.headers.origin === origin,
           "Request origin rejected",
           403,
         );
@@ -59,7 +64,7 @@ export function createApplication(db, config = {}) {
           "JSON required",
           415,
         );
-        let raw = "";
+        raw = "";
         for await (const chunk of req) {
           raw += chunk;
           requireThat(
@@ -78,6 +83,12 @@ export function createApplication(db, config = {}) {
           "Invalid request",
         );
       }
+      if (path === "/api/webhooks/email" && req.method === "POST")
+        return respond(
+          res,
+          200,
+          recordEmailReceipt(db, raw, req.headers, config.emailWebhookSecret),
+        );
       const cookies = Object.fromEntries(
         (req.headers.cookie ?? "").split(";").map((c) => c.trim().split("=")),
       );
@@ -100,7 +111,7 @@ export function createApplication(db, config = {}) {
         rateLimit(db, "booking:" + req.socket.remoteAddress, 20);
         const b = service.create(body, req.headers["idempotency-key"]);
         respond(res, b.duplicate ? 200 : 201, b);
-        void worker.tick().catch(() => {});
+        void worker.tick().catch((e) => worker.logError(e));
         return;
       }
       if (path === "/api/customer/booking") {
@@ -128,7 +139,7 @@ export function createApplication(db, config = {}) {
             "customer",
           );
           respond(res, 200, result);
-          void worker.tick().catch(() => {});
+          void worker.tick().catch((e) => worker.logError(e));
           return;
         }
       }
@@ -168,6 +179,22 @@ export function createApplication(db, config = {}) {
           db
             .prepare("INSERT INTO audit_events VALUES(?,?,?,?,?,?)")
             .run(randomUUID(), BUSINESS, signedIn.id, event, id, Date.now());
+        if (path === "/api/owner/push-config" && req.method === "GET")
+          return respond(res, 200, {
+            publicKey: config.vapidPublicKey ?? null,
+          });
+        if (path === "/api/owner/booking" && req.method === "GET") {
+          service.get(url.searchParams.get("id"));
+          return respond(
+            res,
+            200,
+            db
+              .prepare(
+                "SELECT b.*,c.data customer,v.data vehicle FROM bookings b JOIN customers c ON c.id=b.customer_id JOIN vehicles v ON v.id=b.vehicle_id WHERE b.id=? AND b.business_id=?",
+              )
+              .get(url.searchParams.get("id"), BUSINESS),
+          );
+        }
         if (path === "/api/owner/logout" && req.method === "POST") {
           db.prepare("DELETE FROM sessions WHERE token_hash=?").run(
             hash(cookies.session ?? ""),
@@ -207,7 +234,7 @@ export function createApplication(db, config = {}) {
         if (path === "/api/owner/transition" && req.method === "POST") {
           const result = service.transition(body.id, body.action, body);
           respond(res, 200, result);
-          void worker.tick().catch(() => {});
+          void worker.tick().catch((e) => worker.logError(e));
           return;
         }
         if (path === "/api/owner/settings" && req.method === "PUT") {
@@ -288,10 +315,7 @@ export function createApplication(db, config = {}) {
           return respond(res, 200, { ok: true });
         }
         if (path === "/api/owner/subscription" && req.method === "POST") {
-          validateSubscription(body);
-          db.prepare(
-            "INSERT INTO subscriptions VALUES(?,?,?,?,1) ON CONFLICT(endpoint) DO UPDATE SET data=excluded.data,active=1",
-          ).run(randomUUID(), BUSINESS, body.endpoint, JSON.stringify(body));
+          saveSubscription(db, body, signedIn, config.vapidPublicKey);
           return respond(res, 200, { ok: true });
         }
         if (path === "/api/owner/history" && req.method === "GET") {
@@ -351,6 +375,8 @@ if (
     vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
     emailApiKey: process.env.RESEND_API_KEY,
     emailFrom: process.env.EMAIL_FROM,
+    ownerEmail: process.env.OWNER_NOTIFICATION_EMAIL,
+    emailWebhookSecret: process.env.RESEND_WEBHOOK_SECRET,
     vapidSubject: process.env.VAPID_SUBJECT,
   };
   const { server, worker } = createApplication(
@@ -360,5 +386,8 @@ if (
   server.listen(Number(process.env.PORT ?? 4317), "127.0.0.1", () =>
     console.log("Local: " + config.origin),
   );
-  setInterval(() => void worker.tick().catch(() => {}), 15000).unref();
+  setInterval(
+    () => void worker.tick().catch((e) => worker.logError(e)),
+    15000,
+  ).unref();
 }
