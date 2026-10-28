@@ -1,3 +1,4 @@
+import { googleReviewUrl } from "./reviews.js";
 import { storePhotos } from "./media.js";
 import { randomUUID } from "node:crypto";
 import { transaction } from "./db.js";
@@ -436,6 +437,7 @@ export class BookingService {
           s.googleReviewUrl.length <= 1000),
       "Review URL must use HTTPS",
     );
+    s.googleReviewUrl = googleReviewUrl(s.googleReviewUrl);
     this.db
       .prepare("UPDATE businesses SET settings=? WHERE id=?")
       .run(JSON.stringify(s), BUSINESS);

@@ -212,6 +212,7 @@ async function refresh() {
   }
   renderCalendarControls();
   await loadCalendar();
+  await renderOwnerReviews();
   const id = new URL(location.href).searchParams.get("booking");
   if (id) {
     document.getElementById("booking-" + id)?.scrollIntoView();

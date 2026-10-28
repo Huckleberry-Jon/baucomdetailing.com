@@ -1,4 +1,11 @@
 import {
+  publicReviews,
+  submitReview,
+  moderateReview,
+  reviewLinks,
+  googleReviewUrl,
+} from "./reviews.js";
+import {
   preparePhotos,
   storePhotos,
   listPhotos,
@@ -113,6 +120,24 @@ export function createApplication(db, config = {}) {
         requireThat(s, "Owner login required", 401);
         return s;
       };
+      if (path === "/api/reviews" && req.method === "GET")
+        return respond(res, 200, {
+          reviews: publicReviews(db),
+          links: reviewLinks(service.settings(), origin),
+        });
+      if (path === "/api/reviews" && req.method === "POST") {
+        rateLimit(db, "review:" + req.socket.remoteAddress, 10);
+        return respond(
+          res,
+          201,
+          submitReview(
+            service,
+            body,
+            req.headers["idempotency-key"],
+            req.headers.authorization?.slice(7),
+          ),
+        );
+      }
       if (path === "/api/availability" && req.method === "GET") {
         rateLimit(db, "availability:" + req.socket.remoteAddress, 120);
         return respond(
@@ -205,6 +230,20 @@ export function createApplication(db, config = {}) {
           db
             .prepare("INSERT INTO audit_events VALUES(?,?,?,?,?,?)")
             .run(randomUUID(), BUSINESS, signedIn.id, event, id, Date.now());
+        if (path === "/api/owner/reviews" && req.method === "GET")
+          return respond(
+            res,
+            200,
+            db
+              .prepare(
+                "SELECT * FROM reviews WHERE business_id=? ORDER BY created_at DESC LIMIT 300",
+              )
+              .all(BUSINESS),
+          );
+        if (path === "/api/owner/reviews" && req.method === "PUT")
+          return respond(res, 200, moderateReview(db, body, signedIn));
+        if (path === "/api/owner/review-links" && req.method === "GET")
+          return respond(res, 200, reviewLinks(service.settings(), origin));
         if (path === "/api/owner/photos" && req.method === "GET") {
           service.get(url.searchParams.get("booking"));
           return respond(
@@ -439,6 +478,7 @@ export function createApplication(db, config = {}) {
           "/owner.js": "owner.js",
           "/calendar.js": "calendar.js",
           "/photos.js": "photos.js",
+          "/reviews.js": "reviews.js",
           "/customer.js": "customer.js",
           "/style.css": "style.css",
           "/sw.js": "sw.js",

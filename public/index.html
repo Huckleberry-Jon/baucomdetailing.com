@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/style.css" />
     <script src="/photos.js" defer></script>
     <script src="/app.js" defer></script>
+    <script src="/reviews.js" defer></script>
   </head>
   <body>
     <header>
@@ -207,10 +208,55 @@
       </section>
       <section id="reviews">
         <h2>Real care. Real feedback.</h2>
+        <a
+          id="google-review-link"
+          class="button"
+          href="#reviews"
+          target="_blank"
+          rel="noopener noreferrer"
+          hidden
+          >Leave a Google review ↗</a
+        >
+        <div id="published-reviews" class="grid"></div>
+        <h3>Share your experience</h3>
         <p>
-          Customer reviews and the official Google review link will be added
-          after verification.
+          All ratings are welcome. Reviews are moderated for spam, inappropriate
+          content and personal information.
         </p>
+        <form id="review-form">
+          <label
+            >Public display name<input
+              name="displayName"
+              maxlength="100"
+              required /></label
+          ><label
+            >Rating<select name="rating">
+              <option value="5">5 — Excellent</option>
+              <option value="4">4 — Good</option>
+              <option value="3">3 — Average</option>
+              <option value="2">2 — Below expectations</option>
+              <option value="1">1 — Poor</option>
+            </select></label
+          ><label
+            >Your feedback<textarea
+              name="feedback"
+              minlength="10"
+              maxlength="3000"
+              rows="4"
+              required
+            ></textarea></label
+          ><label class="check"
+            ><input type="checkbox" name="consent" required />I authorize public
+            display of this name, rating and feedback. Please do not include
+            private information.</label
+          ><label class="honey" aria-hidden="true"
+            >Website<input
+              name="website"
+              tabindex="-1"
+              autocomplete="off" /></label
+          ><button>Submit review</button>
+          <p id="review-status" role="status"></p>
+        </form>
       </section>
       <section id="contact">
         <h2>We come to you.</h2>
