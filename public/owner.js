@@ -185,13 +185,31 @@ async function refresh() {
     $("#inbox").append(row);
   }
   $("#delivery-log").replaceChildren();
-  for (const d of dashboard.deliveries)
-    $("#delivery-log").append(
+  for (const d of dashboard.deliveries) {
+    const row = el("div", null, "mini-card");
+    row.append(
       el(
         "p",
         `${d.channel}: ${d.status} · attempts ${d.attempts}${d.last_error ? " · " + d.last_error : ""}`,
       ),
     );
+    if (["blocked", "retry", "failed", "recovery_hold"].includes(d.status))
+      row.append(
+        button("Retry this delivery after review", async () => {
+          await api("retry-delivery", "POST", { id: d.id });
+          await refresh();
+        }),
+      );
+    $("#delivery-log").append(row);
+  }
+  const health = dashboard.notificationHealth;
+  $("#notification-health").textContent =
+    `${health.activeSubscriptions} active phone subscriptions. Customer email ${health.customerEmailConfigured ? "configured" : "not configured"}. Owner fallback ${health.ownerFallbackConfigured ? "configured" : "not configured"}. ${dashboard.recoveryHold ? "Delivery is paused after recovery. Review records before resuming." : ""}`;
+  $("#resume-delivery").hidden = !dashboard.recoveryHold;
+  $("#resume-delivery").onclick = safe(async () => {
+    await api("resume-delivery", "POST", {});
+    await refresh();
+  });
   $("#settings-json").value = JSON.stringify(dashboard.settings, null, 2);
   $("#service-editor").replaceChildren();
   for (const s of dashboard.services) {

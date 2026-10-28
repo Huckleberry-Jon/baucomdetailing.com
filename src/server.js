@@ -230,6 +230,37 @@ export function createApplication(db, config = {}) {
           db
             .prepare("INSERT INTO audit_events VALUES(?,?,?,?,?,?)")
             .run(randomUUID(), BUSINESS, signedIn.id, event, id, Date.now());
+        if (path === "/api/owner/resume-delivery" && req.method === "POST") {
+          transaction(db, () => {
+            db.prepare(
+              "DELETE FROM private_keys WHERE name='delivery-recovery-hold'",
+            ).run();
+            audit("recovery.delivery-resumed", BUSINESS);
+          });
+          return respond(res, 200, { ok: true });
+        }
+        if (path === "/api/owner/retry-delivery" && req.method === "POST") {
+          transaction(db, () => {
+            const d = db
+              .prepare(
+                "SELECT d.* FROM deliveries d JOIN notifications n ON n.id=d.notification_id WHERE d.id=? AND n.business_id=?",
+              )
+              .get(body.id, BUSINESS);
+            requireThat(
+              d &&
+                ["blocked", "retry", "failed", "recovery_hold"].includes(
+                  d.status,
+                ),
+              "Delivery cannot be retried in its current state",
+              409,
+            );
+            db.prepare(
+              "UPDATE deliveries SET status='queued',next_attempt=0,claimed_until=0,attempts=0 WHERE id=?",
+            ).run(d.id);
+            audit("notification.retry-requested", d.id);
+          });
+          return respond(res, 200, { ok: true });
+        }
         if (path === "/api/owner/reviews" && req.method === "GET")
           return respond(
             res,
@@ -368,6 +399,37 @@ export function createApplication(db, config = {}) {
             settings: service.settings(),
             services: service.catalog(),
             vapidPublicKey: config.vapidPublicKey ?? null,
+            recoveryHold:
+              db
+                .prepare(
+                  "SELECT value FROM private_keys WHERE name='delivery-recovery-hold'",
+                )
+                .get()?.value === "1",
+            notificationHealth: {
+              pushConfigured: !!(
+                config.vapidPublicKey &&
+                config.vapidPrivateKey &&
+                config.vapidSubject
+              ),
+              customerEmailConfigured: !!(
+                config.emailApiKey && config.emailFrom
+              ),
+              ownerFallbackConfigured: !!(
+                config.emailApiKey &&
+                config.emailFrom &&
+                config.ownerEmail
+              ),
+              activeSubscriptions: db
+                .prepare(
+                  "SELECT count(*) n FROM subscriptions WHERE business_id=? AND active=1",
+                )
+                .get(BUSINESS).n,
+              workerErrors: db
+                .prepare(
+                  "SELECT * FROM worker_errors ORDER BY created_at DESC LIMIT 20",
+                )
+                .all(),
+            },
           });
         if (path === "/api/owner/transition" && req.method === "POST") {
           const result = service.transition(body.id, body.action, body);

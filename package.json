@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test \"test/*.test.js\"",
-    "owner:setup": "node scripts/setup-owner.js"
+    "owner:setup": "node scripts/setup-owner.js",
+    "backup": "node scripts/backup.js"
   },
   "dependencies": {
     "sharp": "0.35.5",

@@ -188,12 +188,20 @@ export class NotificationWorker {
         "UPDATE subscriptions SET active=0 WHERE id IN (SELECT subscription_id FROM subscription_meta WHERE expires_at IS NOT NULL AND expires_at<=?)",
       )
       .run(now);
+    const cutoff = Number(
+      this.db
+        .prepare(
+          "SELECT value FROM private_keys WHERE name='delivery-recovery-cutoff'",
+        )
+        .get()?.value ?? 0,
+    );
     const events = this.db
       .prepare(
         "SELECT n.*,h.actor,h.data event_data FROM notifications n JOIN history h ON h.id=n.id WHERE n.business_id=?",
       )
       .all(BUSINESS);
     for (const n of events) {
+      if (n.created_at < cutoff) continue;
       const event = n.event.split(":")[0],
         data = JSON.parse(n.event_data),
         b = this.db
@@ -271,7 +279,15 @@ export class NotificationWorker {
     }
   }
   async tick() {
-    if (this.running) return;
+    if (
+      this.running ||
+      this.db
+        .prepare(
+          "SELECT value FROM private_keys WHERE name=\'delivery-recovery-hold\'",
+        )
+        .get()?.value === "1"
+    )
+      return;
     this.running = true;
     try {
       this.enqueue();
