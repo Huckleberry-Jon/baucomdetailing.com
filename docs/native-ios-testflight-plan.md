@@ -1,5 +1,7 @@
 # Native iOS / TestFlight gates
 
+> Current implementation: see cloudflare-migration-report.md and apps/docdetailing_owner. Earlier planned-only/SwiftUI descriptions below are historical; the authorized foundation is now Flutter. Production/native release gates remain unfulfilled.
+
 Hosted backend and physical iPhone acceptance have NOT passed. No native project, repository, signing assets, App Store Connect record, archive or upload exists. Website tests do not establish TestFlight readiness.
 
 After acceptance, create a separate SwiftUI owner app/repository. Temporary name: DocDetailing Owner. Proposed bundle ID com.docincorporated.docdetailing.owner and SKU DOCDETAILING-OWNER-IOS need owner/team availability approval before registration. Do not reuse or modify DocInvoices identifiers, signing assets or secrets.

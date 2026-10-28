@@ -78,3 +78,7 @@ DocDetailing is Doc Incorporated LLC's multi-business subscription product. Jose
 ## Current hosting decision: Cloudflare-first, no purchases
 
 The $110–150/month initial Render commercial recommendation is withdrawn. See [minimum production budget](docs/minimum-production-budget.md) for the $6–12/month feasibility target, [exact Cloudflare migration changes and DocInvoices comparison](docs/cloudflare-migration-plan.md), and [independent native API preparation](docs/native-ios-api-contract.md). The existing runtime has not been migrated. Native image processing, full D1 transactions, delivery and off-provider restore still need acceptance; the lower budget does not waive those checks.
+
+## Cloudflare migration — current implementation
+
+The parallel Workers/D1/R2 backend is now implemented and tested locally. See [the migration report](docs/cloudflare-migration-report.md), [publishing/approval runbook](docs/cloudflare-publish-runbook.md) and [encrypted recovery procedure](docs/cloudflare-recovery-runbook.md). Run npm run cloud:build, npm run test:cloudflare and npm run cloud:preflight. The private loopback profile uses port 4334; existing Node/device profiles remain intact. Production resource IDs, domain routing and external/device acceptance are still blocked. Flutter source is in apps/docdetailing_owner; no iOS archive or live app connection exists.

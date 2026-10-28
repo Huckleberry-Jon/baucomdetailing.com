@@ -1,4 +1,6 @@
 # DocDetailing Cloudflare implementation review
+
+> Current implementation: see cloudflare-migration-report.md and apps/docdetailing_owner. Earlier planned-only/SwiftUI descriptions below are historical; the authorized foundation is now Flutter. Production/native release gates remain unfulfilled.
 October 28, 2026. Current recommendation: Cloudflare-first feasibility budget; supersedes the Render-first commercial purchase proposal. No infrastructure was activated.
 
 ## What the actual DocInvoices code demonstrates
