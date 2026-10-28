@@ -24,6 +24,27 @@ async function load() {
   if (!r.ok) throw Error(catalog.error);
   $("#notice").textContent = catalog.notice;
   $("#service-area").textContent = catalog.settings.serviceArea;
+  const note = $("#contact-booking-note");
+  if (note)
+    note.textContent = catalog.runtime?.siteOpen
+      ? "Appointment requests require owner confirmation."
+      : "Use the appointment request form for this private preview.";
+  if (catalog.settings.scheduleConfirmed) {
+    const clock = (n) =>
+      String(Math.floor(n / 60)).padStart(2, "0") +
+      ":" +
+      String(n % 60).padStart(2, "0");
+    $("#contact-hours").textContent =
+      " Hours: " +
+      catalog.settings.workingDays.join(", ") +
+      " " +
+      clock(catalog.settings.openMinute) +
+      "–" +
+      clock(catalog.settings.closeMinute) +
+      " · " +
+      catalog.settings.timezone +
+      ".";
+  }
   const contact = catalog.settings.contact;
   if (typeof contact === "string" && contact.trim())
     $("#contact-details").textContent = contact;

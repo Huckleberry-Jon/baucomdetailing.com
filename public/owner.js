@@ -217,6 +217,10 @@ async function refresh() {
     await api("resume-delivery", "POST", {});
     await refresh();
   });
+  $("#public-contact").value =
+    typeof dashboard.settings.contact === "string"
+      ? dashboard.settings.contact
+      : "";
   $("#settings-json").value = JSON.stringify(dashboard.settings, null, 2);
   $("#service-editor").replaceChildren();
   for (const s of dashboard.services) {
@@ -271,6 +275,15 @@ $("#refresh").onclick = safe(refresh);
 $("#logout").onclick = safe(async () => {
   await api("logout", "POST", {});
   location.reload();
+});
+$("#contact-form").onsubmit = safe(async (e) => {
+  e.preventDefault();
+  await api("settings", "PUT", {
+    ...dashboard.settings,
+    contact: $("#public-contact").value.trim() || null,
+  });
+  await refresh();
+  $("#status").textContent = "Public contact details saved.";
 });
 $("#settings-form").onsubmit = safe(async (e) => {
   e.preventDefault();

@@ -107,6 +107,12 @@ export function schedule(
 export function validateSettings(s, bookings) {
   text(s.name, "Business name", 120);
   requireThat(
+    s.contact === null ||
+      s.contact === undefined ||
+      (typeof s.contact === "string" && s.contact.length <= 500),
+    "Contact details must be text up to 500 characters",
+  );
+  requireThat(
     typeof s.serviceArea === "string" && s.serviceArea.length <= 500,
     "Invalid service area",
   );
