@@ -51,6 +51,13 @@ abstract interface class OwnerApi {
     String action, {
     int durationMinutes = 90,
   });
+  Future<Object?> workspace(
+    String path, {
+    String method = "GET",
+    Map<String, dynamic>? body,
+    String? key,
+  });
+  Future<List<int>> privatePhoto(String id);
   Future<void> logout();
 }
 
@@ -72,30 +79,41 @@ class HttpOwnerApi implements OwnerApi {
   final List<Cookie> _cookies = [];
   @override
   bool get isDemo => false;
-  Future<Map<String, dynamic>> request(
+  Future<Object?> request(
     String path, {
     Map<String, dynamic>? body,
+    String? method,
+    String? key,
   }) async {
     final uri = origin.resolve(path);
     if (uri.origin != origin.origin) {
       throw const ApiFailure(403, 'Cross-origin request rejected.');
     }
-    final r = await _client.openUrl(body == null ? 'GET' : 'POST', uri);
+    final r = await _client.openUrl(
+      method ?? (body == null ? 'GET' : 'POST'),
+      uri,
+    );
     r.followRedirects = false;
     r.headers.set('Origin', origin.origin);
+    if (key != null) r.headers.set('Idempotency-Key', key);
     r.headers.contentType = ContentType.json;
     r.cookies.addAll(_cookies);
     if (body != null) r.write(jsonEncode(body));
     final response = await r.close().timeout(const Duration(seconds: 20));
-    final text = await utf8.decoder.bind(response).join();
+    final text = await utf8.decoder
+        .bind(response)
+        .join()
+        .timeout(const Duration(seconds: 30));
     if (response.statusCode >= 300 && response.statusCode < 400) {
       throw const ApiFailure(403, 'Use the approved canonical API origin.');
     }
-    final value = jsonDecode(text) as Map<String, dynamic>;
-    if (response.statusCode != 200) {
+    final value = jsonDecode(text);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiFailure(
         response.statusCode,
-        value['error'] as String? ?? 'Request failed.',
+        value is Map
+            ? value['error'] as String? ?? 'Request failed.'
+            : 'Request failed.',
       );
     }
     for (final cookie in response.cookies) {
@@ -117,7 +135,7 @@ class HttpOwnerApi implements OwnerApi {
 
   @override
   Future<List<Booking>> bookings() async {
-    final data = await request('/api/owner/dashboard');
+    final data = await request('/api/owner/dashboard') as Map<String, dynamic>;
     return (data['bookings'] as List)
         .map((row) => Booking.fromJson(row as Map<String, dynamic>))
         .toList();
@@ -138,6 +156,43 @@ class HttpOwnerApi implements OwnerApi {
         'durationMinutes': durationMinutes,
       },
     );
+  }
+
+  @override
+  Future<Object?> workspace(
+    String path, {
+    String method = "GET",
+    Map<String, dynamic>? body,
+    String? key,
+  }) {
+    if (!path.startsWith("/api/owner/")) {
+      throw const ApiFailure(403, "Owner route required.");
+    }
+    return request(path, method: method, body: body, key: key);
+  }
+
+  @override
+  Future<List<int>> privatePhoto(String id) async {
+    final uri = origin.resolve(
+      '/api/owner/photo?${Uri(queryParameters: {'id': id}).query}',
+    );
+    final r = await _client.getUrl(uri);
+    r.followRedirects = false;
+    r.cookies.addAll(_cookies);
+    r.headers.set('Origin', origin.origin);
+    final response = await r.close().timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      await response.drain<void>();
+      throw ApiFailure(response.statusCode, 'Private photo unavailable.');
+    }
+    final bytes = <int>[];
+    await for (final chunk in response.timeout(const Duration(seconds: 30))) {
+      bytes.addAll(chunk);
+      if (bytes.length > 4 * 1024 * 1024) {
+        throw const ApiFailure(413, 'Preview too large.');
+      }
+    }
+    return bytes;
   }
 
   @override
@@ -209,6 +264,44 @@ class DemoOwnerApi implements OwnerApi {
     );
   }
 
+  @override
+  Future<Object?> workspace(
+    String path, {
+    String method = "GET",
+    Map<String, dynamic>? body,
+    String? key,
+  }) async {
+    if (!_signedIn) throw const ApiFailure(401, "Sign in required.");
+    if (method != "GET") {
+      throw const ApiFailure(409, "Use an approved backend to save records.");
+    }
+    if (path.contains("/calendar")) return {"bookings": [], "blocks": []};
+    if (path.contains("/finance/report")) {
+      return {
+        "basis": "Demo: no financial activity recorded.",
+        "receiptsCents": 0,
+        "tipsCents": 0,
+        "expenseCents": 0,
+        "materialsPurchasedCents": 0,
+        "estimatedProfitCents": 0,
+        "cashFlowCents": 0,
+        "salesTaxCollectedCents": 0,
+        "taxRemittedCents": 0,
+      };
+    }
+    if (path.contains("/reviews")) return [];
+    if (path.contains("/dashboard")) {
+      return {
+        "notifications": [],
+        "settings": {"googleReviewUrl": null},
+      };
+    }
+    return {"records": []};
+  }
+
+  @override
+  Future<List<int>> privatePhoto(String id) async =>
+      throw const ApiFailure(404, 'Demo has no photos.');
   @override
   Future<void> logout() async {
     _signedIn = false;

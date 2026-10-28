@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
+import 'workspace.dart';
 
 void main() {
   const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
@@ -98,6 +99,44 @@ class _OwnerHomeState extends State<OwnerHome> {
           ),
       ],
     ),
+    drawer: signedIn
+        ? Drawer(
+            child: SafeArea(
+              child: ListView(
+                children: [
+                  const DrawerHeader(child: Text('Business workspace')),
+                  for (final section in [
+                    'Calendar',
+                    'Jobs',
+                    'Notifications',
+                    'Customers',
+                    'Vehicles',
+                    'Materials',
+                    'Estimates & invoices',
+                    'Payment Center',
+                    'Financial Center',
+                    'Reviews',
+                  ])
+                    ListTile(
+                      title: Text(section),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (context) => WorkspaceScreen(
+                              api: widget.api,
+                              section: section,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          )
+        : null,
     body: SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -228,7 +267,7 @@ class _OwnerHomeState extends State<OwnerHome> {
               ),
             const SizedBox(height: 20),
             const Text(
-              'Foundation status: calendar, photos, reviews, APNs, invoices and payment/finance screens are still being built.',
+              'Open the menu for business records, calendar, materials and finances. Photo permissions, APNs and signed iPhone acceptance remain release gates.',
             ),
           ],
         ],

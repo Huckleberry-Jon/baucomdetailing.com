@@ -7,6 +7,8 @@ workflows:
       flutter: 3.44.6
       xcode: latest
     scripts:
+      - name: Require approved source branch
+        script: test "$CM_BRANCH" = main
       - name: Resolve dependencies
         script: |
           cd apps/docdetailing_owner
@@ -25,6 +27,7 @@ workflows:
     scripts:
       - name: Require acceptance approval
         script: |
+          test "$CM_BRANCH" = main
           test "$IOS_BUILD_APPROVED" = true
           test "$SHARED_BACKEND_ACCEPTED" = true
       - name: Analyze, test and build unsigned only
