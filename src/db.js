@@ -14,6 +14,8 @@ export function openDatabase(path = ":memory:") {
     .sort()) {
     if (!db.prepare("SELECT 1 FROM migrations WHERE name=?").get(name))
       transaction(db, () => {
+        if (db.prepare("SELECT 1 FROM migrations WHERE name=?").get(name))
+          return;
         db.exec(
           readFileSync(
             new URL("../migrations/" + name, import.meta.url),
