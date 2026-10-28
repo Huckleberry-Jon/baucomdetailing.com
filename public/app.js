@@ -105,6 +105,9 @@ $("#booking-form").addEventListener("submit", async (e) => {
     body.acceptNotice = f.get("acceptNotice") === "on";
     delete body.notes;
     delete body.condition;
+    body.photos = await readPhotos(
+      document.querySelector("#booking-photos").files,
+    );
     const r = await fetch("/api/bookings", {
         method: "POST",
         headers: {

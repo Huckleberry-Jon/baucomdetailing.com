@@ -1,3 +1,4 @@
+import { storePhotos } from "./media.js";
 import { randomUUID } from "node:crypto";
 import { transaction } from "./db.js";
 import { BUSINESS, notice } from "./catalog.js";
@@ -60,7 +61,7 @@ export class BookingService {
     );
     return b;
   }
-  create(input, key) {
+  create(input, key, photos = []) {
     text(key, "Idempotency key", 100);
     requireThat(!input.website, "Request rejected");
     requireThat(input.acceptNotice === true, "Accept the pricing notice");
@@ -176,6 +177,7 @@ export class BookingService {
           now + 30 * 86400000,
           now,
         );
+      storePhotos(this.db, this.get(id), photos);
       this.event(id, "booking.requested", "customer", {
         noticeAcceptedAt: now,
       });
@@ -352,6 +354,23 @@ export class BookingService {
           "UPDATE bookings SET status=?,start_ms=?,end_ms=?,buffer_minutes=?,proposal=?,version=version+1 WHERE id=? AND business_id=?",
         )
         .run(status, start, end, buffer, proposal, id, BUSINESS);
+      if (["confirmed", "rescheduled"].includes(status)) {
+        this.db
+          .prepare("INSERT OR IGNORE INTO jobs VALUES(?,?,?,?,?,?)")
+          .run(
+            randomUUID(),
+            BUSINESS,
+            id,
+            b.customer_id,
+            b.vehicle_id,
+            Date.now(),
+          );
+        this.db
+          .prepare(
+            "UPDATE media SET job_id=(SELECT id FROM jobs WHERE booking_id=?) WHERE booking_id=? AND business_id=?",
+          )
+          .run(id, id, BUSINESS);
+      }
       this.event(id, "booking." + action, actor, {
         from: b.status,
         to: status,

@@ -1,3 +1,11 @@
+import {
+  preparePhotos,
+  storePhotos,
+  listPhotos,
+  mediaRecord,
+  selectInvoicePhoto,
+  invoicePhotoManifest,
+} from "./media.js";
 import { calendar, addBlock, availability } from "./calendar.js";
 import http from "node:http";
 import { readFileSync, mkdirSync } from "node:fs";
@@ -43,7 +51,7 @@ export function createApplication(db, config = {}) {
       res.setHeader("X-Frame-Options", "DENY");
       res.setHeader(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
       );
       requireThat(
         req.headers.host === new URL(origin).host,
@@ -69,7 +77,10 @@ export function createApplication(db, config = {}) {
         for await (const chunk of req) {
           raw += chunk;
           requireThat(
-            Buffer.byteLength(raw) <= 32768,
+            Buffer.byteLength(raw) <=
+              (path === "/api/bookings" || path === "/api/owner/photos"
+                ? 24 * 1024 * 1024
+                : 32768),
             "Request too large",
             413,
           );
@@ -123,7 +134,8 @@ export function createApplication(db, config = {}) {
         });
       if (path === "/api/bookings" && req.method === "POST") {
         rateLimit(db, "booking:" + req.socket.remoteAddress, 20);
-        const b = service.create(body, req.headers["idempotency-key"]);
+        const photos = await preparePhotos(body.photos ?? []);
+        const b = service.create(body, req.headers["idempotency-key"], photos);
         respond(res, b.duplicate ? 200 : 201, b);
         void worker.tick().catch((e) => worker.logError(e));
         return;
@@ -193,6 +205,55 @@ export function createApplication(db, config = {}) {
           db
             .prepare("INSERT INTO audit_events VALUES(?,?,?,?,?,?)")
             .run(randomUUID(), BUSINESS, signedIn.id, event, id, Date.now());
+        if (path === "/api/owner/photos" && req.method === "GET") {
+          service.get(url.searchParams.get("booking"));
+          return respond(
+            res,
+            200,
+            listPhotos(db, url.searchParams.get("booking")),
+          );
+        }
+        if (path === "/api/owner/photos" && req.method === "POST") {
+          requireThat(
+            ["intake", "before", "after"].includes(body.kind),
+            "Invalid photo kind",
+          );
+          const b = service.get(body.bookingId),
+            photos = await preparePhotos(body.photos);
+          const records = transaction(db, () => {
+            const result = storePhotos(db, b, photos, body.kind);
+            audit("media.uploaded", b.id);
+            return result;
+          });
+          return respond(res, 201, records);
+        }
+        if (path === "/api/owner/photo" && req.method === "GET") {
+          const p = mediaRecord(db, url.searchParams.get("id")),
+            original = url.searchParams.get("original") === "1";
+          res.setHeader(
+            "Content-Type",
+            original ? p.original_mime : "image/jpeg",
+          );
+          res.setHeader(
+            "Content-Disposition",
+            original ? 'attachment; filename="original-photo"' : "inline",
+          );
+          res.end(Buffer.from(original ? p.original : p.preview));
+          return;
+        }
+        if (path === "/api/owner/invoice-photo" && req.method === "PUT") {
+          selectInvoicePhoto(db, body.id, body.include);
+          audit("media.invoice-selection", body.id);
+          return respond(res, 200, { ok: true });
+        }
+        if (path === "/api/owner/invoice-photos" && req.method === "GET") {
+          service.get(url.searchParams.get("booking"));
+          return respond(
+            res,
+            200,
+            invoicePhotoManifest(db, url.searchParams.get("booking")),
+          );
+        }
         if (path === "/api/owner/calendar" && req.method === "GET")
           return respond(
             res,
@@ -377,6 +438,7 @@ export function createApplication(db, config = {}) {
           "/app.js": "app.js",
           "/owner.js": "owner.js",
           "/calendar.js": "calendar.js",
+          "/photos.js": "photos.js",
           "/customer.js": "customer.js",
           "/style.css": "style.css",
           "/sw.js": "sw.js",

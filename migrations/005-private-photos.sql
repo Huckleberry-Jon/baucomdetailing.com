@@ -1,0 +1,5 @@
+CREATE TABLE jobs(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),booking_id TEXT NOT NULL UNIQUE REFERENCES bookings(id),customer_id TEXT NOT NULL REFERENCES customers(id),vehicle_id TEXT NOT NULL REFERENCES vehicles(id),created_at INTEGER NOT NULL);
+CREATE TABLE media(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),booking_id TEXT NOT NULL REFERENCES bookings(id),customer_id TEXT NOT NULL REFERENCES customers(id),vehicle_id TEXT NOT NULL REFERENCES vehicles(id),job_id TEXT REFERENCES jobs(id),kind TEXT NOT NULL CHECK(kind IN ('intake','before','after')),filename TEXT NOT NULL,original_mime TEXT NOT NULL,original BLOB NOT NULL,preview BLOB NOT NULL,sha256 TEXT NOT NULL,include_on_invoice INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,UNIQUE(booking_id,sha256,kind));
+CREATE INDEX media_booking ON media(business_id,booking_id);
+CREATE INDEX media_job ON media(business_id,job_id);
+INSERT INTO jobs SELECT lower(hex(randomblob(16))),business_id,id,customer_id,vehicle_id,created_at FROM bookings WHERE end_ms IS NOT NULL AND status!='cancelled';

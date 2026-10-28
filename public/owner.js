@@ -162,6 +162,7 @@ async function refresh() {
       }),
     );
     card.append(actions);
+    await photoPanel(b, card);
     $("#request-list").append(card);
   }
   if (!dashboard.bookings.length)
