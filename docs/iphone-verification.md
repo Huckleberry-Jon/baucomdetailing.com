@@ -2,6 +2,8 @@
 
 Software/adapter tests are not evidence of an alert reaching Joseph’s iPhone. This checklist must be executed with Joseph and controlled test customer contact details before Phase 1 acceptance.
 
+Follow [device-test-environment.md](device-test-environment.md) for the now-prepared isolated configuration and staged approvals. It supersedes the earlier generic connection prerequisites. No tunnel or live messages have been enabled.
+
 ## Prerequisites
 
 1. Authorize an HTTPS **development** origin reachable from the iPhone. The current loopback-only preview cannot serve a remote phone. Any tunnel, TLS proxy, network binding, firewall change or staging deployment needs separate authorization; nothing has been exposed by this development pass.
@@ -20,7 +22,7 @@ Software/adapter tests are not evidence of an alert reaching Joseph’s iPhone. 
 - Test customer cancellation and owner fallback email with push denied/unsubscribed/expired or provider failure. Booking/inbox must remain durable regardless of channel failure.
 - Refresh/renew the subscription, revoke/regrant permission and test expired owner sessions. Verify no historical notification storm after renewal.
 - Verify notification tag behavior when retrying the same event, and correct read/unread counts after tapping an alert.
-- Exercise actual iPhone photo selection and JPEG conversion when HEIC is returned. Upload/preview/original download must remain private.
+- Exercise actual iPhone photo selection and the implemented server-side HEIC/HEIF-to-JPEG preview conversion, including preservation and private download of the original. Upload/preview/original download must remain private.
 
 Apple’s platform requirements: https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers
 

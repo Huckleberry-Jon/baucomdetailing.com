@@ -22,6 +22,8 @@ Use owner Settings to configure Joseph’s actual service area, working days/hou
 
 ## Notifications and fallback
 
+Outbound sending now defaults off even with provider credentials: local testing additionally requires `ALLOW_PUSH_SEND=true` and/or `ALLOW_EMAIL_SEND=true`; email requires `TEST_EMAIL_RECIPIENTS`. Keep these off until the exact test destinations and messages are authorized.
+
 Set development `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` using keys generated with `web-push`. The owner enables notifications from an explicit button press. The dashboard checks denied/default/granted permission states, missing/expiring subscriptions and VAPID changes; service-worker renewal attempts use the authenticated owner session. Renew again after owner session expiry. New subscriptions do not replay historical events.
 
 For iPhone, use a separately authorized HTTPS development origin, install the owner dashboard on the Home Screen, sign in, and enable notifications there. Loopback browser tests do not prove iPhone delivery. No HTTPS tunnel, public exposure or device connection has been configured.
@@ -32,7 +34,7 @@ Customer messages contain scoped, expiring private booking links. `RESEND_WEBHOO
 
 ## Photographs
 
-Customers can attach up to 6 JPEG/PNG/WebP photos while submitting a booking, maximum 4 MB each/16 MB combined. Image decoding/pixel limits run server-side before the atomic booking transaction. Originals are preserved privately; stripped, rotated previews are resized to 1600 pixels and JPEG-compressed. HEIC conversion is not implemented: export to JPEG first. Actual iPhone photo-picker behavior still needs a device test.
+Customers can attach up to 6 JPEG/PNG/WebP/HEIC photos while submitting a booking, maximum 4 MB each/16 MB combined. Image decoding/pixel limits run server-side before the atomic booking transaction. Originals are preserved privately; stripped, rotated previews are resized to 1600 pixels and JPEG-compressed. HEIC/HEIF is decoded in a bounded worker and converted to a private JPEG preview while preserving the original. The existing 4 MB / 40-megapixel limits apply; only the primary image is previewed. Actual iPhone photo-picker behavior still needs a device test.
 
 Owner booking records support private intake/before/after photos, a maximum of 24 per booking, authenticated preview/original download, stable customer/vehicle/job associations, and selection for future invoices. Job records are a minimal photo/booking association, not the native management application. Private originals and previews are SQLite BLOBs for this single-business local phase; they are included in the same consistent backup. No public media URLs or gallery publication controls are implemented.
 
@@ -54,6 +56,8 @@ Set `BACKUP_PASSPHRASE` privately (20+ characters). Destinations must be new dir
 ## Verification and remaining acceptance gates
 
 The automated suite covers durable bookings, two-connection confirmation races, notification claims/retries/fallback/receipts, photos/limits/atomic rollback, private media authorization, reviews/moderation and real encrypted restore into a fresh database. Browser QA uses a separate synthetic database via `node test/serve-browser-fixture.js`; its fixture hours/durations/password are test-only and never used by `npm start`.
+
+See [device acceptance environment preparation](docs/device-test-environment.md) for the isolated port-4324 profile, generated development keys, access gate, exact config and approval steps. It has not been exposed. [Off-machine backup preparation](docs/off-machine-backups.md) describes the disabled S3 adapter and required real read-back recovery test.
 
 See [the continuation report](docs/phase1-continuation.md) for changed files and browser evidence. Phase 1 is **not fully accepted** until Joseph’s real iPhone receives a booking alert, opens the exact request, completes owner confirmation/proposal and verifies receipt of a real customer message through the configured channel. Device permission/renewal/expired-session paths must also be exercised. Joseph’s final business details/assets remain pending. Customer returning-identity verification, public authorized gallery publication and broader production hardening remain outside the completed work.
 
