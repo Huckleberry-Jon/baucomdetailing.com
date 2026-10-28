@@ -91,7 +91,8 @@ async function load() {
     l.append(i, document.createTextNode(s));
     $("#concern-checks").append(l);
   }
-  await loadWebsitePhotos();
+  // Optional gallery loading must not prevent booking controls from initializing.
+  void loadWebsitePhotos().catch(() => {});
   const notice = $("#environment-notice");
   if (notice)
     notice.textContent = catalog.runtime?.siteOpen
