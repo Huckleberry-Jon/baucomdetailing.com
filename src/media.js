@@ -1,3 +1,4 @@
+import { isHeic, heicPreview } from "./heic.js";
 import sharp from "sharp";
 import { randomUUID, createHash } from "node:crypto";
 import { BUSINESS } from "./catalog.js";
@@ -28,31 +29,36 @@ export async function preparePhotos(photos = []) {
     );
     let meta, preview;
     try {
-      const image = sharp(bytes, {
-        limitInputPixels: 40000000,
-        failOn: "warning",
-        animated: false,
-      });
-      meta = await image.metadata();
-      requireThat(
-        ["jpeg", "png", "webp"].includes(meta.format) && !(meta.pages > 1),
-        "Use a single-frame JPEG, PNG or WebP photograph",
-      );
-      preview = await image
-        .rotate()
-        .resize({
-          width: 1600,
-          height: 1600,
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .jpeg({ quality: 80 })
-        .toBuffer();
+      if (isHeic(bytes)) {
+        meta = { format: "heic" };
+        preview = await heicPreview(bytes);
+      } else {
+        const image = sharp(bytes, {
+          limitInputPixels: 40000000,
+          failOn: "warning",
+          animated: false,
+        });
+        meta = await image.metadata();
+        requireThat(
+          ["jpeg", "png", "webp"].includes(meta.format) && !(meta.pages > 1),
+          "Use a single-frame JPEG, PNG or WebP photograph",
+        );
+        preview = await image
+          .rotate()
+          .resize({
+            width: 1600,
+            height: 1600,
+            fit: "inside",
+            withoutEnlargement: true,
+          })
+          .jpeg({ quality: 80 })
+          .toBuffer();
+      }
     } catch (e) {
       if (e.status) throw e;
       throw new Problem(
         400,
-        "Photo could not be decoded. Use a JPEG, PNG or WebP image under 4 MB.",
+        "Photo could not be decoded. Use a JPEG, PNG, WebP or HEIC/HEIF image under 4 MB.",
       );
     }
     prepared.push({

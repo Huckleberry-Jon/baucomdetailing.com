@@ -10,9 +10,15 @@
     "start": "node src/server.js",
     "test": "node --test \"test/*.test.js\"",
     "owner:setup": "node scripts/setup-owner.js",
-    "backup": "node scripts/backup.js"
+    "backup": "node scripts/backup.js",
+    "device:prepare": "node scripts/prepare-device-test.js",
+    "device:start": "node --env-file=.env.device-test src/server.js",
+    "backup:remote": "node scripts/backup-remote.js",
+    "device:preflight": "node --env-file=.env.device-test scripts/device-preflight.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1159.0",
+    "heic-decode": "2.1.0",
     "sharp": "0.35.5",
     "svix": "1.76.1",
     "web-push": "3.6.7"

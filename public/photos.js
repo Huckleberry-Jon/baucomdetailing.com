@@ -69,7 +69,8 @@ async function photoPanel(booking, root) {
   const file = el("input");
   file.type = "file";
   file.multiple = true;
-  file.accept = "image/jpeg,image/png,image/webp";
+  file.accept =
+    "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
   file.setAttribute("aria-label", "Job photographs");
   form.append(kind, file, el("button", "Upload private photos"));
   form.onsubmit = safe(async (e) => {
@@ -88,7 +89,7 @@ async function photoPanel(booking, root) {
     form,
     el(
       "small",
-      "JPEG, PNG or WebP. Maximum 6 files per upload, 4 MB each. Private photos are never published to the website.",
+      "JPEG, PNG, WebP or HEIC/HEIF. Maximum 6 files per upload, 4 MB each. Private photos are never published to the website.",
     ),
   );
   root.append(panel);
