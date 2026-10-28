@@ -1,0 +1,132 @@
+{
+  "capturedAtUtc": "2026-10-28T21:43:44.7605344Z",
+  "source": "https://dns.google/resolve (public DNS, not a full Porkbun zone export)",
+  "results": [
+    {
+      "answers": [
+        {
+          "name": "baucomdetailing.com.",
+          "type": 1,
+          "TTL": 34,
+          "data": "207.207.210.36"
+        },
+        {
+          "name": "baucomdetailing.com.",
+          "type": 1,
+          "TTL": 34,
+          "data": "207.207.210.50"
+        },
+        {
+          "name": "baucomdetailing.com.",
+          "type": 1,
+          "TTL": 34,
+          "data": "207.207.210.23"
+        }
+      ],
+      "type": "A",
+      "name": "baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [null],
+      "type": "AAAA",
+      "name": "baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [
+        {
+          "name": "baucomdetailing.com.",
+          "type": 15,
+          "TTL": 600,
+          "data": "20 fwd2.porkbun.com."
+        },
+        {
+          "name": "baucomdetailing.com.",
+          "type": 15,
+          "TTL": 600,
+          "data": "10 fwd1.porkbun.com."
+        }
+      ],
+      "type": "MX",
+      "name": "baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [
+        {
+          "name": "baucomdetailing.com.",
+          "type": 16,
+          "TTL": 600,
+          "data": "v=spf1 include:_spf.porkbun.com ~all"
+        }
+      ],
+      "type": "TXT",
+      "name": "baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [
+        {
+          "name": "baucomdetailing.com.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "fortaleza.ns.porkbun.com."
+        },
+        {
+          "name": "baucomdetailing.com.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "salvador.ns.porkbun.com."
+        },
+        {
+          "name": "baucomdetailing.com.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "curitiba.ns.porkbun.com."
+        },
+        {
+          "name": "baucomdetailing.com.",
+          "type": 2,
+          "TTL": 21600,
+          "data": "maceio.ns.porkbun.com."
+        }
+      ],
+      "type": "NS",
+      "name": "baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [null],
+      "type": "CAA",
+      "name": "baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [
+        {
+          "name": "_dmarc.baucomdetailing.com.",
+          "type": 5,
+          "TTL": 600,
+          "data": "uixie.porkbun.com."
+        }
+      ],
+      "type": "TXT",
+      "name": "_dmarc.baucomdetailing.com",
+      "status": 0
+    },
+    {
+      "answers": [
+        {
+          "name": "www.baucomdetailing.com.",
+          "type": 5,
+          "TTL": 600,
+          "data": "uixie.porkbun.com."
+        }
+      ],
+      "type": "CNAME",
+      "name": "www.baucomdetailing.com",
+      "status": 0
+    }
+  ]
+}

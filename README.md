@@ -36,7 +36,7 @@ Customer messages contain scoped, expiring private booking links. `RESEND_WEBHOO
 
 Customers can attach up to 6 JPEG/PNG/WebP/HEIC photos while submitting a booking, maximum 4 MB each/16 MB combined. Image decoding/pixel limits run server-side before the atomic booking transaction. Originals are preserved privately; stripped, rotated previews are resized to 1600 pixels and JPEG-compressed. HEIC/HEIF is decoded in a bounded worker and converted to a private JPEG preview while preserving the original. The existing 4 MB / 40-megapixel limits apply; only the primary image is previewed. Actual iPhone photo-picker behavior still needs a device test.
 
-Owner booking records support private intake/before/after photos, a maximum of 24 per booking, authenticated preview/original download, stable customer/vehicle/job associations, and selection for future invoices. Job records are a minimal photo/booking association, not the native management application. Private originals and previews are SQLite BLOBs for this single-business local phase; they are included in the same consistent backup. No public media URLs or gallery publication controls are implemented.
+Owner booking records support private intake/before/after photos, a maximum of 24 per booking, authenticated preview/original download, stable customer/vehicle/job associations, and selection for future invoices. Job records are a minimal photo/booking association, not the native management application. Private originals and previews are SQLite BLOBs for this single-business local phase; they are included in the same consistent backup. Private job media remains private. Separate website photo slots support audited draft review and explicit publication of stripped previews; see docs/website-photo-handoff.md.
 
 ## Reviews and invoice preparation
 
@@ -66,3 +66,7 @@ No push, deployment, DNS change, Netlify change, native app work, production cre
 ## Secured device-instance preparation
 
 The isolated instance now supports local-only verification at http://localhost:4324 with a tester gate and Joseph’s separate test owner. Both outbound channels are disabled and cannot be enabled in local-only mode. See [current local readiness and exact remaining approvals](docs/local-device-readiness.md). No public tunnel is active.
+
+## Production and native preparation
+
+See [production deployment](docs/production-deployment.md), [DNS plan](docs/porkbun-dns-plan.md), [photo handoff](docs/website-photo-handoff.md), [native/TestFlight gates](docs/native-ios-testflight-plan.md) and [current verification report](docs/launch-testflight-report.md). Templates are inactive; no hosted deployment or native project exists. Public launch, external communications and iOS uploads require separate authorization.

@@ -1,0 +1,44 @@
+# INACTIVE: copy into separate future native repository only after acceptance.
+workflows:
+  ios-validation:
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      vars:
+        IOS_PROJECT: REPLACE.xcodeproj
+        IOS_SCHEME: REPLACE
+        IOS_DESTINATION: REPLACE_WITH_AVAILABLE_SIMULATOR
+    scripts:
+      - name: Acceptance guard
+        script: |
+          test "$SHARED_BACKEND_ACCEPTED" = true
+          test -d "$IOS_PROJECT"
+          test "$IOS_SCHEME" != REPLACE
+      - name: Analyze
+        script: xcodebuild -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO analyze
+      - name: Test
+        script: xcodebuild -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" -destination "$IOS_DESTINATION" CODE_SIGNING_ALLOWED=NO test
+  ios-archive:
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      groups:
+        - docdetailing_ios_only
+      vars:
+        IOS_PROJECT: REPLACE.xcodeproj
+        IOS_SCHEME: REPLACE
+    scripts:
+      - name: Archive approval guard
+        script: |
+          test "$SHARED_BACKEND_ACCEPTED" = true
+          test "$IOS_ARCHIVE_APPROVED" = true
+          test -d "$IOS_PROJECT"
+          test "$IOS_SCHEME" != REPLACE
+      - name: Archive with separately configured approved signing
+        script: |
+          xcode-project use-profiles
+          xcode-project build-ipa --project "$IOS_PROJECT" --scheme "$IOS_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+# No publishing. Integration/profile installation remains to configure after source exists.
+
