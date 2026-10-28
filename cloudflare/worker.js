@@ -450,9 +450,7 @@ export async function route(request, env, ctx) {
           ownerFallbackConfigured: !!(
             env.RESEND_API_KEY &&
             env.EMAIL_FROM &&
-            (JSON.parse(business.settings).notificationPreferences
-              ?.ownerEmail ??
-              env.OWNER_NOTIFICATION_EMAIL)
+            JSON.parse(business.settings).notificationPreferences?.ownerEmail
           ),
           activeSubscriptions: (
             await s.first(

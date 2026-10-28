@@ -164,5 +164,28 @@ export function validateSettings(s, bookings) {
     "Reschedule or cancel confirmed appointments before closing their date",
     409,
   );
+  if (s.notificationPreferences !== undefined) {
+    const p = s.notificationPreferences;
+    requireThat(
+      p &&
+        typeof p === "object" &&
+        !Array.isArray(p) &&
+        typeof p.pushEnabled === "boolean" &&
+        typeof p.emailEnabled === "boolean",
+      "Explicit tenant notification preferences required",
+    );
+    requireThat(
+      p.ownerEmail === null ||
+        (typeof p.ownerEmail === "string" &&
+          p.ownerEmail.length <= 254 &&
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.ownerEmail)),
+      "Valid owner notification email required",
+    );
+    s.notificationPreferences = {
+      pushEnabled: p.pushEnabled,
+      emailEnabled: p.emailEnabled,
+      ownerEmail: p.ownerEmail,
+    };
+  }
   return { ...s, googleReviewUrl: googleReviewUrl(s.googleReviewUrl) };
 }

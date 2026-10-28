@@ -139,10 +139,7 @@ export async function enqueue(s, origin, env) {
         text: event + "\nReview: " + origin + "/owner?booking=" + booking.id,
         url: "/owner?booking=" + booking.id + "&event=" + n.id,
         eventId: n.id,
-        to:
-          settings.notificationPreferences?.ownerEmail ??
-          env.OWNER_NOTIFICATION_EMAIL ??
-          null,
+        to: settings.notificationPreferences?.ownerEmail ?? null,
       };
       if (n.actor === "customer") {
         for (const sub of subs)
@@ -206,13 +203,13 @@ function blocked(env, channel, to, settings) {
     prefs = settings.notificationPreferences ?? {};
   if (mode === "disabled") return "Outbound communications disabled";
   if (channel === "push") {
-    if (env.ALLOW_PUSH_SEND !== "true" || prefs.pushEnabled === false)
+    if (env.ALLOW_PUSH_SEND !== "true" || prefs.pushEnabled !== true)
       return "Push disabled";
     return env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
       ? null
       : "VAPID keys not configured";
   }
-  if (env.ALLOW_EMAIL_SEND !== "true" || prefs.emailEnabled === false)
+  if (env.ALLOW_EMAIL_SEND !== "true" || prefs.emailEnabled !== true)
     return "Email disabled";
   if (!to) return "Recipient not configured";
   if (!env.RESEND_API_KEY || !env.EMAIL_FROM)
@@ -353,7 +350,11 @@ export async function drain(s, origin, env) {
     } catch (e) {
       const expired = d.channel === "push" && [404, 410].includes(e.status);
       state = expired ? "expired" : d.attempts + 1 >= 5 ? "failed" : "retry";
-      error = expired ? "Subscription expired" : "Notification provider failed";
+      error = expired
+        ? "Subscription expired"
+        : Number.isInteger(e.status)
+          ? "Notification provider failed (HTTP " + e.status + ")"
+          : "Notification transport failed";
       if (expired)
         await s
           .statement(

@@ -360,3 +360,34 @@ test("actual Worker validates signed email receipts, tenant tags and early deliv
     await r.mf.dispose();
   }
 });
+test("business without notification opt-in never inherits another owner's process-wide recipient", async () => {
+  const r = await runtime({
+    COMMUNICATIONS_MODE: "test-only",
+    ALLOW_EMAIL_SEND: "true",
+    RESEND_API_KEY: "synthetic",
+    EMAIL_FROM: "platform@example.invalid",
+    OWNER_NOTIFICATION_EMAIL: "another-owner@example.invalid",
+    TEST_EMAIL_RECIPIENTS: "another-owner@example.invalid",
+  });
+  try {
+    const { cfg } = await seed(r.db);
+    const { notificationPreferences, ...without } = cfg;
+    await r.db
+      .prepare("UPDATE businesses SET settings=? WHERE id=?")
+      .bind(JSON.stringify(without), "baucom")
+      .run();
+    const b = await call(r.mf, "/api/bookings", {
+      method: "POST",
+      key: randomUUID(),
+      body: input(),
+    });
+    assert.equal(b.status, 201);
+    await r.fixture("drain", { tenant: "baucom", origin, env: {} });
+    const rows = (await r.db.prepare("SELECT * FROM deliveries").all()).results;
+    assert.ok(rows.length > 0);
+    assert.ok(rows.every((d) => d.status === "blocked" && d.attempts === 0));
+    assert.equal(JSON.parse(rows[0].payload).to, null);
+  } finally {
+    await r.mf.dispose();
+  }
+});
