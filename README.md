@@ -1,3 +1,5 @@
+Current execution report: [October 28 verification and remaining gates](docs/execution-report-2026-10-28.md). [Private preview commands](docs/device-preview-commands.md). [Flutter / Apple preparation](docs/apple-testflight-preparation.md).
+
 # DocDetailing — Phase 1 local development
 
 Doc Incorporated LLC’s shared detailing platform, initially provisioned only for Baucom’s Mobile Detailing. Website and owner dashboard share one durable backend. No native app or production deployment is included.

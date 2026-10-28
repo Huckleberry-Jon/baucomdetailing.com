@@ -1,3 +1,5 @@
+Current execution update: see execution-report-2026-10-28.md for the expanded 27 Cloudflare / 47 Node / 8 Flutter checks and remaining release gates. The following is the earlier migration checkpoint.
+
 # Cloudflare migration development report
 October 28, 2026. Local development only; production is NOT deployed or approved.
 
