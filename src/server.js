@@ -57,7 +57,8 @@ export function createApplication(db, config = {}) {
       res.setHeader("Cache-Control", "no-store");
       if (config.environment === "device-test") {
         res.setHeader("X-Robots-Tag", "noindex, nofollow");
-        res.setHeader("Strict-Transport-Security", "max-age=86400");
+        if (config.origin.startsWith("https:"))
+          res.setHeader("Strict-Transport-Security", "max-age=86400");
       }
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Referrer-Policy", "no-referrer");

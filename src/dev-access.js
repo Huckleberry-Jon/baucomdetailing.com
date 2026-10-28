@@ -39,7 +39,7 @@ export function accessGate(req, res, path, db, config, body, respond) {
     );
     res.setHeader(
       "Set-Cookie",
-      `dev_access=${gateSession(config.accessGate.signingKey)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=172800`,
+      `dev_access=${gateSession(config.accessGate.signingKey)}; HttpOnly;${config.origin.startsWith("https:") ? " Secure;" : ""} SameSite=Lax; Path=/; Max-Age=172800`,
     );
     respond(res, 200, { ok: true });
     return true;

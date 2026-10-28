@@ -4,7 +4,11 @@ import { randomBytes } from "node:crypto";
 import { fixture, requestInput } from "./helpers.js";
 import { runtimeConfig, deliveryBlockReason } from "../src/runtime-config.js";
 import { passwordHash } from "../src/security.js";
-import { gateSession, validGateSession } from "../src/dev-access.js";
+import {
+  gateSession,
+  validGateSession,
+  accessGate,
+} from "../src/dev-access.js";
 import { NotificationWorker } from "../src/notifications.js";
 import { createApplication } from "../src/server.js";
 const secret = {
@@ -193,7 +197,7 @@ test("HTTP gate blocks all app APIs and serves login at the same private deep-li
   });
   assert.equal(login.status, 200);
   const cookie = login.headers.get("set-cookie");
-  assert.match(cookie, /Secure/);
+  assert.doesNotMatch(cookie, /; Secure(?:;|$)/);
   assert.match(cookie, /HttpOnly/);
   assert.equal(
     (await call("/api/catalog", { headers: { Cookie: cookie.split(";")[0] } }))
@@ -213,4 +217,81 @@ test("HTTP gate blocks all app APIs and serves login at the same private deep-li
     401,
   );
   assert.equal(db.prepare("SELECT count(*) n FROM bookings").get().n, 0);
+});
+
+test("local-only device preparation rejects external origins and cannot enable communications", () => {
+  const env = {
+      APP_ENV: "device-test",
+      DEV_CONNECTION_MODE: "local-only",
+      DEV_ORIGIN: "http://localhost:4324",
+    },
+    config = runtimeConfig(env, () => secret);
+  assert.equal(config.connectionMode, "local-only");
+  assert.equal(config.port, 4324);
+  assert.equal(config.origin, "http://localhost:4324");
+  assert.throws(
+    () =>
+      runtimeConfig(
+        { ...env, DEV_ORIGIN: "http://example.test:4324" },
+        () => secret,
+      ),
+    /Local-only/,
+  );
+  assert.throws(
+    () => runtimeConfig({ ...env, DEV_ALLOW_PUSH_SEND: "true" }, () => secret),
+    /cannot enable/,
+  );
+  assert.throws(
+    () => runtimeConfig({ ...env, DEV_ALLOW_EMAIL_SEND: "true" }, () => secret),
+    /cannot enable/,
+  );
+  const tunnel = runtimeConfig(
+    {
+      ...env,
+      DEV_CONNECTION_MODE: "https-tunnel",
+      DEV_ORIGIN: "https://assigned-example.ngrok.app",
+    },
+    () => secret,
+  );
+  assert.equal(tunnel.connectionMode, "https-tunnel");
+  assert.equal(tunnel.origin, "https://assigned-example.ngrok.app");
+});
+
+test("HTTPS tunnel gate cookies retain Secure while local-only cookies are restricted to loopback", () => {
+  const { db } = fixture(),
+    headers = {},
+    res = {
+      setHeader: (name, value) => {
+        headers[name] = value;
+      },
+    },
+    req = {
+      method: "POST",
+      headers: {},
+      socket: { remoteAddress: "synthetic" },
+    },
+    config = {
+      origin: "https://assigned-example.ngrok.app",
+      accessGate: {
+        passwordHash: secret.accessPasswordHash,
+        signingKey: secret.gateSigningKey,
+      },
+    };
+  let status;
+  const handled = accessGate(
+    req,
+    res,
+    "/dev-access",
+    db,
+    config,
+    { code: "Synthetic gate passphrase" },
+    (_, code) => {
+      status = code;
+    },
+  );
+  assert.equal(handled, true);
+  assert.equal(status, 200);
+  assert.match(headers["Set-Cookie"], /; Secure;/);
+  assert.match(headers["Set-Cookie"], /HttpOnly/);
+  db.close();
 });

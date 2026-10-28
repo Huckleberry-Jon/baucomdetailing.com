@@ -32,23 +32,47 @@ export function runtimeConfig(
           .filter(Boolean),
       },
     };
-  const u = new URL(
-    env.DEV_ORIGIN ?? "https://replace-with-assigned-dev-domain.invalid",
-  );
+  const connectionMode = env.DEV_CONNECTION_MODE ?? "https-tunnel";
   requireThat(
-    u.protocol === "https:" &&
-      !u.username &&
-      !u.password &&
-      !u.port &&
-      u.pathname === "/" &&
-      !u.search &&
-      !u.hash &&
-      !u.hostname.endsWith(".invalid") &&
-      u.hostname !== "baucomdetailing.com" &&
-      !u.hostname.endsWith(".baucomdetailing.com") &&
-      !u.hostname.endsWith(".netlify.app"),
-    "DEV_ORIGIN must be a separate HTTPS development origin, not the business domain or Netlify website",
+    ["local-only", "https-tunnel"].includes(connectionMode),
+    "Invalid DEV_CONNECTION_MODE",
   );
+  const u = new URL(
+    env.DEV_ORIGIN ??
+      (connectionMode === "local-only"
+        ? "http://localhost:4324"
+        : "https://replace-with-assigned-dev-domain.invalid"),
+  );
+  if (connectionMode === "local-only") {
+    requireThat(
+      u.origin === "http://localhost:4324" &&
+        u.pathname === "/" &&
+        !u.search &&
+        !u.hash &&
+        !u.username &&
+        !u.password,
+      "Local-only device tests must use http://localhost:4324",
+    );
+    requireThat(
+      env.DEV_ALLOW_PUSH_SEND !== "true" && env.DEV_ALLOW_EMAIL_SEND !== "true",
+      "Local-only device tests cannot enable outbound push or email",
+    );
+  } else {
+    requireThat(
+      u.protocol === "https:" &&
+        !u.username &&
+        !u.password &&
+        !u.port &&
+        u.pathname === "/" &&
+        !u.search &&
+        !u.hash &&
+        !u.hostname.endsWith(".invalid") &&
+        u.hostname !== "baucomdetailing.com" &&
+        !u.hostname.endsWith(".baucomdetailing.com") &&
+        !u.hostname.endsWith(".netlify.app"),
+      "DEV_ORIGIN must be a separate HTTPS development origin, not the business domain or Netlify website",
+    );
+  }
   const file = resolve("data/device-test/secrets.json");
   requireThat(
     !env.DEV_SECRETS_FILE || resolve(env.DEV_SECRETS_FILE) === file,
@@ -71,6 +95,7 @@ export function runtimeConfig(
   );
   return {
     environment: mode,
+    connectionMode,
     origin: u.origin,
     port: 4324,
     databasePath: resolve("data/device-test/docdetailing.sqlite"),

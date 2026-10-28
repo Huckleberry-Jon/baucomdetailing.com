@@ -14,7 +14,9 @@
     "device:prepare": "node scripts/prepare-device-test.js",
     "device:start": "node --env-file=.env.device-test src/server.js",
     "backup:remote": "node scripts/backup-remote.js",
-    "device:preflight": "node --env-file=.env.device-test scripts/device-preflight.js"
+    "device:preflight": "node --env-file=.env.device-test scripts/device-preflight.js",
+    "device:owner": "node --env-file=.env.device-test scripts/provision-device-owner.js",
+    "device:verify-local": "node --env-file=.env.device-test scripts/verify-device-local.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1159.0",
