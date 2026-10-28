@@ -1,3 +1,4 @@
+# SUPERSEDED: use apps/docdetailing_owner/codemagic.yaml for the current Flutter foundation.
 # INACTIVE: copy into separate future native repository only after acceptance.
 workflows:
   ios-validation:

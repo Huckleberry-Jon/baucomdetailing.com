@@ -1,0 +1,37 @@
+# Preparation only. No triggers, upload, publishing, signing secrets or production build.
+workflows:
+  flutter-validation:
+    name: DocDetailing Flutter foundation
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.44.6
+      xcode: latest
+    scripts:
+      - name: Resolve dependencies
+        script: |
+          cd apps/docdetailing_owner
+          flutter pub get
+      - name: Analyze and test
+        script: |
+          cd apps/docdetailing_owner
+          flutter analyze
+          flutter test
+  ios-unsigned:
+    name: Approved unsigned iOS connectivity validation
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.44.6
+      xcode: latest
+    scripts:
+      - name: Require acceptance approval
+        script: |
+          test "$IOS_BUILD_APPROVED" = true
+          test "$SHARED_BACKEND_ACCEPTED" = true
+      - name: Analyze, test and build unsigned only
+        script: |
+          cd apps/docdetailing_owner
+          flutter pub get
+          flutter analyze
+          flutter test
+          flutter build ios --release --no-codesign --dart-define=DEMO_MODE=true
+# Separate signing/ASC integration, archive, upload and external beta submission remain unconfigured.
