@@ -1,0 +1,9 @@
+CREATE TABLE materials(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),version INTEGER NOT NULL DEFAULT 1,data TEXT NOT NULL,UNIQUE(business_id,id));
+CREATE INDEX materials_tenant ON materials(business_id,id);
+CREATE TABLE financial_documents(id TEXT PRIMARY KEY,business_id TEXT NOT NULL,customer_id TEXT NOT NULL,booking_id TEXT,kind TEXT NOT NULL CHECK(kind IN ('estimate','invoice')),status TEXT NOT NULL CHECK(status IN ('draft','issued','void')),number TEXT,version INTEGER NOT NULL DEFAULT 1,data TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(business_id,id),UNIQUE(business_id,number),FOREIGN KEY(business_id,customer_id) REFERENCES customers(business_id,id),FOREIGN KEY(business_id,booking_id) REFERENCES bookings(business_id,id));
+CREATE INDEX financial_document_customer ON financial_documents(business_id,customer_id,created_at);
+CREATE TABLE financial_events(id TEXT PRIMARY KEY,business_id TEXT NOT NULL,document_id TEXT,kind TEXT NOT NULL CHECK(kind IN ('payment','expense')),amount_cents INTEGER NOT NULL CHECK(amount_cents>0),tip_cents INTEGER NOT NULL DEFAULT 0 CHECK(tip_cents>=0),tax_cents INTEGER NOT NULL DEFAULT 0 CHECK(tax_cents>=0),occurred_at INTEGER NOT NULL,data TEXT NOT NULL,idempotency_key TEXT NOT NULL,request_hash TEXT NOT NULL,UNIQUE(business_id,idempotency_key),FOREIGN KEY(business_id,document_id) REFERENCES financial_documents(business_id,id));
+CREATE INDEX finance_period ON financial_events(business_id,occurred_at);
+CREATE TABLE tenant_entitlements(business_id TEXT PRIMARY KEY REFERENCES businesses(id),access_type TEXT NOT NULL CHECK(access_type IN ('complimentary_test','manual_subscription')),status TEXT NOT NULL CHECK(status IN ('active','suspended')),created_at INTEGER NOT NULL);
+/* Metadata only. No billing provider or automatic customer charges. */
+INSERT INTO tenant_entitlements SELECT id,'complimentary_test','active',0 FROM businesses WHERE id='baucom';

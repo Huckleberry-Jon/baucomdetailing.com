@@ -48,6 +48,76 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       origin: "http://localhost:4334",
       env: {},
     });
+    const customer = await source.db
+      .prepare("SELECT id FROM customers LIMIT 1")
+      .first();
+    const material = await call(source.mf, "/api/owner/materials", {
+      method: "POST",
+      cookie,
+      body: {
+        product: "Recovery cleaner",
+        unit: "bottle",
+        quantityMillis: 1000,
+        costCents: 500,
+        markupBps: 1000,
+        taxable: false,
+      },
+    });
+    assert.equal(material.status, 201);
+    const document = await call(source.mf, "/api/owner/documents", {
+      method: "POST",
+      cookie,
+      body: {
+        kind: "invoice",
+        customerId: customer.id,
+        taxBps: 0,
+        lines: [
+          {
+            description: "Detail",
+            unit: "service",
+            quantityMillis: 1000,
+            unitPriceCents: 10000,
+            unitCostCents: 1000,
+            taxable: false,
+          },
+        ],
+      },
+    });
+    assert.equal(document.status, 201);
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/documents/issue", {
+          method: "POST",
+          cookie,
+          body: { id: document.data.id, version: 1 },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/finance/events", {
+          method: "POST",
+          cookie,
+          key: randomUUID(),
+          body: {
+            kind: "payment",
+            documentId: document.data.id,
+            amountCents: 10000,
+            tipCents: 500,
+            method: "cash",
+            occurredAt: new Date().toISOString(),
+          },
+        })
+      ).status,
+      201,
+    );
+    await source.db
+      .prepare(
+        "INSERT INTO tenant_entitlements VALUES('baucom','complimentary_test','active',?)",
+      )
+      .bind(Date.now())
+      .run();
     const dir = await mkdtemp(
         join(tmpdir(), "docdetailing-encrypted-recovery-"),
       ),
@@ -94,6 +164,10 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       "history",
       "notifications",
       "jobs",
+      "materials",
+      "financial_documents",
+      "financial_events",
+      "tenant_entitlements",
       "media",
     ]) {
       if (table === "settings") {
@@ -108,6 +182,25 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       assert.equal(
         (await target.db.prepare("SELECT count(*) n FROM " + table).first()).n,
         (await source.db.prepare("SELECT count(*) n FROM " + table).first()).n,
+      );
+    }
+    for (const table of [
+      "materials",
+      "financial_documents",
+      "financial_events",
+      "tenant_entitlements",
+    ]) {
+      assert.deepEqual(
+        (
+          await target.db
+            .prepare("SELECT * FROM " + table + " ORDER BY rowid")
+            .all()
+        ).results,
+        (
+          await source.db
+            .prepare("SELECT * FROM " + table + " ORDER BY rowid")
+            .all()
+        ).results,
       );
     }
     const photo = await target.db.prepare("SELECT * FROM media").first();

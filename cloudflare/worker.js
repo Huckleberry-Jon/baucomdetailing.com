@@ -8,6 +8,14 @@ import {
 } from "../src/security.js";
 import { gateSession, validGateSession } from "../src/dev-access.js";
 import { notice } from "../src/catalog.js";
+import {
+  saveMaterial,
+  saveDocument,
+  issueDocument,
+  recordEvent,
+  report,
+} from "./finance.js";
+import { directory, updateRecord } from "./records.js";
 import { CloudBookings } from "./bookings.js";
 import {
   prepareMedia,
@@ -22,6 +30,8 @@ const staticPaths = {
   "/": "index.html",
   "/owner": "owner.html",
   "/booking": "booking.html",
+  "/privacy": "privacy.html",
+  "/terms": "terms.html",
   "/dev-access": "dev-access.html",
 };
 const headers = {
@@ -384,6 +394,55 @@ export async function route(request, env, ctx) {
         s.audit(c, user.id, event, record);
         return { ok: true };
       });
+    if (["/api/owner/customers", "/api/owner/vehicles"].includes(path)) {
+      const kind = path.split("/").pop();
+      if (method === "GET")
+        return json(await directory(s, kind, url.searchParams));
+      if (method === "PUT")
+        return json(await updateRecord(s, kind, body, user.id));
+    }
+    if (path === "/api/owner/materials") {
+      if (method === "GET")
+        return json({
+          records: await s.all(
+            "SELECT * FROM materials WHERE business_id=? ORDER BY rowid DESC LIMIT 300",
+            s.tenant,
+          ),
+        });
+      if (method === "POST")
+        return json(await saveMaterial(s, body, user.id), 201);
+    }
+    if (path === "/api/owner/documents") {
+      if (method === "GET")
+        return json({
+          records: await s.all(
+            "SELECT * FROM financial_documents WHERE business_id=? ORDER BY created_at DESC LIMIT 300",
+            s.tenant,
+          ),
+        });
+      if (method === "POST")
+        return json(await saveDocument(s, body, user.id), 201);
+    }
+    if (path === "/api/owner/documents/issue" && method === "POST")
+      return json(await issueDocument(s, body, user.id));
+    if (path === "/api/owner/finance/events" && method === "POST")
+      return json(
+        await recordEvent(
+          s,
+          body,
+          user.id,
+          request.headers.get("Idempotency-Key"),
+        ),
+        201,
+      );
+    if (path === "/api/owner/finance/report" && method === "GET")
+      return json(
+        await report(
+          s,
+          url.searchParams.get("from"),
+          url.searchParams.get("to"),
+        ),
+      );
     if (path === "/api/owner/logout" && method === "POST") {
       await s
         .statement(
@@ -813,6 +872,15 @@ export default {
       if (env.SITE_OPEN !== "true") h.set("X-Robots-Tag", "noindex, nofollow");
       return new Response(r.body, { status: r.status, headers: h });
     } catch (e) {
+      if (!e.status || e.status >= 500)
+        console.error(
+          JSON.stringify({
+            event: "request.failed",
+            path: new URL(request.url).pathname,
+            status: e.status ?? 500,
+            requestId: randomUUID(),
+          }),
+        );
       return json(
         {
           error: e.status

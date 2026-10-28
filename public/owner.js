@@ -49,6 +49,7 @@ async function refresh() {
       await api("booking?id=" + encodeURIComponent(selected)),
     );
   await syncPushStatus(dashboard.vapidPublicKey, false);
+  if (typeof renderToday === "function") renderToday();
   $("#login").hidden = true;
   $("#workspace").hidden = false;
   $("#stats").replaceChildren(

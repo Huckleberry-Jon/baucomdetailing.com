@@ -33,6 +33,10 @@ export const TABLES = [
   "review_moderation",
   "audit_events",
   "backup_runs",
+  "materials",
+  "financial_documents",
+  "financial_events",
+  "tenant_entitlements",
 ];
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 function key(pass, salt) {
@@ -114,6 +118,7 @@ export async function createCloudBackup({
     files.push({ key: objectKey, name, sha, bytes: bytes.length });
   }
   const manifest = {
+    schemaRevision: 2,
     format: "docdetailing-cloud-backup",
     version: 1,
     id,
@@ -174,8 +179,20 @@ export async function restoreCloudBackup({
         id + "/manifest.enc",
       ).toString(),
     );
+  // Backups created before business-management tables remain recoverable.
+  if (m.schemaRevision === undefined) {
+    for (const table of [
+      "materials",
+      "financial_documents",
+      "financial_events",
+      "tenant_entitlements",
+    ]) {
+      if (m.rows?.[table] === undefined) m.rows[table] = [];
+    }
+  }
   requireThat(
-    m.id === id &&
+    (m.schemaRevision === undefined || m.schemaRevision === 2) &&
+      m.id === id &&
       m.version === 1 &&
       TABLES.every((t) => Array.isArray(m.rows[t])),
     "Invalid recovery manifest",

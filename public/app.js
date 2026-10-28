@@ -24,6 +24,9 @@ async function load() {
   if (!r.ok) throw Error(catalog.error);
   $("#notice").textContent = catalog.notice;
   $("#service-area").textContent = catalog.settings.serviceArea;
+  const contact = catalog.settings.contact;
+  if (typeof contact === "string" && contact.trim())
+    $("#contact-details").textContent = contact;
   for (const p of catalog.services.filter((s) => s.kind === "package")) {
     const c = el("article", null, "card" + (p.featured ? " featured" : ""));
     const figure = el("figure", null, "photo-slot package-photo");
@@ -39,10 +42,7 @@ async function load() {
       el("h3", p.name),
       el("p", p.subtitle),
       el("div", `${money(p.min)}–${money(p.max)}`, "price"),
-      el(
-        "small",
-        "Starting estimate. Vehicle size, condition, and additional cleaning affect final price.",
-      ),
+      el("small", catalog.notice),
     );
     const ul = el("ul");
     for (const item of p.items) ul.append(el("li", item));
