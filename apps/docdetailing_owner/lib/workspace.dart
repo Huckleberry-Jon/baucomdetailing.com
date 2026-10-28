@@ -134,6 +134,29 @@ class _WorkspaceState extends State<WorkspaceScreen> {
     return result;
   }
 
+  Future<String?> chooseAppointmentTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return null;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (time == null) return null;
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    ).toUtc().toIso8601String();
+  }
+
   int cents(String? s) => (double.parse(s ?? '0') * 100).round();
   Future<void> addMaterial() async {
     final f = await form('Add material', {
@@ -347,6 +370,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                 children: [
                   Expanded(
                     child: DropdownButton<int>(
+                      isExpanded: true,
                       value: year,
                       items: [
                         for (
@@ -364,13 +388,11 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                   ),
                   Expanded(
                     child: DropdownButton<int>(
+                      isExpanded: true,
                       value: quarter,
                       items: [
                         for (int q = 1; q <= 4; q++)
-                          DropdownMenuItem(
-                            value: q,
-                            child: Text('Quarter $q (UTC)'),
-                          ),
+                          DropdownMenuItem(value: q, child: Text('Q$q · UTC')),
                       ],
                       onChanged: (v) {
                         setState(() => quarter = v!);
@@ -521,13 +543,18 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                                     : () => run(() async {
                                         final f = await form('Review $action', {
                                           'Duration minutes': '90',
-                                          if (action == 'propose')
-                                            'Proposed time (ISO with time zone)':
-                                                '',
+
                                           if (action == 'propose')
                                             'Revised total': '0',
                                         });
                                         if (f == null) return;
+                                        final proposed = action == 'propose'
+                                            ? await chooseAppointmentTime()
+                                            : null;
+                                        if (action == 'propose' &&
+                                            proposed == null) {
+                                          return;
+                                        }
                                         await save('/api/owner/transition', {
                                           'id': row['id'],
                                           'version': row['version'],
@@ -536,9 +563,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                                             f['Duration minutes']!,
                                           ),
                                           if (action == 'propose')
-                                            'startAt': DateTime.parse(
-                                              f['Proposed time (ISO with time zone)']!,
-                                            ).toUtc().toIso8601String(),
+                                            'startAt': proposed,
                                           if (action == 'propose')
                                             'priceCents': cents(
                                               f['Revised total'],

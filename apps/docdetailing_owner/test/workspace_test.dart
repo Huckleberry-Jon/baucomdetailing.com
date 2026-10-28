@@ -134,4 +134,23 @@ void main() {
     expect(body['version'], 'fixture-version');
     expect(body['data']['firstName'], 'Updated');
   });
+  testWidgets('business screens fit an iPhone-sized viewport', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final section in ['Customers', 'Materials', 'Financial Center']) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WorkspaceScreen(
+            key: ValueKey(section),
+            api: FixtureApi(),
+            section: section,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: section);
+    }
+  });
 }
