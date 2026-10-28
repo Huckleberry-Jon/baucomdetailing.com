@@ -146,3 +146,44 @@ $("#booking-form").addEventListener("submit", async (e) => {
 load().catch((e) => {
   $("#booking-status").textContent = e.message;
 });
+document.querySelector("#check-availability").onclick = async () => {
+  const status = document.querySelector("#availability-status"),
+    root = document.querySelector("#availability-times");
+  root.replaceChildren();
+  try {
+    const q = new URLSearchParams({
+      day: document.querySelector("#availability-day").value,
+      packageId: document.querySelector("#package-select").value,
+    });
+    for (const input of document.querySelectorAll("[name=addonIds]:checked"))
+      q.append("addonId", input.value);
+    const r = await fetch("/api/availability?" + q),
+      data = await r.json();
+    if (!r.ok) throw Error(data.error);
+    status.textContent =
+      data.message + (data.slots.length ? "" : " No available times shown.");
+    for (const slot of data.slots) {
+      const b = el(
+        "button",
+        new Date(slot).toLocaleTimeString("en-US", {
+          timeZone: "America/Chicago",
+          hour: "numeric",
+          minute: "2-digit",
+        }) + " Central",
+      );
+      b.type = "button";
+      b.onclick = () => {
+        const d = new Date(slot),
+          value = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+        document.querySelector("[name=requestedAt]").value = value;
+        status.textContent =
+          "Preferred time selected. Submit the booking form to request it.";
+      };
+      root.append(b);
+    }
+  } catch (e) {
+    status.textContent = e.message;
+  }
+};

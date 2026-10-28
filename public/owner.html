@@ -8,13 +8,14 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="/style.css" />
     <script src="/owner.js" defer></script>
+    <script src="/calendar.js" defer></script>
   </head>
   <body>
     <header>
       <a class="brand" href="/">BAUCOM’S <small>OWNER WORKSPACE</small></a>
       <nav>
-        <a href="#requests">Requests</a><a href="#notifications">Inbox</a
-        ><a href="#settings">Settings</a>
+        <a href="#calendar">Calendar</a><a href="#requests">Requests</a
+        ><a href="#notifications">Inbox</a><a href="#settings">Settings</a>
       </nav>
     </header>
     <main class="owner">
@@ -54,6 +55,36 @@
         </p>
         <p id="push-status" role="status"></p>
         <div class="stats" id="stats"></div>
+        <section id="calendar">
+          <h2>Booking calendar</h2>
+          <p>
+            America/Chicago. Pending requests and proposed times are not
+            reserved. Confirmed appointments include their service duration and
+            travel buffer.
+          </p>
+          <label
+            >Calendar month<input type="month" id="calendar-month"
+          /></label>
+          <div id="calendar-days" class="calendar-grid"></div>
+          <form id="block-form">
+            <h3>Block time / personal time off</h3>
+            <label>Reason<input name="label" maxlength="120" required /></label>
+            <div class="form-grid">
+              <label
+                >Start (device local time)<input
+                  name="startAt"
+                  type="datetime-local"
+                  required /></label
+              ><label
+                >End (device local time)<input
+                  name="endAt"
+                  type="datetime-local"
+                  required
+              /></label>
+            </div>
+            <button>Block time</button>
+          </form>
+        </section>
         <section id="requests">
           <h2>Booking requests</h2>
           <div id="request-list"></div>
@@ -71,15 +102,110 @@
             midnight in America/Chicago. Working days use Mon, Tue, Wed, Thu,
             Fri, Sat, Sun. No hours or durations have been invented.
           </p>
-          <form id="settings-form">
+          <form id="schedule-form">
             <label
-              >Shared settings (JSON)<textarea
-                id="settings-json"
-                rows="20"
-                spellcheck="false"
+              >Service area<input
+                name="serviceArea"
+                maxlength="500"
+                required /></label
+            ><label class="check"
+              ><input type="checkbox" name="serviceAreaConfirmed" />Service area
+              confirmed by Joseph</label
+            >
+            <fieldset>
+              <legend>Working days</legend>
+              <div class="checks">
+                <label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Mon"
+                  />Mon</label
+                ><label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Tue"
+                  />Tue</label
+                ><label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Wed"
+                  />Wed</label
+                ><label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Thu"
+                  />Thu</label
+                ><label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Fri"
+                  />Fri</label
+                ><label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Sat"
+                  />Sat</label
+                ><label class="check"
+                  ><input
+                    type="checkbox"
+                    name="workingDays"
+                    value="Sun"
+                  />Sun</label
+                >
+              </div>
+            </fieldset>
+            <div class="form-grid">
+              <label
+                >Opens (America/Chicago)<input type="time" name="open" /></label
+              ><label
+                >Closes (America/Chicago)<input
+                  type="time"
+                  name="close" /></label
+              ><label
+                >Travel buffer (minutes)<input
+                  type="number"
+                  name="bufferMinutes"
+                  min="0"
+                  max="240"
+                  required /></label
+              ><label
+                >Maximum appointments per day<input
+                  type="number"
+                  name="maxDaily"
+                  min="1"
+                  max="100"
+              /></label>
+            </div>
+            <label
+              >Closed dates (YYYY-MM-DD, comma separated)<textarea
+                name="closedDates"
+                rows="2"
               ></textarea></label
-            ><button>Save settings</button>
+            ><label class="check"
+              ><input type="checkbox" name="scheduleConfirmed" />Working hours
+              and capacity confirmed by Joseph</label
+            ><button>Save schedule</button>
           </form>
+          <h3>Service durations</h3>
+          <div id="duration-controls"></div>
+          <details>
+            <summary>Advanced shared settings</summary>
+            <form id="settings-form">
+              <label
+                >Shared settings (JSON)<textarea
+                  id="settings-json"
+                  rows="20"
+                  spellcheck="false"
+                ></textarea></label
+              ><button>Save settings</button>
+            </form>
+          </details>
           <h2>Service catalog</h2>
           <p>
             Prices use cents. Existing bookings keep their original price

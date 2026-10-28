@@ -223,6 +223,12 @@ export class BookingService {
       "Outside working hours or on a closed date",
       409,
     );
+    const blocked = this.db
+      .prepare(
+        "SELECT id FROM schedule_blocks WHERE business_id=? AND start_ms<? AND end_ms>? LIMIT 1",
+      )
+      .get(BUSINESS, end + s.bufferMinutes * 60000, start);
+    requireThat(!blocked, "Appointment overlaps blocked time", 409);
     const active = this.db
       .prepare(
         "SELECT * FROM bookings WHERE business_id=? AND id!=? AND (status IN ('confirmed','rescheduled','in_progress') OR (status='awaiting_acceptance' AND end_ms IS NOT NULL))",

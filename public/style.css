@@ -411,3 +411,61 @@ code {
     padding: 20px 6%;
   }
 }
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.calendar-day {
+  border: 1px solid var(--line);
+  padding: 14px;
+  border-radius: 6px;
+  min-height: 130px;
+  background: #fffdf7;
+}
+.calendar-day h3 {
+  font: 600 15px system-ui;
+}
+.calendar-day.closed {
+  background: #e2e4db;
+}
+.calendar-entry {
+  display: block;
+  margin: 10px 0;
+  padding: 8px;
+  border-left: 4px solid #507744;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.calendar-entry.pending,
+.proposed {
+  border-color: #a67b19;
+  background: #fff7d5;
+}
+.calendar-entry.cancelled,
+.calendar-entry.no_show {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+.blocked {
+  background: #ddd0c4;
+  padding: 10px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.duration-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.duration-row label {
+  flex: 1;
+}
+@media (max-width: 650px) {
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+  .duration-row {
+    display: block;
+  }
+}

@@ -209,6 +209,8 @@ async function refresh() {
     });
     $("#service-editor").append(f);
   }
+  renderCalendarControls();
+  await loadCalendar();
   const id = new URL(location.href).searchParams.get("booking");
   if (id) {
     document.getElementById("booking-" + id)?.scrollIntoView();

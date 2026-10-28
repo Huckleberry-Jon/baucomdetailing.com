@@ -1,3 +1,4 @@
+import { calendar, addBlock, availability } from "./calendar.js";
 import http from "node:http";
 import { readFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -101,6 +102,19 @@ export function createApplication(db, config = {}) {
         requireThat(s, "Owner login required", 401);
         return s;
       };
+      if (path === "/api/availability" && req.method === "GET") {
+        rateLimit(db, "availability:" + req.socket.remoteAddress, 120);
+        return respond(
+          res,
+          200,
+          availability(
+            service,
+            url.searchParams.get("day"),
+            url.searchParams.get("packageId"),
+            url.searchParams.getAll("addonId"),
+          ),
+        );
+      }
       if (path === "/api/catalog" && req.method === "GET")
         return respond(res, 200, {
           settings: service.settings(),
@@ -179,6 +193,30 @@ export function createApplication(db, config = {}) {
           db
             .prepare("INSERT INTO audit_events VALUES(?,?,?,?,?,?)")
             .run(randomUUID(), BUSINESS, signedIn.id, event, id, Date.now());
+        if (path === "/api/owner/calendar" && req.method === "GET")
+          return respond(
+            res,
+            200,
+            calendar(
+              service,
+              url.searchParams.get("from"),
+              url.searchParams.get("to"),
+            ),
+          );
+        if (path === "/api/owner/block" && req.method === "POST") {
+          const result = addBlock(service, body);
+          audit("calendar.blocked", result.id);
+          return respond(res, 201, result);
+        }
+        if (path === "/api/owner/block" && req.method === "DELETE") {
+          transaction(db, () => {
+            db.prepare(
+              "DELETE FROM schedule_blocks WHERE id=? AND business_id=?",
+            ).run(body.id, BUSINESS);
+            audit("calendar.unblocked", body.id);
+          });
+          return respond(res, 200, { ok: true });
+        }
         if (path === "/api/owner/push-config" && req.method === "GET")
           return respond(res, 200, {
             publicKey: config.vapidPublicKey ?? null,
@@ -338,6 +376,7 @@ export function createApplication(db, config = {}) {
           "/booking": "booking.html",
           "/app.js": "app.js",
           "/owner.js": "owner.js",
+          "/calendar.js": "calendar.js",
           "/customer.js": "customer.js",
           "/style.css": "style.css",
           "/sw.js": "sw.js",

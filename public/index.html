@@ -66,6 +66,15 @@
           This is a request. Joseph will review the vehicle, location, price,
           and availability before confirming.
         </p>
+        <details>
+          <summary>Check appointment availability</summary>
+          <label>Preferred day<input type="date" id="availability-day" /></label
+          ><button id="check-availability" type="button">
+            Check times for selected services
+          </button>
+          <p id="availability-status" role="status"></p>
+          <div id="availability-times" class="toolbar"></div>
+        </details>
         <form id="booking-form">
           <div class="form-grid">
             <label
