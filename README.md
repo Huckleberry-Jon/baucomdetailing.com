@@ -70,3 +70,7 @@ The isolated instance now supports local-only verification at http://localhost:4
 ## Production and native preparation
 
 See [production deployment](docs/production-deployment.md), [DNS plan](docs/porkbun-dns-plan.md), [photo handoff](docs/website-photo-handoff.md), [native/TestFlight gates](docs/native-ios-testflight-plan.md) and [current verification report](docs/launch-testflight-report.md). Templates are inactive; no hosted deployment or native project exists. Public launch, external communications and iOS uploads require separate authorization.
+
+## Commercial product architecture
+
+DocDetailing is Doc Incorporated LLC's multi-business subscription product. Joseph is the first complimentary tester. The current runtime remains single-business; it must not onboard another business until tenant isolation is implemented and verified. Read [the commercial architecture review](docs/commercial-architecture-review.md) and [operating costs at 1/10/100/1,000 businesses](docs/commercial-operating-costs.md). The existing deployment template is a Joseph pilot, not the commercial scaling blueprint. No billing or migration has been activated.

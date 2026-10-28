@@ -2,6 +2,8 @@
 
 Preparation only: no push, hosted deployment, purchase, DNS change, customer communication or native build.
 
+Commercial review: this is a single-business pilot template only. Do not provision additional businesses with it. See docs/commercial-architecture-review.md and docs/commercial-operating-costs.md before any purchase or deployment.
+
 Use one Render Docker service, plan 1c-2g (1 CPU/2 GB), with a 10 GB persistent disk at /var/data/docdetailing. This retains Node 24, SQLite and private image BLOBs. Budget $25/month compute plus separately quoted disk, backup and email usage; approve the current dashboard quote and region first. A single persistent-disk instance has redeployment downtime and is not highly available. Cloudflare Workers currently stub node:sqlite; moving this backend would require migration. No nameserver migration is proposed.
 
 Review the inactive deployment/render.production.example.yaml, deployment/production.env.example and Dockerfile. Docker is unavailable here: Linux image startup, mount ownership and memory limits remain unverified. Build on Linux, pin a verified Node image digest, and run all container checks before hosting.

@@ -1,3 +1,4 @@
+# Commercial review: this is a single-business pilot template only. Do not provision additional businesses with it. See docs/commercial-architecture-review.md and docs/commercial-operating-costs.md before any purchase or deployment.
 # Reviewed template only: no service has been created. Auto deploy intentionally disabled.
 services:
   - type: web
