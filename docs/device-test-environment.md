@@ -1,5 +1,11 @@
 # Device acceptance environment — prepared, not exposed
 
+## Current preparation update
+
+The authorized local-only environment and Joseph’s test owner are now provisioned and verified. Read [local-device-readiness.md](local-device-readiness.md) for current status and exact remaining approvals. Public tunnel activation, push/email and external backup storage remain unauthorized. The sections below describe the later HTTPS path; they do not authorize executing it.
+
+`DEV_CONNECTION_MODE=local-only` uses `http://localhost:4324` and prohibits outbound push/email. Switch to `DEV_CONNECTION_MODE=https-tunnel` with the approved HTTPS origin only after the account/URL/testers/window approval. Local preflight can now succeed without pretending a public URL has been selected. Owner credentials and the gate code are private files in the isolated device directory, never in Git.
+
 ## Inspected architecture
 
 The existing Node 24 ESM HTTP server, shared SQLite WAL database, migrations, buildless website, authenticated owner dashboard, notification worker and private SQLite photo storage are retained. No hosting manifest, remote deployment configuration, DNS change or alternate backend was found. The Git remote remains `Huckleberry-Jon/baucomdetailing.com`; no fetch/push/deployment was performed in this pass. The existing normal preview binds only to `127.0.0.1:4317`.
@@ -81,7 +87,7 @@ These are **future actions requiring approval**, not commands already executed:
    ```powershell
    npm.cmd run device:preflight
    ```
-   The current placeholder URL intentionally fails this check. Once filled, it prints configuration/owner/scheduling readiness and communication flags without secrets. It never starts exposure. Do not treat a successful check as phone-delivery verification.
+   In local-only mode this check reports local readiness while explicitly keeping iPhone readiness false. The HTTPS mode requires the real approved URL; it rejects placeholders. Once filled, it prints configuration/owner/scheduling readiness and communication flags without secrets. It never starts exposure. Do not treat a successful check as phone-delivery verification.
 3. Approve opening the **gated** development URL while push and email flags remain false. Start the app and tunnel in separate terminals:
    ```powershell
    npm.cmd run device:start
@@ -106,4 +112,4 @@ See `off-machine-backups.md` for the dedicated private S3 bucket configuration, 
 
 38 automated tests pass, including all previous 30. New tests cover device-secret isolation, default-off channels, recipient allowlists, signed gate cookies and API blocking; real HEIC conversion/corruption rejection; simulated encrypted remote upload/download plus fresh restoration; and booking/history survival after push/email/worker failures followed by database restart. No regressions remain in that suite.
 
-Device preparation was run twice successfully to check it preserves existing keys. File-level Windows ACL handling was corrected during preparation; the owning user can now reopen the database while other accounts are excluded. `device:preflight` currently exits nonzero **as designed** because the assigned development URL is still a placeholder. No tunnel, deployment, push, DNS change, cloud upload or customer communication was enabled.
+Device preparation was run twice successfully to check it preserves existing keys. File-level Windows ACL handling was corrected during preparation; the owning user can now reopen the database while other accounts are excluded. The subsequent preparation update added a strict local-only mode; preflight now succeeds locally while public connection and physical-device readiness remain pending. No tunnel, deployment, push, DNS change, cloud upload or customer communication was enabled.

@@ -62,3 +62,7 @@ See [device acceptance environment preparation](docs/device-test-environment.md)
 See [the continuation report](docs/phase1-continuation.md) for changed files and browser evidence. Phase 1 is **not fully accepted** until Joseph’s real iPhone receives a booking alert, opens the exact request, completes owner confirmation/proposal and verifies receipt of a real customer message through the configured channel. Device permission/renewal/expired-session paths must also be exercised. Joseph’s final business details/assets remain pending. Customer returning-identity verification, public authorized gallery publication and broader production hardening remain outside the completed work.
 
 No push, deployment, DNS change, Netlify change, native app work, production credentials or other Doc Incorporated product changes have been performed.
+
+## Secured device-instance preparation
+
+The isolated instance now supports local-only verification at http://localhost:4324 with a tester gate and Joseph’s separate test owner. Both outbound channels are disabled and cannot be enabled in local-only mode. See [current local readiness and exact remaining approvals](docs/local-device-readiness.md). No public tunnel is active.
