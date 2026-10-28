@@ -1,0 +1,3 @@
+self.addEventListener('push',event=>{let data={};try{data=event.data.json();}catch{}event.waitUntil(self.registration.showNotification(data.title||'Booking update',{body:data.body||'Open your dashboard.',tag:data.eventId||'booking',data:{url:data.url||'/owner'},icon:'/icon.svg'}));});
+self.addEventListener('notificationclick',event=>{event.notification.close();let u=new URL(event.notification.data?.url||'/owner',self.location.origin);if(u.origin!==self.location.origin||u.pathname!=='/owner')u=new URL('/owner',self.location.origin);event.waitUntil(clients.openWindow(u.href));});
+// Do not cache authenticated pages, customer records, or API responses.

@@ -1,0 +1,1168 @@
+This is the complete development handoff for Dex. Website first, app second, but both must operate as one connected system. The website must have a working booking backend and phone notification system from the beginning, not temporary forms we'll have to replace later.
+
+## Doc Incorporated LLC — Development Handoff
+
+Requirements defined
+
+October 28, 2026
+
+| Project folder | `C:\DocDetailing`                     |
+| -------------- | ------------------------------------- |
+| GitHub         | `Huckleberry-Jon/baucomdetailing.com` |
+| Domain         | `baucomdetailing.com`                 |
+| First business | Baucom's Mobile Detailing             |
+| Owner          | Doc Incorporated LLC                  |
+| Priority       | Website → App → Final integration     |
+
+# COMPLETE DEVELOPMENT HANDOFF — DEX
+
+## Doc Incorporated LLC — Detailing Business Platform
+
+**Date:** October 28, 2026\
+**Project directory:** `C:\DocDetailing`\
+**Website repository:** `https://github.com/Huckleberry-Jon/baucomdetailing.com`\
+**Purchased domain:** `baucomdetailing.com`\
+**First customer:** Joseph Baucom — Baucom's Mobile Detailing\
+**Development priority:** Website first, then mobile application\
+**Authorization:** Development and local testing only. No production deployments, App Store submissions, or release builds without approval.
+
+---
+
+# 1. PROJECT OBJECTIVE
+
+Build a complete, integrated detailing business management platform for Doc Incorporated LLC.
+
+Joseph Baucom will be the first business using this platform.
+
+The system will consist of:
+
+1. A professional, custom-designed customer website.
+2. A shared backend supporting bookings, customers, vehicles, jobs, invoices, payments, finances, reviews, and notifications.
+3. A private mobile business management application for Joseph.
+4. A functional notification and booking confirmation system connecting the website to Joseph's phone.
+
+The website must be built first, but its underlying architecture must accommodate the mobile app without major reconstruction.
+
+This must be working business software, not a collection of static screens.
+
+Keep the product significantly simpler than DocInvoices while preserving the business functions we have specifically requested.
+
+Do not introduce QuickBooks, Kate AI, diesel repair features, truck fleet management, or unrelated DocInvoices complexity.
+
+The product's final public name is undecided. Use `DocDetailing` as an internal development identifier only until the name is chosen.
+
+# 2. PROJECT OWNERSHIP AND ISOLATION
+
+The project belongs to Doc Incorporated LLC.
+
+Joseph will own his business branding, domain-use arrangements, and business data, while Doc Incorporated retains ownership of the reusable software platform, subject to any future agreement.
+
+Use:
+
+- `C:\DocDetailing` for local development.
+- `Huckleberry-Jon/baucomdetailing.com` for the customer website.
+- A separate app repository when the app project begins.
+- A common backend with appropriate separation between public and private functionality.
+
+**Do not modify Joseph's existing website:**
+
+`https://baucomdetaling.netlify.app/`
+
+Do not modify his Netlify team, existing repository, website assets, or deployment.
+
+His old site is entirely his to manage.
+
+Do not make changes to production DocInvoices, Doc Command Center, or any other Doc Incorporated applications.
+
+The website repository is public. Never commit passwords, payment credentials, private customer data, API tokens, production secrets, or environment files containing secrets.
+
+# 3. DEVELOPMENT ORDER
+
+## Phase 1 — Website and shared backend
+
+Develop:
+
+- Website frontend.
+- Responsive customer interface.
+- Service package catalog.
+- Add-on catalog.
+- Customer and vehicle intake.
+- Appointment request form.
+- Availability and scheduling logic.
+- Shared booking database.
+- Owner authentication.
+- Private booking dashboard.
+- Phone notification delivery.
+- Booking confirmation and rescheduling.
+- Customer booking confirmation messages.
+- Initial photo gallery and review integration.
+
+**Critical:** The website phase must include a functional mobile-accessible owner dashboard for Joseph.
+
+This allows him to receive and manage real booking requests before the native application exists.
+
+Do not make website notifications dependent on an app that hasn't been developed.
+
+## Phase 2 — Mobile application
+
+Build the private business management application.
+
+Integrate:
+
+- Existing booking backend.
+- Customer management.
+- Vehicle records.
+- Scheduling.
+- Job management.
+- Materials/parts entry.
+- Before-and-after photographs.
+- Estimates and invoices.
+- Payment Center.
+- Financial Center.
+- Reviews and notifications.
+
+Do not build separate databases or incompatible booking systems for the website and app.
+
+## Phase 3 — Integration, verification and controlled release
+
+Verify all end-to-end workflows, including booking notifications, approvals, customer confirmation, payment and financial records.
+
+No production deployment until authorized.
+
+---
+
+# 4. WEBSITE DESIGN
+
+**Business:** Baucom's Mobile Detailing\
+**Primary domain:** `baucomdetailing.com`\
+**Service area:** Amarillo, Texas, and the surrounding Panhandle area, subject to Joseph's confirmation.
+
+The website should have a professional automotive detailing appearance.
+
+Use:
+
+- Strong, readable typography.
+- Clear service and pricing cards.
+- High-quality vehicle photography.
+- Clean mobile navigation.
+- Prominent booking actions.
+- Professional before-and-after galleries.
+- Authentic business branding.
+- A fast, responsive mobile-first layout.
+
+Joseph is collecting his own pictures, banners, and branding materials.
+
+Prioritize photographs of Joseph working instead of generic stock imagery.
+
+Temporary placeholders are acceptable during development, but do not represent stock photos as actual completed work.
+
+### Website pages
+
+**Home**
+
+- Business introduction.
+- Featured interior detailing services.
+- Actual work photographs.
+- Main booking action.
+- Service area.
+- Customer reviews.
+- Contact information.
+
+**Packages**
+
+- Three primary interior packages.
+- Prices and full service descriptions.
+- Package comparison.
+- Vehicle-condition pricing notice.
+- Select Package action.
+
+**Add-ons**
+
+- Additional cleaning services.
+- Prices or quotation requirements.
+- Compatibility with selected packages.
+
+**Book Appointment**
+
+- Package selection.
+- Add-ons.
+- Customer details.
+- Vehicle details.
+- Service location.
+- Requested date/time.
+- Vehicle-condition disclosures.
+- Optional vehicle photographs.
+- Booking submission.
+
+**Gallery**
+
+- Before-and-after transformations.
+- Actual completed work.
+- Optional categories for interiors, exteriors, and specialty work.
+
+**Reviews**
+
+- Customer testimonials.
+- Link to the actual Google review page.
+- Customer review submission.
+- Appropriate approval and display controls.
+
+**Contact**
+
+- Business information.
+- Service area.
+- Contact options.
+- Business hours once confirmed.
+
+Website navigation must function consistently on mobile and desktop.
+
+---
+
+# 5. INTERIOR DETAILING PACKAGES
+
+Use Joseph's supplied service descriptions and provisional names.
+
+Final names remain editable and must be approved by Joseph.
+
+## Package 1 — Route 66 Revival
+
+**Essential — Clean & Refresh**\
+**Price: $79–$119**
+
+Includes:
+
+- Full interior vacuum, including seats, carpets, and mats.
+- Dashboard, console, door panels, and cupholders wiped down.
+- Air-compressed vents and crevices.
+- Interior windows and mirrors cleaned.
+- Light interior shine.
+- Final inspection.
+
+## Package 2 — The Dust Off
+
+**Premium — Deep Clean & Protect**\
+**Price: $119–$169**
+
+Includes everything in Essential, plus:
+
+- Steam cleaning of suitable hard surfaces.
+- Detailed carpet and seat spot cleaning.
+- Leather or vinyl cleaning.
+- Detailed door jambs and trim.
+- Interior dressing or protectant where appropriate.
+
+This is Joseph's main advertised package.
+
+## Package 3 — The Final Mile
+
+**Ultimate — Interior Reset**\
+**Price: $169–$229**
+
+Includes everything in Premium, plus:
+
+- Carpet and fabric seat extraction.
+- Targeted stain treatment.
+- Detailed hard-to-reach areas.
+- Additional odor treatment as needed.
+- Final detailing and quality inspection.
+
+### Package management
+
+Packages must not be hardcoded permanently.
+
+Joseph must eventually be able to:
+
+- Rename packages.
+- Modify descriptions.
+- Change prices and price ranges.
+- Change photographs.
+- Add/remove package items.
+- Enable or disable services.
+- Adjust approximate service durations.
+- Set applicable add-ons.
+
+Changes saved through the owner system must update the website automatically.
+
+Use a versioned service/price snapshot on each booking so later price edits cannot silently change existing customer quotes.
+
+---
+
+# 6. REQUIRED PRICING DISCLAIMERS
+
+Each package must clearly explain that pricing depends on vehicle size, condition, and additional cleaning requirements.
+
+Display the following notice in an appropriate format:
+
+**Pricing & Vehicle Condition Notice**
+
+Package prices are starting estimates and may vary depending on vehicle size, interior condition, and the level of cleaning required.
+
+Excessive stains, embedded pet hair, chewing gum, spilled food or drinks, heavy dirt, excessive odors, and other difficult-to-remove substances may require additional cleaning charges.
+
+Any additional charges will be discussed with the customer and approved before work begins. No surprise charges.
+
+### Implementation
+
+Show a short version beneath each package price.
+
+Show the full notice during booking.
+
+Allow the customer to identify:
+
+- Excessive staining.
+- Pet hair.
+- Chewing gum.
+- Food or beverage spills.
+- Heavy dirt or mud.
+- Odors.
+- Other specific cleaning concerns.
+
+Allow customers to upload photographs.
+
+Joseph can review the request and approve or revise the estimate.
+
+Any revised price must be communicated to and accepted by the customer before additional billable work proceeds.
+
+Distinguish routine stain treatment already included in Premium/Ultimate from excessive or specialized cleaning sold as an add-on.
+
+---
+
+# 7. SPECIALTY ADD-ONS
+
+The website and app must support separately priced add-on services.
+
+Initial examples:
+
+- Excessive pet hair removal.
+- Chewing gum removal.
+- Severe stain treatment.
+- Heavy odor treatment.
+- Excessive dirt/mud removal.
+- Additional upholstery extraction.
+- Specialty interior cleaning.
+- Exterior washing and detailing services when Joseph defines them.
+
+Do not invent final prices.
+
+Joseph must be able to manage add-ons through the owner system.
+
+Each add-on should have:
+
+- Name.
+- Description.
+- Price or price range.
+- Optional photograph.
+- Estimated service duration.
+- Taxable status.
+- Availability.
+- Conditions or exclusions.
+
+---
+
+# 8. FULL WEBSITE BOOKING SYSTEM
+
+This is a critical functional requirement.
+
+### Customer booking sequence
+
+1. Customer visits the website.
+2. Selects a service package.
+3. Adds optional services.
+4. Enters customer information.
+5. Enters vehicle information.
+6. Supplies the detailing location.
+7. Describes any problem areas.
+8. Uploads photographs if needed.
+9. Selects a preferred appointment date and time.
+10. Reviews the estimated price and pricing conditions.
+11. Submits the request.
+12. Website creates a persistent booking record.
+13. Backend notifies Joseph.
+14. Joseph opens the pending booking.
+15. Joseph confirms, rejects, or proposes another appointment.
+16. Customer receives the result.
+17. The confirmed appointment appears in Joseph's calendar.
+
+**A requested appointment is not a confirmed booking.**
+
+### Booking states
+
+Support at least:
+
+- Pending.
+- Awaiting customer acceptance of revised time/price.
+- Confirmed.
+- Rescheduled.
+- Cancelled.
+- In progress.
+- Completed.
+- No-show.
+
+Joseph must be able to set:
+
+- Working days.
+- Business hours.
+- Unavailable days.
+- Personal time off.
+- Appointment durations.
+- Travel buffers.
+- Maximum daily capacity.
+- Service area limitations.
+
+Prevent overlapping confirmed bookings.
+
+Use atomic server-side checks when confirming appointments so simultaneous requests cannot create double bookings.
+
+Maintain a booking history showing status changes, confirmation times, and relevant customer acknowledgments.
+
+---
+
+# 9. PHONE NOTIFICATIONS — REQUIRED
+
+The website must be able to alert Joseph on his phone when a customer submits a booking.
+
+**Do not implement this as an email-only form or a nonfunctional notification icon.**
+
+### Initial website-phase implementation
+
+Create a secure, mobile-friendly owner dashboard that Joseph can install on his iPhone Home Screen as a web app.
+
+Implement supported web push notifications with:
+
+- Proper service worker registration.
+- Permission request after user interaction.
+- Secure notification subscriptions.
+- Server-side notification delivery.
+- Booking identification.
+- A direct link to the matching request.
+- Notification delivery/error logging.
+- A way to refresh the subscription.
+
+iPhone web push requires a supported iOS version, installation as a Home Screen web app, user permission, and proper browser/service-worker support.
+
+Do not claim notifications work until tested on a real device.
+
+### Critical notification events
+
+**New appointment**
+
+- Joseph gets an alert.
+- Alert identifies a new booking request.
+- Opens the pending booking details.
+
+**Customer accepts revised appointment**
+
+- Joseph receives a confirmation notification.
+
+**Customer cancels or requests a change**
+
+- Joseph is notified.
+
+**Customer approves revised price**
+
+- Joseph is notified.
+
+**Payment received**
+
+- Joseph receives a payment confirmation where supported by the payment provider.
+
+### Notification reliability
+
+Push notification delivery cannot be guaranteed.
+
+All bookings must remain stored in the backend even when push fails.
+
+Provide:
+
+- In-app notification inbox.
+- Unread count.
+- Read/unread state.
+- Notification records.
+- Retry-safe delivery.
+- Duplicate prevention.
+- Optional email/SMS fallback when a configured provider is available.
+
+Never rely on a notification alone as the source of booking data.
+
+Customer-facing booking confirmations must likewise use actual configured delivery channels. Do not mark a message delivered merely because it was queued.
+
+### Native app transition
+
+Once the native mobile app exists, integrate native push delivery through the same backend event system.
+
+The native app should use the same booking records, event IDs, and notification history.
+
+Avoid duplicate notifications when multiple devices or delivery channels are active.
+
+---
+
+# 10. CUSTOMER AND VEHICLE RECORDS
+
+Build a searchable customer database.
+
+### Customer fields
+
+- Customer ID.
+- First and last name.
+- Phone.
+- Email.
+- Service address.
+- Customer notes.
+- Appointment history.
+- Invoice history.
+- Payment history.
+
+### Vehicle fields
+
+- Vehicle ID.
+- Customer association.
+- Year.
+- Make.
+- Model.
+- Color.
+- License plate, optional.
+- Body type.
+- Condition notes.
+- Service history.
+- Before-and-after photographs.
+
+Support multiple vehicles belonging to one customer.
+
+A returning customer should not have to re-enter their information unnecessarily.
+
+Use verified and appropriately authorized methods for linking returning website customers to existing records; avoid exposing histories through guessable identifiers.
+
+---
+
+# 11. JOB AND WORK ORDER SYSTEM
+
+Convert confirmed appointments into detailing jobs.
+
+Each job should support:
+
+- Customer.
+- Vehicle.
+- Appointment date.
+- Location.
+- Selected package.
+- Additional services.
+- Materials used.
+- Labor.
+- Travel/fuel charges.
+- Condition notes.
+- Before photos.
+- After photos.
+- Estimate.
+- Invoice.
+- Payment status.
+
+### Job lifecycle
+
+Pending → Confirmed → In Progress → Completed → Invoiced → Paid.
+
+Support cancellation and authorized corrections without destroying history.
+
+Joseph should be able to add additional approved services during a job.
+
+Do not require the full DocInvoices repair-order workflow.
+
+Keep job management easy enough to operate with one hand on a phone.
+
+---
+
+# 12. MATERIALS AND PARTS ENTRY
+
+Reuse the successful **DocInvoices parts field and layout concept**.
+
+Adapt the terminology to detailing materials and supplies.
+
+### Required fields
+
+- Material/product name.
+- Quantity.
+- Unit of measurement.
+- Purchase quantity.
+- Purchase cost.
+- Unit cost.
+- Markup percentage.
+- Selling price.
+- Taxable designation.
+- Associated job.
+
+Support:
+
+- Ounces.
+- Fluid ounces.
+- Gallons.
+- Bottles.
+- Individual items.
+- Other configurable units.
+
+### Calculations
+
+The system must calculate:
+
+- Cost per unit.
+- Quantity used.
+- Material cost allocated to a job.
+- Selling price.
+- Markup.
+- Material profit.
+- Job material totals.
+
+Example:
+
+A 32-ounce bottle costs $28.
+
+Joseph uses 4 ounces.
+
+Allocated material cost: $3.50.
+
+If he charges $8 for the material, the material's gross contribution is $4.50.
+
+Keep actual purchase expenses separate from material cost allocation so finances are not double-counted.
+
+Allow multiple material lines and multiple service operations on one invoice.
+
+Use integer minor currency units or another reliable decimal-money representation; avoid floating-point rounding errors in financial totals.
+
+---
+
+# 13. BEFORE-AND-AFTER PHOTOS
+
+Photos must integrate directly with jobs and invoices.
+
+Joseph must be able to:
+
+- Take photos from his phone.
+- Upload existing photos.
+- Label them Before or After.
+- Assign them to a vehicle and job.
+- View photos within job history.
+- Add selected pictures to invoices.
+- Use authorized photographs on the website.
+
+### Invoice requirements
+
+PDF invoices should include clearly labeled before-and-after photos.
+
+Optimize and resize images appropriately.
+
+Do not generate enormous PDF files unnecessarily.
+
+Original photos should remain securely stored.
+
+Do not expose private customer photos through publicly enumerable storage URLs.
+
+Website gallery publication requires customer permission.
+
+---
+
+# 14. ESTIMATES AND INVOICES
+
+Build an independent system inspired by the practical features of DocInvoices.
+
+Required:
+
+- Create estimate.
+- Edit estimate.
+- Convert estimate into invoice.
+- Multiple operations.
+- Multiple materials.
+- Hourly or flat-rate labor.
+- Travel charges.
+- Discounts.
+- Sales tax.
+- Deposit and payment application.
+- Balance due.
+- Professional PDF output.
+- Before-and-after pictures.
+- Customer sharing.
+- Paid/partially paid/unpaid status.
+- Invoice history.
+
+Use unique invoice numbers and preserve accounting records.
+
+Corrections to issued invoices must preserve transaction history rather than silently overwrite financial activity.
+
+---
+
+# 15. LIVE INVOICE REVIEW LINKS
+
+Every customer-facing invoice must support clickable review links.
+
+### Google reviews
+
+Store Joseph's official Google review URL in business settings.
+
+Include a clearly labeled clickable Google review link in the invoice PDF.
+
+### Website reviews
+
+Include a link to the website's review form.
+
+The form should support:
+
+- Customer name or approved display name.
+- Rating.
+- Written feedback.
+- Submission date.
+- Business moderation.
+- Optional authorized photographs.
+
+Moderation should prevent spam and inappropriate content, not selectively suppress legitimate negative feedback.
+
+### Review requests
+
+Allow Joseph to send an optional review request after completing or receiving payment for a job.
+
+Provide an easy on/off setting.
+
+Do not automatically post reviews or create fabricated testimonials.
+
+Review links must work on both mobile and desktop.
+
+---
+
+# 16. PAYMENT CENTER
+
+Develop a dedicated Payment Center.
+
+Support:
+
+- Cash payment records.
+- Card payments through an approved provider.
+- Square integration.
+- Deposits.
+- Partial payments.
+- Final payments.
+- Refund records.
+- Outstanding balances.
+- Customer receipts.
+- Payment history.
+- Transaction processing status.
+
+Square is the planned payment provider, subject to account access and integration verification.
+
+Do not create a custom card-storage or card-processing system.
+
+Use securely hosted payment interfaces or approved provider SDKs.
+
+Payment status must be validated server-side, including signed webhook verification and idempotent processing.
+
+An invoice must never be marked paid solely because a customer opened a payment link or returned to the website.
+
+Provide reconciliation between recorded invoices and actual payment transactions.
+
+---
+
+# 17. FINANCIAL CENTER — NO QUICKBOOKS
+
+**Explicit requirement: QuickBooks is excluded from this product.**
+
+Build Doc Incorporated's own integrated reporting and expense system.
+
+### Dashboard
+
+- Today's revenue.
+- This week's revenue.
+- Monthly revenue.
+- Quarterly revenue.
+- Year-to-date revenue.
+- Outstanding invoices.
+- Expenses.
+- Cash flow.
+- Estimated profitability.
+
+### Period selection
+
+- Day.
+- Week.
+- Month.
+- Quarter (Q1, Q2, Q3, Q4).
+- Year.
+
+### Income
+
+Track:
+
+- Detailing package revenue.
+- Add-on revenue.
+- Material revenue.
+- Travel/service charges.
+- Discounts.
+- Tips.
+- Refunds.
+- Sales tax collected.
+
+### Expenses
+
+Categories:
+
+- Chemicals.
+- Supplies.
+- Equipment.
+- Fuel.
+- Insurance.
+- Repairs.
+- Subscriptions.
+- Advertising.
+- Miscellaneous.
+
+Support receipt/photo attachments to expenses.
+
+### Financial calculations
+
+Separate:
+
+1. Invoiced sales.
+2. Actual collected payments.
+3. Business operating expenses.
+4. Material/job-cost allocations.
+5. Estimated labor costs.
+6. Gross job profitability.
+7. Business operating profit.
+8. Cash flow.
+9. Sales tax liabilities.
+
+Do not double-count material costs as both purchase expenses and additional cash expenses when used on jobs.
+
+Do not treat sales tax collected as business income.
+
+Tips must be recorded separately from service revenue and sales tax, with tax treatment configurable under applicable rules.
+
+### Exports and backups
+
+- CSV exports.
+- PDF financial reports.
+- Quarterly summaries.
+- Expense reports.
+- Payment history.
+- Invoice reports.
+- Backup and restore functionality.
+
+Financial calculations must be covered by automated tests.
+
+---
+
+# 18. SECURITY AND DATA PROTECTION
+
+The customer website is public, but Joseph's management interface must require authentication.
+
+Requirements:
+
+- Secure owner login.
+- Server-enforced authorization.
+- Protected customer information.
+- Protected vehicle histories.
+- Protected invoices and financial data.
+- Private media storage.
+- Secure secrets management.
+- Audit records for important changes.
+- Backup recovery.
+- Controlled access to payment data.
+
+Do not rely on hidden website buttons as security.
+
+All private API routes must check authorization server-side.
+
+Design the business data model for possible future multi-business support, but initially provision only Joseph's business.
+
+Any future business must be isolated from every other business.
+
+Apply rate limiting and spam protection to public booking and review forms.
+
+Use appropriately scoped, expiring links when customers access private documents or booking details without creating an account.
+
+---
+
+# 19. WEBSITE/APP CONFIGURATION
+
+Joseph must be able to control operational information without editing code.
+
+Owner settings should eventually include:
+
+- Business name.
+- Contact information.
+- Logo.
+- Service area.
+- Working hours.
+- Closed dates.
+- Package descriptions.
+- Package prices.
+- Add-ons.
+- Booking availability.
+- Appointment buffers.
+- Notification preferences.
+- Google review link.
+- Sales tax settings.
+- Payment options.
+- Invoice footer.
+- Website gallery content.
+
+Use a shared configuration system so changes flow to the website automatically.
+
+---
+
+# 20. RECOMMENDED TECHNICAL STRUCTURE
+
+Dex should inspect the local directory and repository before creating project files.
+
+Do not assume an existing codebase is present.
+
+Choose a maintainable, appropriately lightweight architecture.
+
+Suggested logical components:
+
+**Public Website**
+
+- Homepage.
+- Service catalog.
+- Booking.
+- Reviews.
+- Gallery.
+- Customer contact forms.
+
+**Private Owner Interface**
+
+- Dashboard.
+- Notifications.
+- Calendar.
+- Booking requests.
+- Customers and vehicles.
+- Jobs.
+- Estimates and invoices.
+- Materials.
+- Payments.
+- Finance.
+- Settings.
+
+**Shared Backend**
+
+- Authentication.
+- Business configuration.
+- Customers.
+- Vehicles.
+- Service packages.
+- Add-ons.
+- Bookings.
+- Scheduling.
+- Notifications.
+- Jobs.
+- Materials.
+- Invoices.
+- Payments.
+- Expenses.
+- Reports.
+- Media.
+- Audit events.
+
+**Database**
+
+- Durable, migration-controlled schema.
+- Consistent record identifiers.
+- Referential integrity.
+- Indexed booking dates and customer relations.
+- Financial transaction integrity.
+- Backup strategy.
+
+The exact framework and hosting implementation should be selected after inspecting the available project environment.
+
+Do not force dependencies on DocInvoices production infrastructure.
+
+---
+
+# 21. REQUIRED TESTING
+
+Dex must develop automated tests for business-critical functions.
+
+### Booking tests
+
+- Customer successfully creates a request.
+- Request persists in the backend.
+- Owner receives it in the dashboard.
+- Notification event is created.
+- Joseph can confirm the request.
+- Confirmation persists.
+- Customer receives confirmation through configured channels.
+- Rescheduling works.
+- Cancellation works.
+- Conflicting appointments are rejected.
+- Simultaneous requests cannot both confirm overlapping slots.
+- Duplicate form submissions do not create duplicate bookings.
+
+### Notification tests
+
+- New booking triggers notification processing.
+- Notification links open the correct booking.
+- Failed push does not lose booking data.
+- Unread counts are accurate.
+- Read status persists.
+- Duplicate notification events are handled correctly.
+- Delivery failure is recorded.
+- Real iPhone push notification verification is required before release.
+
+### Invoice tests
+
+- Package pricing.
+- Multiple services.
+- Materials and markup.
+- Tax calculations.
+- Discounts.
+- Partial payments.
+- Full payments.
+- Refunds.
+- Invoice PDF generation.
+- Photo rendering.
+- Clickable review links.
+
+### Finance tests
+
+- Daily/monthly/quarterly reporting.
+- Cash basis versus invoice totals.
+- Materials allocation.
+- Expense totals.
+- No double-counting.
+- Sales tax tracking.
+- Refund adjustments.
+- Tip reporting.
+- Export consistency.
+
+### Security tests
+
+- Public visitors cannot access owner records.
+- Unauthorized API requests are rejected.
+- Private photos are protected.
+- Customer details are not exposed through booking IDs.
+- Payment webhooks require proper validation.
+- Public forms resist spam and abuse.
+
+---
+
+# 22. ACCEPTANCE CRITERIA
+
+The website phase is not considered functionally complete until the following can be demonstrated in a controlled test:
+
+1. A customer opens the website on a phone.
+2. Selects a package and add-on.
+3. Enters customer and vehicle details.
+4. Selects a preferred date/time.
+5. Submits the booking request.
+6. Backend saves the request.
+7. Joseph sees the request in his authenticated owner dashboard.
+8. The configured notification system attempts delivery to his phone.
+9. Joseph opens the request and confirms it.
+10. The appointment is protected against conflicts.
+11. Customer confirmation is sent through a verified channel.
+12. Both website and dashboard show the correct appointment status.
+
+The native app phase is complete only when Joseph can manage that same booking, customer, vehicle, job, invoice and payment from his phone without duplicate data entry.
+
+Financial reporting must agree with its underlying transaction records.
+
+**A successful screen render is not proof of functional completion.**
+
+---
+
+# 23. INITIAL USER AND DISTRIBUTION
+
+Joseph uses an iPhone.
+
+Start with the website and installable owner web dashboard.
+
+Move to native iOS development once the shared backend and website workflows are stable.
+
+Native push notification integration must be designed so it reuses backend events rather than creating an independent notification system.
+
+The application must remain suitable for other detailing businesses in the future, but public subscriptions, pricing tiers and multi-tenant onboarding are not Phase 1 priorities.
+
+Do not add unnecessary features for hypothetical customers while Joseph's core workflow remains unfinished.
+
+---
+
+# 24. WHAT IS STILL PENDING
+
+Joseph still needs to provide or confirm:
+
+- His actual work photographs.
+- Before-and-after examples.
+- Banners and logo assets.
+- Final service package names.
+- Final add-on list and prices.
+- Exterior detailing services.
+- Business hours.
+- Service area.
+- Package durations.
+- Contact details.
+- Official Google review URL.
+- Final app naming decision.
+- Square account/integration setup when applicable.
+
+Use clearly marked placeholders where necessary.
+
+Do not fabricate prices, reviews, photographs, business hours or customer testimonials.
+
+Do not let missing marketing materials block development of the booking backend, app data model or functional tests.
+
+---
+
+# 25. IMMEDIATE DEX INSTRUCTIONS
+
+Dex, begin by inspecting:
+
+`C:\DocDetailing`
+
+and the GitHub website repository:
+
+`https://github.com/Huckleberry-Jon/baucomdetailing.com`
+
+Then:
+
+1. Report the existing local and remote project state.
+2. Establish a clean website project structure.
+3. Define the shared backend architecture.
+4. Define database tables and migration strategy.
+5. Implement the service/package catalog using the supplied pricing.
+6. Implement customer and vehicle intake.
+7. Implement booking requests and status transitions.
+8. Implement the secure mobile-friendly owner dashboard.
+9. Implement the notification event pipeline and supported push subscription handling.
+10. Prepare the system for eventual native app integration.
+11. Add meaningful automated tests.
+12. Report completed functionality, test results, remaining blockers, and files changed.
+
+**Website first. Native app second. Same backend from day one.**
+
+Do not deploy to the purchased domain yet.
+
+Do not alter DNS.
+
+Do not touch Joseph's existing Netlify site.
+
+Do not create release builds.
+
+Do not change other Doc Incorporated products.
+
+Do not request production credentials unless they are necessary for the next explicitly authorized step.
+
+Development should proceed in manageable, verifiable commits, with clear separation of website, backend and future app work.
+
+**Final goal:** Give Joseph a professional detailing website where customers select services and request appointments, while a connected mobile app enables him to manage those appointments, vehicle records, detailing work, photos, invoices, payments and finances.
+
+The website and app must function as one business system operated through Doc Incorporated LLC.
+
+## Priority for the first development pass
+
+I would have Dex concentrate on these three things before spending substantial time on appearance:
+
+1. The shared backend — everything depends on reliable customers, packages, appointments, and records.
+2. The website booking experience — customers must be able to select services, provide vehicle information, and request appointments.
+3. Joseph's phone notifications and confirmation — the entire website-to-owner workflow must function before we move to the native app.
+
+The financial and payment architecture should be accounted for from the beginning, but it doesn't need to delay the website.
+
+One important distinction: Because the native app comes second, Dex must create Joseph's private, phone-accessible booking dashboard during website development. That means Joseph can actually receive, review, and confirm bookings before we finish building the app.
+
+Once we have that working, we'll build the mobile app on top of the same records and notification system. No duplicated development, no disconnected calendars, and no rebuilding the backend halfway through.
+
+This handoff authorizes Dex to begin development and testing, but not to publish the website, modify Porkbun DNS, or release the app.

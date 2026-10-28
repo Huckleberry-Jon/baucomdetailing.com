@@ -1,0 +1,13 @@
+CREATE TABLE businesses(id TEXT PRIMARY KEY,settings TEXT NOT NULL);
+CREATE TABLE services(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),version INTEGER NOT NULL DEFAULT 1,data TEXT NOT NULL);
+CREATE TABLE customers(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),data TEXT NOT NULL);
+CREATE TABLE vehicles(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),customer_id TEXT NOT NULL REFERENCES customers(id),data TEXT NOT NULL);
+CREATE TABLE bookings(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),customer_id TEXT NOT NULL REFERENCES customers(id),vehicle_id TEXT NOT NULL REFERENCES vehicles(id),idempotency_key TEXT NOT NULL,request_hash TEXT NOT NULL,status TEXT NOT NULL,start_ms INTEGER NOT NULL,end_ms INTEGER,buffer_minutes INTEGER NOT NULL DEFAULT 0,snapshot TEXT NOT NULL,data TEXT NOT NULL,access_hash TEXT NOT NULL,access_expires INTEGER NOT NULL,proposal TEXT,version INTEGER NOT NULL DEFAULT 1,created_at INTEGER NOT NULL,UNIQUE(business_id,idempotency_key));
+CREATE INDEX booking_schedule ON bookings(business_id,status,start_ms,end_ms);
+CREATE TABLE history(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),booking_id TEXT NOT NULL REFERENCES bookings(id),actor TEXT NOT NULL,event TEXT NOT NULL,data TEXT NOT NULL,created_at INTEGER NOT NULL);
+CREATE TABLE notifications(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),booking_id TEXT NOT NULL REFERENCES bookings(id),event TEXT NOT NULL,read_at INTEGER,created_at INTEGER NOT NULL,UNIQUE(booking_id,event));
+CREATE TABLE subscriptions(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),endpoint TEXT NOT NULL UNIQUE,data TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE deliveries(id TEXT PRIMARY KEY,notification_id TEXT NOT NULL REFERENCES notifications(id),channel TEXT NOT NULL,target TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER NOT NULL DEFAULT 0,last_error TEXT,UNIQUE(notification_id,channel,target));
+CREATE TABLE owners(id TEXT PRIMARY KEY,business_id TEXT NOT NULL REFERENCES businesses(id),email TEXT NOT NULL UNIQUE,password_hash TEXT NOT NULL);
+CREATE TABLE sessions(token_hash TEXT PRIMARY KEY,owner_id TEXT NOT NULL REFERENCES owners(id),expires INTEGER NOT NULL);
+CREATE TABLE rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL);

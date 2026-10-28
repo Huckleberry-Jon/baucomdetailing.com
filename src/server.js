@@ -1,0 +1,68 @@
+import http from 'node:http';
+import {readFileSync,mkdirSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {resolve} from 'node:path';
+import {openDatabase,transaction} from './db.js';
+import {BookingService} from './bookings.js';
+import {BUSINESS,notice} from './catalog.js';
+import {hash,token,verifyPassword,Problem,requireThat,rateLimit} from './security.js';
+import {NotificationWorker,validateSubscription} from './notifications.js';
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/manifest+json','.svg':'image/svg+xml'};
+export function createApplication(db,config={}){
+ const service=new BookingService(db),worker=new NotificationWorker(db,config);const origin=config.origin??'http://localhost:4317';
+ const respond=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(data));};
+ const server=http.createServer(async(req,res)=>{try{
+  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+  requireThat(req.headers.host===new URL(origin).host,'Invalid host',400);
+  const url=new URL(req.url,origin),path=url.pathname;let body={};
+  if(['POST','PUT','PATCH','DELETE'].includes(req.method)){
+   requireThat(req.headers.origin===origin,'Request origin rejected',403);requireThat(req.headers['content-type']?.startsWith('application/json'),'JSON required',415);
+   let raw='';for await(const chunk of req){raw+=chunk;requireThat(Buffer.byteLength(raw)<=32768,'Request too large',413);}try{body=JSON.parse(raw||'{}');}catch{throw new Problem(400,'Invalid JSON');}requireThat(body&&typeof body==='object'&&!Array.isArray(body),'Invalid request');
+  }
+  const cookies=Object.fromEntries((req.headers.cookie??'').split(';').map(c=>c.trim().split('=')));
+  const owner=()=>{const s=db.prepare('SELECT o.* FROM sessions s JOIN owners o ON o.id=s.owner_id WHERE s.token_hash=? AND s.expires>? AND o.business_id=?').get(hash(cookies.session??''),Date.now(),BUSINESS);requireThat(s,'Owner login required',401);return s;};
+  if(path==='/api/catalog'&&req.method==='GET')return respond(res,200,{settings:service.settings(),services:service.catalog().filter(s=>s.enabled),notice});
+  if(path==='/api/bookings'&&req.method==='POST'){rateLimit(db,'booking:'+req.socket.remoteAddress,20);const b=service.create(body,req.headers['idempotency-key']);respond(res,b.duplicate?200:201,b);void worker.tick().catch(()=>{});return;}
+  if(path==='/api/customer/booking'){
+   const auth=req.headers.authorization??'';requireThat(auth.startsWith('Bearer '),'Customer access link required',403);const b=service.authorizeCustomer(body.id??url.searchParams.get('id'),auth.slice(7));
+   if(req.method==='GET')return respond(res,200,service.publicView(b));
+   if(req.method==='POST'){requireThat(['accept','cancel'].includes(body.action),'Invalid customer action');const result=service.transition(b.id,body.action,body,'customer');respond(res,200,result);void worker.tick().catch(()=>{});return;}
+  }
+  if(path==='/api/login'&&req.method==='POST'){
+   rateLimit(db,'login:'+req.socket.remoteAddress,10,900000);requireThat(typeof body.email==='string'&&typeof body.password==='string'&&body.password.length<=200,'Login failed',401);
+   const o=db.prepare('SELECT * FROM owners WHERE email=? AND business_id=?').get(body.email.toLowerCase(),BUSINESS);requireThat(o&&verifyPassword(body.password,o.password_hash),'Login failed',401);
+   const secret=token();db.prepare('DELETE FROM sessions WHERE expires<?').run(Date.now());db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(hash(secret),o.id,Date.now()+12*3600000);res.setHeader('Set-Cookie',`session=${secret}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${origin.startsWith('https:')?'; Secure':''}`);return respond(res,200,{ok:true});
+  }
+  if(path.startsWith('/api/owner/')){
+   const signedIn=owner();
+   const audit=(event,id)=>db.prepare('INSERT INTO audit_events VALUES(?,?,?,?,?,?)').run(randomUUID(),BUSINESS,signedIn.id,event,id,Date.now());
+   if(path==='/api/owner/logout'&&req.method==='POST'){db.prepare('DELETE FROM sessions WHERE token_hash=?').run(hash(cookies.session??''));res.setHeader('Set-Cookie','session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return respond(res,200,{ok:true});}
+   if(path==='/api/owner/dashboard'&&req.method==='GET')return respond(res,200,{bookings:db.prepare('SELECT b.*,c.data customer,v.data vehicle FROM bookings b JOIN customers c ON c.id=b.customer_id JOIN vehicles v ON v.id=b.vehicle_id WHERE b.business_id=? ORDER BY b.created_at DESC LIMIT 300').all(BUSINESS),notifications:db.prepare('SELECT * FROM notifications WHERE business_id=? ORDER BY created_at DESC LIMIT 300').all(BUSINESS),unread:db.prepare('SELECT count(*) n FROM notifications WHERE business_id=? AND read_at IS NULL').get(BUSINESS).n,deliveries:db.prepare('SELECT d.* FROM deliveries d JOIN notifications n ON n.id=d.notification_id WHERE n.business_id=? ORDER BY n.created_at DESC LIMIT 300').all(BUSINESS),settings:service.settings(),services:service.catalog(),vapidPublicKey:config.vapidPublicKey??null});
+   if(path==='/api/owner/transition'&&req.method==='POST'){const result=service.transition(body.id,body.action,body);respond(res,200,result);void worker.tick().catch(()=>{});return;}
+   if(path==='/api/owner/settings'&&req.method==='PUT'){const settings=transaction(db,()=>{const value=service.updateSettings(body);audit('settings.updated',BUSINESS);return value;});return respond(res,200,settings);}
+   if(path==='/api/owner/service'&&req.method==='PUT'){
+    const old=service.catalog().find(s=>s.id===body.id);requireThat(old&&body.version===old.version,'Service changed; refresh',409);
+    requireThat(typeof body.name==='string'&&body.name.length>0&&body.name.length<120&&typeof body.enabled==='boolean','Invalid service');requireThat(Array.isArray(body.items??[])&&(body.items??[]).every(x=>typeof x==='string'&&x.length<=500),'Invalid service items');
+    requireThat(body.min===null||Number.isSafeInteger(body.min)&&body.min>=0,'Invalid minimum');requireThat(body.max===null||Number.isSafeInteger(body.max)&&body.max>=body.min,'Invalid maximum');requireThat(old.kind!=='package'||(body.min!==null&&body.max!==null),'Package prices required');requireThat(body.durationMinutes===null||Number.isInteger(body.durationMinutes)&&body.durationMinutes>0&&body.durationMinutes<=720,'Invalid duration');
+    body.kind=old.kind;if(old.kind==='addon')requireThat(Array.isArray(body.packageIds)&&body.packageIds.every(id=>service.catalog().some(s=>s.kind==='package'&&s.id===id)),'Invalid package compatibility');
+    const {version,...data}=body;const result=db.prepare('UPDATE services SET data=?,version=version+1 WHERE id=? AND business_id=? AND version=?').run(JSON.stringify(data),body.id,BUSINESS,version);requireThat(result.changes===1,'Service changed; refresh',409);audit('service.updated',body.id);return respond(res,200,{ok:true});
+   }
+   if(path==='/api/owner/read'&&req.method==='POST'){db.prepare('UPDATE notifications SET read_at=? WHERE id=? AND business_id=?').run(body.read===false?null:Date.now(),body.id,BUSINESS);return respond(res,200,{ok:true});}
+   if(path==='/api/owner/subscription'&&req.method==='POST'){validateSubscription(body);db.prepare('INSERT INTO subscriptions VALUES(?,?,?,?,1) ON CONFLICT(endpoint) DO UPDATE SET data=excluded.data,active=1').run(randomUUID(),BUSINESS,body.endpoint,JSON.stringify(body));return respond(res,200,{ok:true});}
+   if(path==='/api/owner/history'&&req.method==='GET'){service.get(url.searchParams.get('id'));return respond(res,200,db.prepare('SELECT * FROM history WHERE booking_id=? AND business_id=? ORDER BY created_at').all(url.searchParams.get('id'),BUSINESS));}
+  }
+  if(req.method==='GET'){
+   const files={'/':'index.html','/owner':'owner.html','/booking':'booking.html','/app.js':'app.js','/owner.js':'owner.js','/customer.js':'customer.js','/style.css':'style.css','/sw.js':'sw.js','/manifest.json':'manifest.json','/icon.svg':'icon.svg'};
+   const file=files[path];if(file){const ext=file.slice(file.lastIndexOf('.'));res.setHeader('Content-Type',types[ext]);res.writeHead(200);res.end(readFileSync(new URL('../public/'+file,import.meta.url)));return;}
+  }
+  throw new Problem(404,'Not found');
+ }catch(e){if(!res.headersSent)respond(res,e.status??500,{error:e.status?e.message:'Server error'});else res.end();}});
+ return {server,worker,service};
+}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ mkdirSync('data',{recursive:true});const config={origin:process.env.APP_ORIGIN??'http://localhost:4317',vapidPublicKey:process.env.VAPID_PUBLIC_KEY,vapidPrivateKey:process.env.VAPID_PRIVATE_KEY,emailApiKey:process.env.RESEND_API_KEY,emailFrom:process.env.EMAIL_FROM,vapidSubject:process.env.VAPID_SUBJECT};
+ const {server,worker}=createApplication(openDatabase(process.env.DATABASE_PATH??'data/docdetailing.sqlite'),config);server.listen(Number(process.env.PORT??4317),'127.0.0.1',()=>console.log('Local: '+config.origin));setInterval(()=>void worker.tick().catch(()=>{}),15000).unref();
+}
+
+
