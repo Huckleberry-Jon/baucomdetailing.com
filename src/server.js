@@ -80,18 +80,18 @@ export function createApplication(db, config = {}) {
           "JSON required",
           415,
         );
-        raw = "";
+        const chunks = [];
+        let size = 0;
+        const limit =
+          path === "/api/bookings" || path === "/api/owner/photos"
+            ? 24 * 1024 * 1024
+            : 32768;
         for await (const chunk of req) {
-          raw += chunk;
-          requireThat(
-            Buffer.byteLength(raw) <=
-              (path === "/api/bookings" || path === "/api/owner/photos"
-                ? 24 * 1024 * 1024
-                : 32768),
-            "Request too large",
-            413,
-          );
+          size += chunk.length;
+          requireThat(size <= limit, "Request too large", 413);
+          chunks.push(chunk);
         }
+        raw = Buffer.concat(chunks).toString("utf8");
         try {
           body = JSON.parse(raw || "{}");
         } catch {

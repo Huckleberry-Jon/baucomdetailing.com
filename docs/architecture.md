@@ -1,53 +1,41 @@
-# Architecture and phased data plan
+# Phase 1 shared architecture
 
-## Inspected state, October 28, 2026
+The original Node 24 ESM server, SQLite migrations, buildless customer website and phone-accessible authenticated owner dashboard are retained. The website and future native client use the same records and event IDs. No DocInvoices infrastructure dependency was introduced.
 
-`C:\DocDetailing` existed and was empty; it had no Git metadata or project instructions. The connected GitHub API confirmed `Huckleberry-Jon/baucomdetailing.com` is public and empty. The development implementation is independent of DocInvoices and Joseph’s existing Netlify site. Nothing has been pushed or deployed.
+## Durable records and migrations
 
-## First-pass choice
+Migrations 001–006 define business configuration, versioned services, customers, vehicles, bookings, status history, notifications/subscriptions/deliveries, owner sessions, rate limits and audit records; then private link keys, subscription lifecycle metadata, delivery attempts/leases and webhook receipts; calendar blocks; job/photo records; and reviews/moderation history. Never edit an applied migration. Add the next numbered migration for schema changes.
 
-Node 24 ESM server, built-in SQLite, buildless browser JavaScript and a pinned Web Push library. This provides a small, runnable local vertical slice with persistent shared business records and no dependency on another Doc Incorporated product. Future iOS clients should use versioned authenticated API contracts over this backend, not their own booking database. The existing `/api` routes are an initial contract; freeze/version them before native app integration.
+All tenant-facing operations scope the fixed initial business ID. Multi-business onboarding is not exposed. Composite business foreign keys and tenant-isolation acceptance tests remain mandatory before provisioning a second business.
 
-SQLite WAL plus `BEGIN IMMEDIATE` serializes write transactions across processes. No asynchronous provider calls occur inside booking transactions. Outbound delivery is separate from booking persistence. This first pass supports one local server/notification worker; horizontal deployment requires atomic delivery claims, leases, and migration to an appropriate managed database or single-writer design. Do not place SQLite on a network share.
+Money uses integer cents. Original service/price snapshots remain immutable per booking. Proposal price/time and customer acceptance history are retained. Future finance/payment/invoice code must preserve accounting transactions, avoid double-counting purchased materials versus job allocations, exclude tax liabilities from revenue, and use signed/idempotent provider webhooks.
 
-## Current tables
+## Booking/calendar consistency
 
-`businesses`: shared settings and business scope.
-`services`: package/add-on content with monotonically increasing versions.
-`customers`: customer intake; no automatic identity merge.
-`vehicles`: customer association and vehicle intake.
-`bookings`: customer/vehicle relationships, idempotency key and request hash, original service snapshot, scheduling interval/buffer, status/version, expiring access hash, revision proposal.
-`history`: immutable booking events, actor and customer acknowledgments.
-`notifications`: event identity, booking deep link and read state.
-`subscriptions`: protected push endpoint and subscription keys.
-`deliveries`: event/channel/target uniqueness, retries, error status. Provider acceptance is not device delivery.
-`owners`, `sessions`: business-scoped authentication with hashed password/session tokens.
-`rate_limits`: durable IP request counters. Production proxy handling must use a trusted proxy configuration rather than trusting forwarded headers.
-`audit_events`: owner configuration/catalog mutation records.
-`migrations`: applied SQL versions. Apply files in order inside transactions; never edit an applied migration. Add a migration for every schema change.
+`BEGIN IMMEDIATE` serializes confirmations across SQLite connections. Busy timeout is configured before WAL initialization. Confirmations/proposals check working days/hours, dates, interval blocks, service duration, daily capacity and travel buffers. Proposals are rechecked on customer acceptance. Confirmed slots are held while proposed replacements are pending. Public availability returns time candidates without customer data and does not reserve them. The calendar queries a bounded date range rather than relying on the dashboard’s recent-booking limit. Owner deep links can fetch a booking outside that recent list.
 
-IDs are UUIDs except predefined catalog/business keys. Monetary catalog values are integer cents. Every tenant-facing query must constrain the authenticated business. Public multi-business provisioning is not implemented. Future composite business foreign keys and tenant-isolation tests must accompany adding another business; currently only Joseph is provisioned.
+## Notification contracts
 
-## State and delivery contracts
+Booking transactions create immutable history and inbox events atomically. A worker materializes unique event/channel/target deliveries with captured message payloads. Conditional delivery claims and bounded leases coordinate workers; provider calls happen outside database transactions. Attempts and failures persist, while booking data stays authoritative.
 
-A request is pending until explicitly confirmed. Proposals enter awaiting_acceptance and require a bearer-authenticated customer acceptance. Confirmations/revisions check future appointment time, working days, closed dates, working hours, travel buffer and capacity. Concurrent or stale transitions fail. Original snapshots remain unchanged. Accepted proposals retain price/time and acceptance history. Requested times do not reserve availability; a proposed time is checked again upon acceptance. Existing confirmed times remain reserved while proposals are pending.
+New device subscriptions record registration time so old events do not get replayed. Expired endpoints deactivate, and owner email fallback is configurable. Permission/expiry/key-change checks are in the dashboard; service-worker subscription-change handling renews when the owner session permits. Otherwise the owner must sign in and renew.
 
-Each committed booking event creates an inbox notification in the same transaction. Notification processing creates unique channel/target deliveries, retries transient failures with backoff, disables expired push subscriptions and preserves the booking on provider failure. Push payloads contain no customer identity, phone or address. Stable event IDs are used as notification tags. Provider crash windows can still redeliver a push; at-least-once delivery is the honest contract. Customer email uses an idempotency key. Provider status webhooks and native-device routing/preference deduplication remain to be added before production/native rollout.
+Customer emails use idempotency keys and include scoped links signed by a private, database-stored key with the booking’s expiration. Legacy hashed random tokens continue to work. Links expire after 30 days; owner link reissuance/recovery remains a later controlled feature. Email status updates use Svix verification on the raw body, deduplicate provider event IDs and reconcile early receipts. Email provider acceptance, mail-server delivery and actual user/device receipt are separate states.
 
-## Later migration groups (planned, not implemented)
+Push cannot offer exactly-once delivery across a provider/crash boundary. Stable event tags reduce visible duplicates. Production rollout still needs bounded worker backlog/retention, monitoring and provider/device verification; the current worker scans event history and is intended for this local single-business volume.
 
-- Media: private object records scoped to customer/vehicle/job, original/derived variants, before/after labels, publication permission and expiring authenticated download grants.
-- Jobs and operations: confirmed-booking association, operations, condition notes, materials and photos. Preserve lifecycle/audit corrections.
-- Materials: purchased quantity/unit/cost, normalized unit conversions, usage allocations, markup and sale amounts. Use fixed decimal quantities and integer monetary amounts with explicit rounding. A purchase is a cash expense; job allocation is a profitability attribution, not a second cash expense.
-- Estimates/invoices: immutable issued versions, sequential unique invoice numbers within a business, service/material/labor/travel/discount/tax lines, accepted estimate versions, photo selections, review links and correction transactions.
-- Payments: provider transaction IDs, signed webhook receipts, idempotency keys, payment allocations, refunds and reconciliation. Hosted Square interfaces only. Never infer paid status from browser redirects.
-- Finance: purchase/operating expenses, receipt attachments, tips, tax liabilities, payment cash ledger and reporting projections. Separate invoiced sales, collected cash, taxes, tips, material allocations and labor estimates. Financial calculations and period-boundary tests are mandatory before shipping these features.
-- Reviews: verifiable submissions, moderation reasons, explicit public-display/photo consent and abuse controls without suppressing legitimate negative feedback.
+## Private media and invoice preparation
 
-Native app lives in a separate repository and reuses booking/customer/vehicle/event IDs. No separate app database of record. Native push is another delivery adapter, with preferred-device/channel rules to avoid cross-channel duplicate alerts.
+Originals/previews are private SQLite BLOBs, indexed by business/booking/job and associated with customer/vehicle IDs. No directory path or public object URL is exposed. Server decoding verifies supported raster formats and pixel/byte limits. Previews strip metadata, auto-orient, resize and compress; originals remain unchanged. Booking plus intake media commits or rolls back together. Before/after media requires the confirmed job association. Invoice selections reference optimized previews; later invoice rendering can read these authenticated records without exposing original storage.
 
-## Security/release boundaries
+The initial public gallery remains a clearly marked placeholder until Joseph supplies authorized work. No customer photos publish automatically.
 
-Loopback HTTP is for local development. Production or real-phone tests require an authorized secure origin, correct APP_ORIGIN, reverse proxy/TLS, secrets management, backups, owner recovery and session hardening. Never cache private API responses in a service worker. Never publish database files or private media. Unknown contact information, hours, photos and testimonials remain explicitly pending.
+## Reviews and future invoice links
 
-No Square integration, payment handling, production deployment, DNS edits or native app release has been performed. Preserve these boundaries until separately authorized.
+Public form submissions are consented, spam-limited, idempotent and pending. Public APIs only return approved content without booking/customer identifiers. Moderation decisions preserve actor, previous/new status, content-policy reason and timestamp. One-star reviews can publish using the same approval controls. Official HTTPS Google URLs are validated by host. The shared review-link function returns website/Google links for the future invoice renderer.
+
+## Recovery boundaries
+
+The SQLite online backup API captures records and media in one consistent snapshot. Encryption uses AES-256-GCM and scrypt with fresh salts/nonces. Restoration verifies checksum, authentication, integrity and foreign keys into a fresh directory, then revokes sessions, disables subscriptions and pauses outbound processing. Recovered deliveries require explicit review and retry; new-event sending is resumed separately. See `backup-recovery.md` for commands and tested recovery behavior. Environment provider secrets are managed separately and excluded from backup/source.
+
+Loopback remains local-only. Real iPhone verification requires separately authorized secure development connectivity and development providers. No hosting/DNS changes were performed. Native apps, invoices/PDFs, materials, Square payments and finances remain later phases using these shared IDs and data contracts.

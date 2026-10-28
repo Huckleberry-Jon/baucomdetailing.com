@@ -90,7 +90,7 @@ async function refresh() {
       card.append(
         el(
           "p",
-          `Proposal: ${new Date(p.startAt).toLocaleString()} · $${(p.priceCents / 100).toFixed(2)}. Customer acceptance is required.`,
+          `Proposal: ${new Date(p.startAt).toLocaleString()} · $${(p.priceCents / 100).toFixed(2)}. ${b.status === "awaiting_acceptance" ? "Customer acceptance is required." : "Revision retained in booking history."}`,
         ),
       );
     }
@@ -232,6 +232,8 @@ async function refresh() {
   await loadCalendar();
   await renderOwnerReviews();
   const id = new URL(location.href).searchParams.get("booking");
+  if (!id && location.hash)
+    document.getElementById(location.hash.slice(1))?.scrollIntoView();
   if (id) {
     document.getElementById("booking-" + id)?.scrollIntoView();
     const eventId = new URL(location.href).searchParams.get("event");
@@ -271,8 +273,10 @@ $("#settings-form").onsubmit = safe(async (e) => {
 $("#enable-push").onclick = safe(() =>
   syncPushStatus(dashboard.vapidPublicKey, true),
 );
-refresh().catch((e) => {
-  if (e.status !== 401) $("#status").textContent = e.message;
+document.addEventListener("DOMContentLoaded", () => {
+  refresh().catch((e) => {
+    if (e.status !== 401) $("#status").textContent = e.message;
+  });
 });
 async function syncPushStatus(publicKey, interactive = false) {
   const status = document.querySelector("#push-status");

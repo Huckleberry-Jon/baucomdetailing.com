@@ -437,6 +437,24 @@ export class BookingService {
           s.googleReviewUrl.length <= 1000),
       "Review URL must use HTTPS",
     );
+    const confirmed = this.db
+      .prepare(
+        "SELECT start_ms FROM bookings WHERE business_id=? AND (status IN ('confirmed','rescheduled','in_progress') OR(status='awaiting_acceptance' AND end_ms IS NOT NULL))",
+      )
+      .all(BUSINESS);
+    for (const b of confirmed) {
+      const day = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Chicago",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(b.start_ms);
+      requireThat(
+        !s.closedDates.includes(day),
+        "Reschedule or cancel confirmed appointments before closing their date",
+        409,
+      );
+    }
     s.googleReviewUrl = googleReviewUrl(s.googleReviewUrl);
     this.db
       .prepare("UPDATE businesses SET settings=? WHERE id=?")

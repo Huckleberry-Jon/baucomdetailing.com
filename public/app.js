@@ -89,6 +89,8 @@ async function load() {
   }
   estimate();
   $("#package-select").onchange = estimate;
+  if (location.hash)
+    document.getElementById(location.hash.slice(1))?.scrollIntoView();
 }
 $("#booking-form").addEventListener("submit", async (e) => {
   e.preventDefault();

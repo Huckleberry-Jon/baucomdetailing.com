@@ -175,11 +175,17 @@ export class NotificationWorker {
       );
   }
   queue(n, channel, target, payload) {
+    const serialized = JSON.stringify(payload);
     this.db
       .prepare(
         "INSERT OR IGNORE INTO deliveries(id,notification_id,channel,target,status,payload) VALUES(?,?,?,?,'queued',?)",
       )
-      .run(randomUUID(), n.id, channel, target, JSON.stringify(payload));
+      .run(randomUUID(), n.id, channel, target, serialized);
+    this.db
+      .prepare(
+        "UPDATE deliveries SET payload=? WHERE notification_id=? AND channel=? AND target=? AND payload IS NULL",
+      )
+      .run(serialized, n.id, channel, target);
   }
   enqueue() {
     const now = Date.now();

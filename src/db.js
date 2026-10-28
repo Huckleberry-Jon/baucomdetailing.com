@@ -4,7 +4,7 @@ import { BUSINESS, settings, packages, addons } from "./catalog.js";
 export function openDatabase(path = ":memory:") {
   const db = new DatabaseSync(path);
   db.exec(
-    "PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;",
+    "PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;",
   );
   db.exec(
     "CREATE TABLE IF NOT EXISTS migrations(name TEXT PRIMARY KEY,applied_at INTEGER NOT NULL)",

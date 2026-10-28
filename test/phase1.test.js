@@ -259,3 +259,19 @@ test("availability handles unknown durations, closed days and invalid dates", ()
   );
   db.close();
 });
+test("closed-date changes cannot silently conflict with confirmed appointments; DST dates map to Central time", () => {
+  const { db, s } = fixture(),
+    b = s.create(requestInput(), "closed-conflict");
+  s.transition(b.id, "confirm", { version: 1, durationMinutes: 60 });
+  assert.throws(
+    () =>
+      s.updateSettings({
+        ...s.settings(),
+        closedDates: [dateKey(Date.parse(future()))],
+      }),
+    /Reschedule/,
+  );
+  assert.equal(dateKey(Date.parse("2026-11-01T04:30:00Z")), "2026-10-31");
+  assert.equal(dateKey(Date.parse("2026-11-01T07:30:00Z")), "2026-11-01");
+  db.close();
+});

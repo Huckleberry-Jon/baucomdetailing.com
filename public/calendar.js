@@ -10,7 +10,7 @@ function renderCalendarControls() {
   const time = (n) =>
     n == null
       ? ""
-      : `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+      : `${String(Math.floor((n === 1440 ? 0 : n) / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
   f.elements.open.value = time(s.openMinute);
   f.elements.close.value = time(s.closeMinute);
   f.elements.closedDates.value = s.closedDates.join(", ");
@@ -160,7 +160,11 @@ document.querySelector("#schedule-form").onsubmit = safe(async (e) => {
     bufferMinutes: Number(f.get("bufferMinutes")),
     maxDaily: Number(f.get("maxDaily")),
     openMinute: f.get("open") ? minute(f.get("open")) : null,
-    closeMinute: f.get("close") ? minute(f.get("close")) : null,
+    closeMinute: f.get("close")
+      ? f.get("close") === "00:00"
+        ? 1440
+        : minute(f.get("close"))
+      : null,
     workingDays: f.getAll("workingDays"),
     closedDates: f
       .get("closedDates")
