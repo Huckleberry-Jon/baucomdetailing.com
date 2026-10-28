@@ -1,3 +1,4 @@
+import { runtimeConfig } from "../src/runtime-config.js";
 import { mkdirSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { randomUUID } from "node:crypto";
@@ -17,9 +18,7 @@ try {
     "OWNER_PASSWORD must be at least 14 characters",
   );
   mkdirSync("data", { recursive: true });
-  const db = openDatabase(
-    process.env.DATABASE_PATH ?? "data/docdetailing.sqlite",
-  );
+  const db = openDatabase(runtimeConfig().databasePath);
   requireThat(
     !db.prepare("SELECT 1 FROM owners").get(),
     "Owner already provisioned. Use a controlled recovery procedure.",

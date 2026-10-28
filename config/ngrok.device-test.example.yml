@@ -1,0 +1,9 @@
+# Prepared only; no tunnel is started. Set NGROK_AUTHTOKEN privately in the terminal.
+version: 3
+agent:
+  web_addr: false
+endpoints:
+  - name: docdetailing-device-test
+    url: https://replace-with-assigned-dev-domain.invalid
+    upstream:
+      url: http://127.0.0.1:4324

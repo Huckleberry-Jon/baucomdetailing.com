@@ -1,3 +1,4 @@
+import { deliveryBlockReason } from "./runtime-config.js";
 import webpush from "web-push";
 import { Webhook } from "svix";
 import { randomUUID } from "node:crypto";
@@ -311,6 +312,19 @@ export class NotificationWorker {
       for (const d of pending) {
         const push = d.channel === "push";
         let payload = JSON.parse(d.payload ?? "{}");
+        const blocked = deliveryBlockReason(
+          this.config,
+          push,
+          d.channel === "owner_email" ? this.config.ownerEmail : payload.to,
+        );
+        if (blocked) {
+          this.db
+            .prepare(
+              "UPDATE deliveries SET status='blocked',last_error=?,next_attempt=? WHERE id=? AND status IN ('queued','retry','blocked')",
+            )
+            .run(blocked, now + 60000, d.id);
+          continue;
+        }
         const configured = push
           ? this.config.vapidPublicKey &&
             this.config.vapidPrivateKey &&

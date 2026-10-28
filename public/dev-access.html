@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>DocDetailing · Development access</title>
+    <script src="/dev-access.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1>Private development test</h1>
+      <p>
+        Authorized testers only. This environment contains test bookings. Owner
+        sign-in is required separately.
+      </p>
+      <form id="access-form">
+        <label
+          >Development access code
+          <input
+            name="code"
+            type="password"
+            autocomplete="off"
+            required
+            maxlength="200" /></label
+        ><button>Enter test environment</button>
+        <p role="status" id="access-status"></p>
+      </form>
+    </main>
+  </body>
+</html>

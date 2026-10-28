@@ -6,3 +6,5 @@ data/
 *.sqlite*
 *.log
 .development-write-check
+!.env.device-test.example
+config/ngrok.device-test.local.yml

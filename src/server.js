@@ -1,3 +1,5 @@
+import { runtimeConfig } from "./runtime-config.js";
+import { accessGate } from "./dev-access.js";
 import {
   publicReviews,
   submitReview,
@@ -53,6 +55,10 @@ export function createApplication(db, config = {}) {
   const server = http.createServer(async (req, res) => {
     try {
       res.setHeader("Cache-Control", "no-store");
+      if (config.environment === "device-test") {
+        res.setHeader("X-Robots-Tag", "noindex, nofollow");
+        res.setHeader("Strict-Transport-Security", "max-age=86400");
+      }
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Referrer-Policy", "no-referrer");
       res.setHeader("X-Frame-Options", "DENY");
@@ -67,6 +73,14 @@ export function createApplication(db, config = {}) {
       );
       const url = new URL(req.url, origin),
         path = url.pathname;
+      if (
+        config.accessGate &&
+        !["/dev-access", "/dev-access.js", "/api/webhooks/email"].includes(
+          path,
+        ) &&
+        accessGate(req, res, path, db, config, {}, respond)
+      )
+        return;
       let body = {},
         raw = "";
       if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
@@ -102,6 +116,7 @@ export function createApplication(db, config = {}) {
           "Invalid request",
         );
       }
+      if (accessGate(req, res, path, db, config, body, respond)) return;
       if (path === "/api/webhooks/email" && req.method === "POST")
         return respond(
           res,
@@ -534,6 +549,8 @@ export function createApplication(db, config = {}) {
       if (req.method === "GET") {
         const files = {
           "/": "index.html",
+          "/dev-access": "dev-access.html",
+          "/dev-access.js": "dev-access.js",
           "/owner": "owner.html",
           "/booking": "booking.html",
           "/app.js": "app.js",
@@ -572,21 +589,12 @@ if (
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   mkdirSync("data", { recursive: true });
-  const config = {
-    origin: process.env.APP_ORIGIN ?? "http://localhost:4317",
-    vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
-    vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
-    emailApiKey: process.env.RESEND_API_KEY,
-    emailFrom: process.env.EMAIL_FROM,
-    ownerEmail: process.env.OWNER_NOTIFICATION_EMAIL,
-    emailWebhookSecret: process.env.RESEND_WEBHOOK_SECRET,
-    vapidSubject: process.env.VAPID_SUBJECT,
-  };
+  const config = runtimeConfig();
   const { server, worker } = createApplication(
-    openDatabase(process.env.DATABASE_PATH ?? "data/docdetailing.sqlite"),
+    openDatabase(config.databasePath),
     config,
   );
-  server.listen(Number(process.env.PORT ?? 4317), "127.0.0.1", () =>
+  server.listen(config.port, "127.0.0.1", () =>
     console.log("Local: " + config.origin),
   );
   setInterval(
