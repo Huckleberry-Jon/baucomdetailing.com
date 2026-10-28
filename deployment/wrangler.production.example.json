@@ -1,0 +1,60 @@
+{
+  "name": "docdetailing-site-production",
+  "account_id": "REPLACE_WITH_APPROVED_DOCDETAILING_ACCOUNT",
+  "main": "../data/cloudflare-build/worker.mjs",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none"
+  },
+  "routes": [
+    {
+      "pattern": "baucomdetailing.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.baucomdetailing.com",
+      "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "docdetailing-production",
+      "database_id": "REPLACE_WITH_NEW_DOCDETAILING_D1_ID",
+      "migrations_dir": "../cloudflare/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "docdetailing-production-private"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "CLOUDFLARE_ENV": "production",
+    "DATA_NAMESPACE": "production",
+    "SITE_OPEN": "false",
+    "COMMUNICATIONS_MODE": "disabled",
+    "ALLOW_EMAIL_SEND": "false",
+    "ALLOW_PUSH_SEND": "false"
+  }
+}

@@ -16,16 +16,23 @@
     "backup:remote": "node scripts/backup-remote.js",
     "device:preflight": "node --env-file=.env.device-test scripts/device-preflight.js",
     "device:owner": "node --env-file=.env.device-test scripts/provision-device-owner.js",
-    "device:verify-local": "node --env-file=.env.device-test scripts/verify-device-local.js"
+    "device:verify-local": "node --env-file=.env.device-test scripts/verify-device-local.js",
+    "test:cloudflare": "node --test --test-concurrency=1 test-cloudflare/*.test.mjs",
+    "cloud:build": "node scripts/build-cloudflare.mjs",
+    "cloud:preflight": "node scripts/cloudflare-preflight.mjs",
+    "cloud:prepare": "node scripts/prepare-cloudflare-local.mjs",
+    "cloud:dev": "wrangler dev --local --config data/cloudflare-local/wrangler.json --port 4334 --persist-to data/cloudflare-local/persist --ip 127.0.0.1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1159.0",
     "heic-decode": "2.1.0",
     "sharp": "0.35.5",
-    "svix": "1.76.1",
+    "svix": "1.99.1",
     "web-push": "3.6.7"
   },
   "devDependencies": {
-    "prettier": "3.6.2"
+    "miniflare": "5.20261023.2-beta",
+    "prettier": "3.6.2",
+    "wrangler": "4.155.0"
   }
 }

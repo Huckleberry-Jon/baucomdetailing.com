@@ -1,0 +1,41 @@
+{
+  "name": "docdetailing-local",
+  "main": "../data/cloudflare-build/worker.mjs",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "docdetailing-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../cloudflare/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "docdetailing-local-media"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "vars": {
+    "CLOUDFLARE_ENV": "local",
+    "DATA_NAMESPACE": "local",
+    "SITE_OPEN": "false",
+    "COMMUNICATIONS_MODE": "disabled",
+    "ALLOW_EMAIL_SEND": "false",
+    "ALLOW_PUSH_SEND": "false"
+  }
+}
