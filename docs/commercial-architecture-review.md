@@ -1,4 +1,6 @@
 # DocDetailing commercial architecture review
+
+> CURRENT DECISION: The Render-first $110–150 initial hosting recommendation is withdrawn. Follow minimum-production-budget.md and cloudflare-migration-plan.md. Earlier cost/scaling figures below are historical planning scenarios, not purchase recommendations.
 October 28, 2026. Owner: Doc Incorporated LLC. Decision proposal, not deployment authorization.
 
 ## Decision

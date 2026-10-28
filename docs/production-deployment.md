@@ -1,5 +1,7 @@
 # Production preparation — October 28, 2026
 
+> CURRENT DECISION: The Render-first $110–150 initial hosting recommendation is withdrawn. Follow minimum-production-budget.md and cloudflare-migration-plan.md. Earlier cost/scaling figures below are historical planning scenarios, not purchase recommendations.
+
 Preparation only: no push, hosted deployment, purchase, DNS change, customer communication or native build.
 
 Commercial review: this is a single-business pilot template only. Do not provision additional businesses with it. See docs/commercial-architecture-review.md and docs/commercial-operating-costs.md before any purchase or deployment.

@@ -74,3 +74,7 @@ See [production deployment](docs/production-deployment.md), [DNS plan](docs/pork
 ## Commercial product architecture
 
 DocDetailing is Doc Incorporated LLC's multi-business subscription product. Joseph is the first complimentary tester. The current runtime remains single-business; it must not onboard another business until tenant isolation is implemented and verified. Read [the commercial architecture review](docs/commercial-architecture-review.md) and [operating costs at 1/10/100/1,000 businesses](docs/commercial-operating-costs.md). The existing deployment template is a Joseph pilot, not the commercial scaling blueprint. No billing or migration has been activated.
+
+## Current hosting decision: Cloudflare-first, no purchases
+
+The $110–150/month initial Render commercial recommendation is withdrawn. See [minimum production budget](docs/minimum-production-budget.md) for the $6–12/month feasibility target, [exact Cloudflare migration changes and DocInvoices comparison](docs/cloudflare-migration-plan.md), and [independent native API preparation](docs/native-ios-api-contract.md). The existing runtime has not been migrated. Native image processing, full D1 transactions, delivery and off-provider restore still need acceptance; the lower budget does not waive those checks.
