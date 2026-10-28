@@ -12,10 +12,14 @@
     <script src="/photos.js" defer></script>
     <script src="/app.js" defer></script>
     <script src="/reviews.js" defer></script>
+    <script src="/website-photos.js" defer></script>
   </head>
   <body>
     <header>
-      <a class="brand" href="/">BAUCOM’S <small>MOBILE DETAILING</small></a>
+      <a class="brand" href="/"
+        ><span class="branding-photo" data-photo-slot="branding-logo"></span
+        >BAUCOM’S <small>MOBILE DETAILING</small></a
+      >
       <nav aria-label="Main navigation">
         <a href="#packages">Packages</a><a href="#addons">Add-ons</a
         ><a href="#gallery">Our work</a><a href="#reviews">Reviews</a
@@ -29,6 +33,9 @@
           AMARILLO · TEXAS PANHANDLE
           <span>Service area pending confirmation</span>
         </div>
+        <figure class="photo-slot hero-photo" data-photo-slot="hero">
+          <span>Hero photograph from Joseph · coming soon</span>
+        </figure>
         <h1>A fresh start.<br />For every mile.</h1>
         <p>
           Thoughtful interior detailing, brought to you. From a quick refresh to
@@ -37,9 +44,6 @@
         <a class="button" href="#packages">Find your detail ↗</a>
         <div class="hero-note">
           Your vehicle. Your location. Attention to the details.
-        </div>
-        <div class="line-art" aria-hidden="true">
-          66<span>CARE FOR THE ROAD AHEAD</span>
         </div>
       </section>
       <section id="packages">
@@ -60,6 +64,18 @@
           specialized cleaning.
         </p>
         <div id="addons-grid" class="grid"></div>
+      </section>
+      <section id="at-work">
+        <div class="eyebrow">THE PERSON BEHIND THE DETAIL</div>
+        <h2>Care in every corner.</h2>
+        <div class="work-photo-grid">
+          <figure class="photo-slot" data-photo-slot="action-1">
+            <span>Joseph working · photograph pending</span>
+          </figure>
+          <figure class="photo-slot" data-photo-slot="action-2">
+            <span>Detailing in action · photograph pending</span>
+          </figure>
+        </div>
       </section>
       <section id="book" class="booking-section">
         <div class="eyebrow">03 / LET’S GET STARTED</div>
@@ -201,6 +217,20 @@
       <section id="gallery">
         <div class="eyebrow">04 / OUR WORK</div>
         <h2>The difference is in the details.</h2>
+        <div class="before-after-grid">
+          <figure class="photo-slot" data-photo-slot="gallery-1-before">
+            <span>Before · authorized photograph pending</span>
+          </figure>
+          <figure class="photo-slot" data-photo-slot="gallery-1-after">
+            <span>After · authorized photograph pending</span>
+          </figure>
+          <figure class="photo-slot" data-photo-slot="gallery-2-before">
+            <span>Before · authorized photograph pending</span>
+          </figure>
+          <figure class="photo-slot" data-photo-slot="gallery-2-after">
+            <span>After · authorized photograph pending</span>
+          </figure>
+        </div>
         <div class="empty">
           Joseph’s before-and-after photographs are coming soon.<br />Only
           authorized photographs of actual work will appear here.
@@ -268,10 +298,15 @@
       </section>
     </main>
     <footer>
-      <a class="brand" href="/">BAUCOM’S <small>MOBILE DETAILING</small></a>
+      <a class="brand" href="/"
+        ><span class="branding-photo" data-photo-slot="branding-logo"></span
+        >BAUCOM’S <small>MOBILE DETAILING</small></a
+      >
       <p>Operated on software by Doc Incorporated LLC.</p>
       <a href="/owner">Owner sign in</a
-      ><span>LOCAL DEVELOPMENT · NOT OPEN FOR LIVE BOOKINGS</span>
+      ><span id="environment-notice"
+        >LOCAL DEVELOPMENT · NOT OPEN FOR LIVE BOOKINGS</span
+      >
     </footer>
   </body>
 </html>

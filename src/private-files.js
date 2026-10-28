@@ -1,8 +1,13 @@
 import { execFileSync } from "node:child_process";
 import { chmodSync, readdirSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 export function protectDeviceDirectory() {
-  const directory = resolve("data/device-test");
+  return protectPrivateDirectory("data/device-test");
+}
+export function protectPrivateDirectory(target) {
+  const directory = resolve(target);
+  if (dirname(directory) !== resolve("data"))
+    throw Error("Private directory must be a named child of project data");
   if (process.platform === "win32") {
     const identity = execFileSync("whoami", ["/user", "/fo", "csv", "/nh"], {
       encoding: "utf8",

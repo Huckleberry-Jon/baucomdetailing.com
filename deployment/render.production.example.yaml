@@ -1,0 +1,33 @@
+# Reviewed template only: no service has been created. Auto deploy intentionally disabled.
+services:
+  - type: web
+    name: docdetailing-production-preview
+    runtime: docker
+    plan: 1c-2g
+    numInstances: 1
+    autoDeployTrigger: "off"
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    disk:
+      name: docdetailing-private-data
+      mountPath: /var/data/docdetailing
+      sizeGB: 10
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PROD_DATA_DIR
+        value: /var/data/docdetailing
+      - key: PROD_SITE_OPEN
+        value: "false"
+      - key: PROD_COMMUNICATIONS_MODE
+        value: disabled
+      - key: PROD_ALLOW_PUSH_SEND
+        value: "false"
+      - key: PROD_ALLOW_EMAIL_SEND
+        value: "false"
+      - key: PROD_ORIGIN
+        sync: false
+      - key: PROD_PREVIEW_PASSWORD_HASH
+        sync: false
+      - key: PROD_PREVIEW_SIGNING_KEY
+        sync: false

@@ -1,0 +1,12 @@
+.git
+node_modules
+data
+.env
+.env.*
+**/*.sqlite*
+**/*.log
+docs
+.codex
+.agents
+.aws
+.development-write-check

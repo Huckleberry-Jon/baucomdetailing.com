@@ -1,3 +1,4 @@
+import { productionConfig } from "./production-config.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { requireThat } from "./security.js";
@@ -7,9 +8,10 @@ export function runtimeConfig(
 ) {
   const mode = env.APP_ENV ?? "local";
   requireThat(
-    ["local", "device-test"].includes(mode),
-    "Unsupported APP_ENV. Production is not configured by this development task.",
+    ["local", "device-test", "production"].includes(mode),
+    "Unsupported APP_ENV",
   );
+  if (mode === "production") return productionConfig(env);
   if (mode === "local")
     return {
       environment: mode,
@@ -123,6 +125,8 @@ export function deliveryBlockReason(config, push, recipient) {
   if (push)
     return p.pushEnabled ? null : "Push sending disabled by environment policy";
   if (!p.emailEnabled) return "Email sending disabled by environment policy";
+  if (config.environment === "production" && p.emailScope === "live")
+    return null;
   if (
     !p.emailRecipients.includes(
       String(recipient ?? "")

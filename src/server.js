@@ -1,3 +1,12 @@
+import {
+  websiteSlots,
+  saveWebsitePhoto,
+  publishWebsitePhoto,
+  publicWebsitePhotos,
+  websitePhoto,
+} from "./website-photos.js";
+import { HostedBackupRunner, hostedBackupSettings } from "./hosted-backups.js";
+import { prepareStorage } from "./production-storage.js";
 import { runtimeConfig } from "./runtime-config.js";
 import { accessGate } from "./dev-access.js";
 import {
@@ -43,6 +52,7 @@ const types = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/manifest+json",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
 };
 export function createApplication(db, config = {}) {
   const service = new BookingService(db),
@@ -52,6 +62,7 @@ export function createApplication(db, config = {}) {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(data));
   };
+  let activeUploads = 0;
   const server = http.createServer(async (req, res) => {
     try {
       res.setHeader("Cache-Control", "no-store");
@@ -67,6 +78,21 @@ export function createApplication(db, config = {}) {
         "Content-Security-Policy",
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
       );
+      if (req.url === "/healthz" && req.method === "GET") {
+        db.prepare("SELECT 1").get();
+        return respond(res, 200, { status: "ok" });
+      }
+      if (config.environment === "production") {
+        if (
+          config.hostAliases?.includes(req.headers.host) &&
+          req.method === "GET"
+        ) {
+          res.writeHead(308, { Location: origin + req.url });
+          res.end();
+          return;
+        }
+        res.setHeader("Strict-Transport-Security", "max-age=31536000");
+      }
       requireThat(
         req.headers.host === new URL(origin).host,
         "Invalid host",
@@ -95,10 +121,33 @@ export function createApplication(db, config = {}) {
           "JSON required",
           415,
         );
+        if (
+          path === "/api/bookings" ||
+          path === "/api/owner/photos" ||
+          path === "/api/owner/website-photos"
+        ) {
+          requireThat(
+            activeUploads < 2,
+            "Photo upload capacity is busy; retry shortly",
+            503,
+          );
+          activeUploads++;
+          let released = false;
+          const release = () => {
+            if (!released) {
+              released = true;
+              activeUploads--;
+            }
+          };
+          res.once("finish", release);
+          res.once("close", release);
+        }
         const chunks = [];
         let size = 0;
         const limit =
-          path === "/api/bookings" || path === "/api/owner/photos"
+          path === "/api/bookings" ||
+          path === "/api/owner/photos" ||
+          path === "/api/owner/website-photos"
             ? 24 * 1024 * 1024
             : 32768;
         for await (const chunk of req) {
@@ -136,6 +185,22 @@ export function createApplication(db, config = {}) {
         requireThat(s, "Owner login required", 401);
         return s;
       };
+      if (path === "/api/website-photos" && req.method === "GET")
+        return respond(res, 200, publicWebsitePhotos(db));
+      if (path === "/api/website-photo" && req.method === "GET") {
+        const photo = websitePhoto(db, url.searchParams.get("id"));
+        res.setHeader("Content-Type", "image/jpeg");
+        res.end(Buffer.from(photo.preview));
+        return;
+      }
+      if (path === "/robots.txt" && req.method === "GET") {
+        res.setHeader("Content-Type", "text/plain");
+        res.end(
+          "User-agent: *\n" +
+            (config.siteOpen === true ? "Allow: /\n" : "Disallow: /\n"),
+        );
+        return;
+      }
       if (path === "/api/reviews" && req.method === "GET")
         return respond(res, 200, {
           reviews: publicReviews(db),
@@ -172,6 +237,10 @@ export function createApplication(db, config = {}) {
           settings: service.settings(),
           services: service.catalog().filter((s) => s.enabled),
           notice,
+          runtime: {
+            environment: config.environment ?? "local",
+            siteOpen: config.siteOpen === true,
+          },
         });
       if (path === "/api/bookings" && req.method === "POST") {
         rateLimit(db, "booking:" + req.socket.remoteAddress, 20);
@@ -246,6 +315,49 @@ export function createApplication(db, config = {}) {
           db
             .prepare("INSERT INTO audit_events VALUES(?,?,?,?,?,?)")
             .run(randomUUID(), BUSINESS, signedIn.id, event, id, Date.now());
+        if (path === "/api/owner/website-photos" && req.method === "GET")
+          return respond(res, 200, {
+            slots: websiteSlots,
+            photos: db
+              .prepare(
+                "SELECT id,slot,alt,caption,rights_note,status,updated_at FROM website_photos WHERE business_id=?",
+              )
+              .all(BUSINESS),
+          });
+        if (path === "/api/owner/website-photos" && req.method === "POST") {
+          const photos = await preparePhotos(body.photos);
+          requireThat(
+            photos.length === 1,
+            "Upload one website photograph at a time",
+          );
+          return respond(
+            res,
+            201,
+            saveWebsitePhoto(db, body, photos[0], signedIn),
+          );
+        }
+        if (path === "/api/owner/website-publish" && req.method === "PUT")
+          return respond(res, 200, publishWebsitePhoto(db, body, signedIn));
+        if (path === "/api/owner/website-photo" && req.method === "GET") {
+          const p = websitePhoto(db, url.searchParams.get("id"), true);
+          res.setHeader(
+            "Content-Type",
+            url.searchParams.get("original") === "1"
+              ? p.original_mime
+              : "image/jpeg",
+          );
+          if (url.searchParams.get("original") === "1")
+            res.setHeader(
+              "Content-Disposition",
+              'attachment; filename="website-original"',
+            );
+          res.end(
+            Buffer.from(
+              url.searchParams.get("original") === "1" ? p.original : p.preview,
+            ),
+          );
+          return;
+        }
         if (path === "/api/owner/resume-delivery" && req.method === "POST") {
           transaction(db, () => {
             db.prepare(
@@ -412,6 +524,11 @@ export function createApplication(db, config = {}) {
                 "SELECT d.* FROM deliveries d JOIN notifications n ON n.id=d.notification_id WHERE n.business_id=? ORDER BY n.created_at DESC LIMIT 300",
               )
               .all(BUSINESS),
+            backupStatus: db
+              .prepare(
+                "SELECT id,started_at,finished_at,status,error FROM backup_runs WHERE business_id=? ORDER BY started_at DESC LIMIT 5",
+              )
+              .all(BUSINESS),
             settings: service.settings(),
             services: service.catalog(),
             vapidPublicKey: config.vapidPublicKey ?? null,
@@ -564,6 +681,10 @@ export function createApplication(db, config = {}) {
           "/sw.js": "sw.js",
           "/manifest.json": "manifest.json",
           "/icon.svg": "icon.svg",
+          "/website-photos.js": "website-photos.js",
+          "/icon-192.png": "icon-192.png",
+          "/icon-512.png": "icon-512.png",
+          "/apple-touch-icon.png": "apple-touch-icon.png",
         };
         const file = files[path];
         if (file) {
@@ -583,6 +704,8 @@ export function createApplication(db, config = {}) {
       else res.end();
     }
   });
+  server.requestTimeout = 120000;
+  server.headersTimeout = 30000;
   return { server, worker, service };
 }
 if (
@@ -591,15 +714,43 @@ if (
 ) {
   mkdirSync("data", { recursive: true });
   const config = runtimeConfig();
-  const { server, worker } = createApplication(
-    openDatabase(config.databasePath),
-    config,
+  prepareStorage(config);
+  const database = openDatabase(config.databasePath);
+  const backupRunner = new HostedBackupRunner(
+    database,
+    hostedBackupSettings(process.env, config),
   );
-  server.listen(config.port, "127.0.0.1", () =>
+  const { server, worker } = createApplication(database, config);
+  server.listen(config.port, config.bindHost ?? "127.0.0.1", () =>
     console.log("Local: " + config.origin),
   );
-  setInterval(
+  const notificationTimer = setInterval(
     () => void worker.tick().catch((e) => worker.logError(e)),
     15000,
   ).unref();
+  const backupTimer = setInterval(
+    () => void backupRunner.tick(),
+    60000,
+  ).unref();
+  let shuttingDown = false;
+  const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    clearInterval(notificationTimer);
+    clearInterval(backupTimer);
+    server.close(() => {
+      const closeDb = () => {
+        if (worker.running || backupRunner.running) {
+          setTimeout(closeDb, 100).unref();
+          return;
+        }
+        database.close();
+        process.exit(0);
+      };
+      closeDb();
+    });
+    setTimeout(() => process.exit(1), 30000).unref();
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }

@@ -26,6 +26,10 @@ async function load() {
   $("#service-area").textContent = catalog.settings.serviceArea;
   for (const p of catalog.services.filter((s) => s.kind === "package")) {
     const c = el("article", null, "card" + (p.featured ? " featured" : ""));
+    const figure = el("figure", null, "photo-slot package-photo");
+    figure.dataset.photoSlot = "package-" + p.id;
+    figure.append(el("span", "Service photograph pending"));
+    c.append(figure);
     c.append(
       el(
         "div",
@@ -87,6 +91,14 @@ async function load() {
     l.append(i, document.createTextNode(s));
     $("#concern-checks").append(l);
   }
+  await loadWebsitePhotos();
+  const notice = $("#environment-notice");
+  if (notice)
+    notice.textContent = catalog.runtime?.siteOpen
+      ? "REQUESTS REQUIRE OWNER CONFIRMATION"
+      : catalog.runtime?.environment === "production"
+        ? "PRIVATE PRELAUNCH PREVIEW"
+        : "LOCAL DEVELOPMENT · NOT OPEN FOR LIVE BOOKINGS";
   estimate();
   $("#package-select").onchange = estimate;
   if (location.hash)
@@ -148,8 +160,10 @@ $("#booking-form").addEventListener("submit", async (e) => {
     button.disabled = false;
   }
 });
-load().catch((e) => {
-  $("#booking-status").textContent = e.message;
+document.addEventListener("DOMContentLoaded", () => {
+  load().catch((e) => {
+    $("#booking-status").textContent = e.message;
+  });
 });
 document.querySelector("#check-availability").onclick = async () => {
   const status = document.querySelector("#availability-status"),

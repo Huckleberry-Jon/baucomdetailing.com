@@ -6,11 +6,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Baucom’s · Owner</title>
     <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/style.css" />
     <script src="/photos.js" defer></script>
     <script src="/owner.js" defer></script>
     <script src="/calendar.js" defer></script>
     <script src="/reviews.js" defer></script>
+    <script src="/website-photos.js" defer></script>
   </head>
   <body>
     <header>
@@ -95,6 +97,7 @@
           <h2>Notification inbox</h2>
           <div id="inbox"></div>
           <p id="notification-health"></p>
+          <p id="backup-health"></p>
           <button id="resume-delivery" hidden>
             Resume new-event delivery after recovery review
           </button>
@@ -117,6 +120,15 @@
           </form>
           <p id="invoice-review-links"></p>
           <div id="review-management"></div>
+        </section>
+        <section id="website-photos">
+          <h2>Website photographs and branding</h2>
+          <p>
+            Upload actual work into the prepared locations. Every upload starts
+            as a draft. Public display requires a separate rights/permission
+            confirmation. Job photos are never published automatically.
+          </p>
+          <div id="website-photo-manager"></div>
         </section>
         <section id="settings">
           <h2>Business &amp; scheduling</h2>

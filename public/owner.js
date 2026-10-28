@@ -202,6 +202,12 @@ async function refresh() {
       );
     $("#delivery-log").append(row);
   }
+  const latestBackup = dashboard.backupStatus?.[0];
+  $("#backup-health").textContent = latestBackup
+    ? "Hosted backup: " +
+      latestBackup.status +
+      (latestBackup.error ? " · " + latestBackup.error : "")
+    : "No hosted backup run recorded in this environment.";
   const health = dashboard.notificationHealth;
   $("#notification-health").textContent =
     `${health.activeSubscriptions} active phone subscriptions. Customer email ${health.customerEmailConfigured ? "configured" : "not configured"}. Owner fallback ${health.ownerFallbackConfigured ? "configured" : "not configured"}. ${dashboard.recoveryHold ? "Delivery is paused after recovery. Review records before resuming." : ""}`;
@@ -231,6 +237,7 @@ async function refresh() {
   renderCalendarControls();
   await loadCalendar();
   await renderOwnerReviews();
+  await loadWebsitePhotoManager();
   const id = new URL(location.href).searchParams.get("booking");
   if (!id && location.hash)
     document.getElementById(location.hash.slice(1))?.scrollIntoView();
