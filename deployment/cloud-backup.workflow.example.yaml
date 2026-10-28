@@ -1,0 +1,36 @@
+# INACTIVE until runner, destination, credentials and external backup uploads are separately approved.
+name: DocDetailing independent encrypted backup
+on:
+  workflow_dispatch:
+jobs:
+  backup:
+    if: vars.DOCDETAILING_BACKUP_APPROVED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node scripts/cloud-backup.mjs create
+        env:
+          ALLOW_EXTERNAL_BACKUP_UPLOAD: 'true'
+          BACKUP_APPROVAL_REF: ${{ vars.DOCDETAILING_BACKUP_APPROVAL_REF }}
+          BACKUP_PASSPHRASE: ${{ secrets.DOCDETAILING_BACKUP_PASSPHRASE }}
+          CF_ACCOUNT_ID: ${{ secrets.DOCDETAILING_CF_ACCOUNT_ID }}
+          CF_D1_DATABASE_ID: ${{ secrets.DOCDETAILING_D1_ID }}
+          CF_D1_EXPORT_TOKEN: ${{ secrets.DOCDETAILING_D1_EXPORT_TOKEN }}
+          R2_ACCOUNT_ID: ${{ secrets.DOCDETAILING_CF_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.DOCDETAILING_MEDIA_BUCKET }}
+          R2_READ_ACCESS_KEY_ID: ${{ secrets.DOCDETAILING_R2_READ_KEY }}
+          R2_READ_SECRET_ACCESS_KEY: ${{ secrets.DOCDETAILING_R2_READ_SECRET }}
+          RECOVERY_ENDPOINT: ${{ vars.DOCDETAILING_B2_ENDPOINT }}
+          RECOVERY_REGION: ${{ vars.DOCDETAILING_B2_REGION }}
+          RECOVERY_BUCKET: ${{ vars.DOCDETAILING_B2_BUCKET }}
+          RECOVERY_ACCESS_KEY_ID: ${{ secrets.DOCDETAILING_B2_APPEND_KEY }}
+          RECOVERY_SECRET_ACCESS_KEY: ${{ secrets.DOCDETAILING_B2_APPEND_SECRET }}
+          SOURCE_NAMESPACE: production
+# Pin actions to reviewed commit SHAs before activation. Add daily schedule only after approval.
+# Runner failure must page the approved operator. Configure an independent backup-age check too.
