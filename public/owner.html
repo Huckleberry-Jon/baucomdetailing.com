@@ -1,1 +1,93 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="apple-mobile-web-app-capable" content="yes"><title>Baucom’s · Owner</title><link rel="manifest" href="/manifest.json"><link rel="stylesheet" href="/style.css"><script src="/owner.js" defer></script></head><body><header><a class="brand" href="/">BAUCOM’S <small>OWNER WORKSPACE</small></a><nav><a href="#requests">Requests</a><a href="#notifications">Inbox</a><a href="#settings">Settings</a></nav></header><main class="owner"><div class="eyebrow">YOUR BUSINESS / AT A GLANCE</div><h1>A clear view<br>of the road ahead.</h1><p role="status" id="status"></p><form id="login"><h2>Owner sign in</h2><label>Email<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button>Sign in</button><p>Provision the owner locally with <code>npm run owner:setup</code>. No default password is created.</p></form><div id="workspace" hidden><div class="toolbar"><button id="refresh">Refresh</button><button id="enable-push">Enable / refresh phone alerts</button><button id="logout">Sign out</button></div><p>iPhone: add this dashboard to your Home Screen, open it there, then enable alerts. A secure HTTPS development origin and real-device test are required. Push delivery is not guaranteed.</p><div class="stats" id="stats"></div><section id="requests"><h2>Booking requests</h2><div id="request-list"></div></section><section id="notifications"><h2>Notification inbox</h2><div id="inbox"></div><h3>Delivery log</h3><div id="delivery-log"></div></section><section id="settings"><h2>Business &amp; scheduling</h2><p>Review the shared configuration below. Times are minutes after midnight in America/Chicago. Working days use Mon, Tue, Wed, Thu, Fri, Sat, Sun. No hours or durations have been invented.</p><form id="settings-form"><label>Shared settings (JSON)<textarea id="settings-json" rows="20" spellcheck="false"></textarea></label><button>Save settings</button></form><h2>Service catalog</h2><p>Prices use cents. Existing bookings keep their original price snapshots.</p><div id="service-editor"></div></section></div></main><footer>Doc Incorporated LLC · Local development</footer></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Baucom’s · Owner</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/owner.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/">BAUCOM’S <small>OWNER WORKSPACE</small></a>
+      <nav>
+        <a href="#requests">Requests</a><a href="#notifications">Inbox</a
+        ><a href="#settings">Settings</a>
+      </nav>
+    </header>
+    <main class="owner">
+      <div class="eyebrow">YOUR BUSINESS / AT A GLANCE</div>
+      <h1>A clear view<br />of the road ahead.</h1>
+      <p role="status" id="status"></p>
+      <form id="login">
+        <h2>Owner sign in</h2>
+        <label
+          >Email<input
+            name="email"
+            type="email"
+            autocomplete="username"
+            required /></label
+        ><label
+          >Password<input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required /></label
+        ><button>Sign in</button>
+        <p>
+          Provision the owner locally with <code>npm run owner:setup</code>. No
+          default password is created.
+        </p>
+      </form>
+      <div id="workspace" hidden>
+        <div class="toolbar">
+          <button id="refresh">Refresh</button
+          ><button id="enable-push">Enable / refresh phone alerts</button
+          ><button id="logout">Sign out</button>
+        </div>
+        <p>
+          iPhone: add this dashboard to your Home Screen, open it there, then
+          enable alerts. A secure HTTPS development origin and real-device test
+          are required. Push delivery is not guaranteed.
+        </p>
+        <div class="stats" id="stats"></div>
+        <section id="requests">
+          <h2>Booking requests</h2>
+          <div id="request-list"></div>
+        </section>
+        <section id="notifications">
+          <h2>Notification inbox</h2>
+          <div id="inbox"></div>
+          <h3>Delivery log</h3>
+          <div id="delivery-log"></div>
+        </section>
+        <section id="settings">
+          <h2>Business &amp; scheduling</h2>
+          <p>
+            Review the shared configuration below. Times are minutes after
+            midnight in America/Chicago. Working days use Mon, Tue, Wed, Thu,
+            Fri, Sat, Sun. No hours or durations have been invented.
+          </p>
+          <form id="settings-form">
+            <label
+              >Shared settings (JSON)<textarea
+                id="settings-json"
+                rows="20"
+                spellcheck="false"
+              ></textarea></label
+            ><button>Save settings</button>
+          </form>
+          <h2>Service catalog</h2>
+          <p>
+            Prices use cents. Existing bookings keep their original price
+            snapshots.
+          </p>
+          <div id="service-editor"></div>
+        </section>
+      </div>
+    </main>
+    <footer>Doc Incorporated LLC · Local development</footer>
+  </body>
+</html>

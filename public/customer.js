@@ -1,3 +1,61 @@
-const [id,secret]=location.hash.slice(1).split(':');let booking;const $=s=>document.querySelector(s),line=t=>{const p=document.createElement('p');p.textContent=t;return p;};
-async function request(action){try{if(!id||!secret)throw Error('Use the complete private booking link from your submission.');const r=await fetch('/api/customer/booking'+(action?'':'?id='+encodeURIComponent(id)),{method:action?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+secret},body:action?JSON.stringify({id,action,version:booking.version}):undefined});booking=await r.json();if(!r.ok)throw Error(booking.error);$('#booking').replaceChildren(line('Status: '+booking.status.replaceAll('_',' ')),line('Requested appointment: '+new Date(booking.requestedAt).toLocaleString()),line(booking.snapshot.package.name));if(booking.proposal){const p=booking.proposal;$('#booking').append(line(`Revised time: ${new Date(p.startAt).toLocaleString()}. Revised total: $${(p.priceCents/100).toFixed(2)}.`));}$('#accept').hidden=booking.status!=='awaiting_acceptance';$('#cancel').hidden=!['pending','confirmed','rescheduled','awaiting_acceptance'].includes(booking.status);$('#status').textContent='Latest status loaded.';}catch(e){$('#status').textContent=e.message;}}
-$('#refresh').onclick=()=>request();$('#accept').onclick=()=>request('accept');$('#cancel').onclick=()=>request('cancel');request();
+const [id, secret] = location.hash.slice(1).split(":");
+let booking;
+const $ = (s) => document.querySelector(s),
+  line = (t) => {
+    const p = document.createElement("p");
+    p.textContent = t;
+    return p;
+  };
+async function request(action) {
+  try {
+    if (!id || !secret)
+      throw Error(
+        "Use the complete private booking link from your submission.",
+      );
+    const r = await fetch(
+      "/api/customer/booking" + (action ? "" : "?id=" + encodeURIComponent(id)),
+      {
+        method: action ? "POST" : "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + secret,
+        },
+        body: action
+          ? JSON.stringify({ id, action, version: booking.version })
+          : undefined,
+      },
+    );
+    booking = await r.json();
+    if (!r.ok) throw Error(booking.error);
+    $("#booking").replaceChildren(
+      line("Status: " + booking.status.replaceAll("_", " ")),
+      line(
+        "Requested appointment: " +
+          new Date(booking.requestedAt).toLocaleString(),
+      ),
+      line(booking.snapshot.package.name),
+    );
+    if (booking.proposal) {
+      const p = booking.proposal;
+      $("#booking").append(
+        line(
+          `Revised time: ${new Date(p.startAt).toLocaleString()}. Revised total: $${(p.priceCents / 100).toFixed(2)}.`,
+        ),
+      );
+    }
+    $("#accept").hidden = booking.status !== "awaiting_acceptance";
+    $("#cancel").hidden = ![
+      "pending",
+      "confirmed",
+      "rescheduled",
+      "awaiting_acceptance",
+    ].includes(booking.status);
+    $("#status").textContent = "Latest status loaded.";
+  } catch (e) {
+    $("#status").textContent = e.message;
+  }
+}
+$("#refresh").onclick = () => request();
+$("#accept").onclick = () => request("accept");
+$("#cancel").onclick = () => request("cancel");
+request();
