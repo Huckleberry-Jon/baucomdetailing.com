@@ -1,3 +1,5 @@
+Latest staging provisioning and billing blocker: [Cloudflare preview status](docs/cloudflare-staging-provisioning-report.md).
+
 Current execution report: [October 28 verification and remaining gates](docs/execution-report-2026-10-28.md). [Private preview commands](docs/device-preview-commands.md). [Flutter / Apple preparation](docs/apple-testflight-preparation.md).
 
 # DocDetailing — Phase 1 local development
