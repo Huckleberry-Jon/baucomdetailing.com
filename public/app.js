@@ -120,7 +120,9 @@ async function load() {
       ? "REQUESTS REQUIRE OWNER CONFIRMATION"
       : catalog.runtime?.environment === "production"
         ? "PRIVATE PRELAUNCH PREVIEW"
-        : "LOCAL DEVELOPMENT · NOT OPEN FOR LIVE BOOKINGS";
+        : catalog.runtime?.environment === "staging"
+          ? "PRIVATE STAGING · TEST BOOKINGS ONLY"
+          : "LOCAL DEVELOPMENT · NOT OPEN FOR LIVE BOOKINGS";
   estimate();
   $("#package-select").onchange = estimate;
   if (location.hash)

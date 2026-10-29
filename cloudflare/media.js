@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { hash, requireThat, Problem, text } from "../src/security.js";
 export function slots(catalog) {
   return [
-    { slot: "hero", label: "Homepage hero", ratio: "16:9" },
+    { slot: "hero", label: "Homepage hero", ratio: "3:4" },
+    { slot: "banner", label: "Route 66 brand banner", ratio: "4:1" },
     ...catalog
       .filter((s) => s.kind === "package")
       .map((p) => ({
@@ -11,8 +12,8 @@ export function slots(catalog) {
         label: p.name + " package",
         ratio: "3:2",
       })),
-    { slot: "action-1", label: "Detailer working", ratio: "3:2" },
-    { slot: "action-2", label: "Detailing in action", ratio: "3:2" },
+    { slot: "action-1", label: "Owner portrait", ratio: "3:2" },
+    { slot: "action-2", label: "Owner truck", ratio: "3:2" },
     { slot: "branding-logo", label: "Business branding", ratio: "1:1" },
     ...["1", "2"].flatMap((n) =>
       ["before", "after"].map((kind) => ({

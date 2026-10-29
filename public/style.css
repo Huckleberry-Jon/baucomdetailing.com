@@ -1,8 +1,8 @@
 :root {
-  --ink: #192e29;
-  --paper: #f4f1e9;
-  --accent: #deec86;
-  --line: #d3d7ca;
+  --ink: #19150e;
+  --paper: #f6eedc;
+  --accent: #d6ae65;
+  --line: #d6c59e;
 }
 * {
   box-sizing: border-box;
@@ -595,5 +595,137 @@ summary {
   .work-photo-grid,
   .before-after-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Baucom's approved Route 66 palette. Owner forms retain their readable light surface. */
+.route66 {
+  background: #0d0c0a;
+  color: #f3e5c8;
+}
+.route66 header,
+.route66 footer {
+  border-color: #4b3c26;
+}
+.route66 .brand,
+.route66 h2,
+.route66 .price,
+.route66 .eyebrow {
+  color: #dfbc78;
+}
+.route66 .hero {
+  background: radial-gradient(ellipse at 20% 10%, #2b2316, #0d0c0a 72%);
+  min-height: 670px;
+}
+.route66 .hero h1 {
+  max-width: 55%;
+  font-size: clamp(52px, 7vw, 94px);
+}
+.route66 .hero > p {
+  max-width: 43%;
+  color: #e1d1b4;
+}
+.route66 .hero-note {
+  color: #d2bd96;
+}
+.route66 .hero-photo {
+  top: 45px;
+  width: 36%;
+  max-width: 420px;
+  aspect-ratio: 706/930;
+  background: #090807;
+  border: 1px solid #6a5130;
+}
+.route66 .hero-photo img,
+.route66 .package-photo img,
+.route66 .brand-banner img {
+  object-fit: contain;
+}
+.route66 .card,
+.route66 .mini-card {
+  background: #191610;
+  border-color: #514029;
+}
+.route66 .card.featured {
+  background: #241d12;
+  border-color: #d6ae65;
+}
+.route66 .booking-section {
+  background: #18140e;
+}
+.route66 button,
+.route66 .button {
+  background: #d6ae65;
+  color: #17120b;
+  font-weight: 700;
+}
+.route66 .photo-slot {
+  background: #080706;
+  color: #e5d2ae;
+  border-color: #685032;
+}
+.route66 .photo-slot figcaption {
+  background: #17120bea;
+  color: #f3e5c8;
+}
+.route66 .package-photo {
+  aspect-ratio: 3/2;
+}
+.route66 .branding-photo {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.route66 .branding-photo img {
+  width: 64px;
+  height: 52px;
+}
+.route66 .brand-story {
+  padding: 24px 6%;
+}
+.route66 .brand-banner {
+  aspect-ratio: 706/178;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.route66 #at-work .photo-slot {
+  aspect-ratio: 4/3;
+}
+.route66 #at-work [data-photo-slot="action-1"] img {
+  object-position: 50% 0%;
+}
+.route66 #at-work [data-photo-slot="action-2"] img {
+  object-fit: contain;
+}
+.route66 .notice,
+.route66 .empty {
+  background: #241d12;
+  color: #e4d5b9;
+  border-color: #685032;
+}
+.route66 fieldset {
+  border-color: #685032;
+}
+.route66 :focus-visible {
+  outline-color: #f2cc82;
+}
+@media (max-width: 900px) {
+  .route66 .hero {
+    min-height: 0;
+  }
+  .route66 .hero h1,
+  .route66 .hero > p {
+    max-width: 100%;
+  }
+  .route66 .hero-photo {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    top: auto;
+    aspect-ratio: 706/930;
+    margin: 32px auto 0;
+  }
+  .route66 .branding-photo img {
+    width: 54px;
+    height: 44px;
   }
 }

@@ -1,3 +1,5 @@
+Latest website update: [approved Baucom assets and black/gold staging verification](docs/website-assets-staging-report.md).
+
 Working private HTTPS preview: [hosted verification and access handoff](docs/cloudflare-hosted-preview-report.md).
 
 Latest staging provisioning and billing blocker: [Cloudflare preview status](docs/cloudflare-staging-provisioning-report.md).

@@ -72,7 +72,7 @@ test("website photographs stay private drafts until explicit permission and revo
   saveWebsitePhoto(db, input, photo, owner);
   assert.equal(publicWebsitePhotos(db).length, 0);
   assert.equal(db.prepare("SELECT count(*) n FROM audit_events").get().n, 3);
-  assert.equal(websiteSlots.length, 11);
+  assert.equal(websiteSlots.length, 12);
   db.close();
 });
 test("website slots cover every supplied package plus distinct action, gallery and branding locations", () => {

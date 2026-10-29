@@ -3,12 +3,13 @@ import { BUSINESS } from "./catalog.js";
 import { requireThat, text } from "./security.js";
 import { transaction } from "./db.js";
 export const websiteSlots = [
-  { slot: "hero", label: "Homepage hero", ratio: "16:9" },
+  { slot: "hero", label: "Homepage hero", ratio: "3:4" },
+  { slot: "banner", label: "Route 66 brand banner", ratio: "4:1" },
   { slot: "package-route66", label: "Route 66 Revival package", ratio: "3:2" },
   { slot: "package-dustoff", label: "The Dust Off package", ratio: "3:2" },
   { slot: "package-finalmile", label: "The Final Mile package", ratio: "3:2" },
-  { slot: "action-1", label: "Joseph working", ratio: "3:2" },
-  { slot: "action-2", label: "Detailing in action", ratio: "3:2" },
+  { slot: "action-1", label: "Owner portrait", ratio: "3:2" },
+  { slot: "action-2", label: "Owner truck", ratio: "3:2" },
   { slot: "branding-logo", label: "Business logo / branding", ratio: "1:1" },
   ...["1", "2"].flatMap((n) =>
     ["before", "after"].map((kind) => ({
