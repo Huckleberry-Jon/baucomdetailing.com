@@ -1,3 +1,4 @@
+import { sessionCookie, sessionInfo, rotateSession } from "./sessions.js";
 import { randomUUID } from "node:crypto";
 import {
   hash,
@@ -388,6 +389,27 @@ export async function route(request, env, ctx) {
   if (path.startsWith("/api/owner/")) {
     const user = signedOwner,
       id = url.searchParams.get("id");
+    if (path === "/api/owner/session" && method === "GET")
+      return json(await sessionInfo(s, cookie.session, user));
+    if (path === "/api/owner/session/refresh" && method === "POST") {
+      await rate(s, "refresh:" + user.id, 60);
+      const next = await rotateSession(s, cookie.session, user);
+      return json({ expiresAt: next.expiresAt }, 200, {
+        "Set-Cookie": sessionCookie(next.secret, origin),
+      });
+    }
+    if (path === "/api/owner/session/revoke-all" && method === "POST") {
+      await s
+        .statement(
+          "DELETE FROM sessions WHERE business_id=? AND owner_id=?",
+          s.tenant,
+          user.id,
+        )
+        .run();
+      return json({ ok: true }, 200, {
+        "Set-Cookie": sessionCookie("", origin, 0),
+      });
+    }
     const audited = async (event, record, commands) =>
       s.atomic(async (b, c) => {
         c.push(...commands);

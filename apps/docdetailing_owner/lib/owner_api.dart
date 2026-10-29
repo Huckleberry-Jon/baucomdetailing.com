@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'session_store.dart';
 
 class Booking {
   const Booking({
@@ -61,10 +63,19 @@ abstract interface class OwnerApi {
   Future<void> logout();
 }
 
-/// HTTPS, origin-bound, in-memory sessions only. No production credentials are embedded.
-/// Keychain persistence, native APNs and multi-membership APIs remain release gates.
-class HttpOwnerApi implements OwnerApi {
-  HttpOwnerApi(this.origin) {
+abstract interface class SessionOwnerApi {
+  ValueListenable<int> get authChanges;
+  Future<bool> restoreSession();
+  Future<void> revokeAllSessions();
+}
+
+/// Origin-bound HTTPS with Keychain-backed, expiring server sessions. No passwords are persisted.
+class HttpOwnerApi implements OwnerApi, SessionOwnerApi {
+  HttpOwnerApi(
+    this.origin, {
+    SecureSessionStore? sessionStore,
+    HttpClient? client,
+  }) {
     if (origin.scheme != 'https' ||
         origin.userInfo.isNotEmpty ||
         origin.hasQuery ||
@@ -72,11 +83,56 @@ class HttpOwnerApi implements OwnerApi {
         !['', '/'].contains(origin.path)) {
       throw ArgumentError('An approved HTTPS API origin is required.');
     }
+    _client =
+        client ??
+        (HttpClient()..connectionTimeout = const Duration(seconds: 15));
+    sessions = SessionCookies(origin, sessionStore ?? KeychainSessionStore());
   }
   final Uri origin;
-  final HttpClient _client = HttpClient()
-    ..connectionTimeout = const Duration(seconds: 15);
-  final List<Cookie> _cookies = [];
+  late final HttpClient _client;
+  late final SessionCookies sessions;
+  @override
+  final ValueNotifier<int> authChanges = ValueNotifier(0);
+  Future<void>? _refreshing;
+  int _epoch = 0;
+  Future<void> invalidate() async {
+    _epoch++;
+    try {
+      await sessions.clear();
+    } finally {
+      authChanges.value++;
+    }
+  }
+
+  @override
+  Future<bool> restoreSession() async {
+    await sessions.load();
+    if (!sessions.hasOwner) {
+      await sessions.clear();
+      return false;
+    }
+    try {
+      await request('/api/owner/session');
+      return true;
+    } on ApiFailure catch (e) {
+      if (e.status == 401) return false;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> revokeAllSessions() async {
+    try {
+      await request(
+        '/api/owner/session/revoke-all',
+        body: {},
+        skipRefresh: true,
+      );
+    } finally {
+      await invalidate();
+    }
+  }
+
   @override
   bool get isDemo => false;
   Future<Object?> request(
@@ -84,7 +140,24 @@ class HttpOwnerApi implements OwnerApi {
     Map<String, dynamic>? body,
     String? method,
     String? key,
+    bool skipRefresh = false,
   }) async {
+    await sessions.load();
+    if (!skipRefresh &&
+        path.startsWith('/api/owner/') &&
+        sessions.hasOwner &&
+        sessions.needsRefresh) {
+      _refreshing ??=
+          request(
+            '/api/owner/session/refresh',
+            body: {},
+            skipRefresh: true,
+          ).then((_) {}).whenComplete(() {
+            _refreshing = null;
+          });
+      await _refreshing;
+    }
+    final epoch = _epoch;
     final uri = origin.resolve(path);
     if (uri.origin != origin.origin) {
       throw const ApiFailure(403, 'Cross-origin request rejected.');
@@ -97,17 +170,31 @@ class HttpOwnerApi implements OwnerApi {
     r.headers.set('Origin', origin.origin);
     if (key != null) r.headers.set('Idempotency-Key', key);
     r.headers.contentType = ContentType.json;
-    r.cookies.addAll(_cookies);
+    r.cookies.addAll(sessions.active);
     if (body != null) r.write(jsonEncode(body));
     final response = await r.close().timeout(const Duration(seconds: 20));
     final text = await utf8.decoder
         .bind(response)
         .join()
         .timeout(const Duration(seconds: 30));
+    if (epoch != _epoch) {
+      throw const ApiFailure(401, 'Session changed; sign in again.');
+    }
     if (response.statusCode >= 300 && response.statusCode < 400) {
       throw const ApiFailure(403, 'Use the approved canonical API origin.');
     }
-    final value = jsonDecode(text);
+    Object? value;
+    try {
+      value = jsonDecode(text);
+    } catch (_) {
+      throw const ApiFailure(
+        502,
+        'The service returned an invalid response. Please retry.',
+      );
+    }
+    if (response.statusCode == 401 && path.startsWith('/api/owner/')) {
+      await invalidate();
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiFailure(
         response.statusCode,
@@ -116,9 +203,14 @@ class HttpOwnerApi implements OwnerApi {
             : 'Request failed.',
       );
     }
-    for (final cookie in response.cookies) {
-      _cookies.removeWhere((old) => old.name == cookie.name);
-      if (cookie.maxAge != 0) _cookies.add(cookie);
+    try {
+      await sessions.accept(response.cookies);
+    } catch (_) {
+      await invalidate();
+      throw const ApiFailure(
+        503,
+        'Secure session storage is unavailable. Please sign in again.',
+      );
     }
     return value;
   }
@@ -173,15 +265,18 @@ class HttpOwnerApi implements OwnerApi {
 
   @override
   Future<List<int>> privatePhoto(String id) async {
+    await sessions.load();
+    final epoch = _epoch;
     final uri = origin.resolve(
       '/api/owner/photo?${Uri(queryParameters: {'id': id}).query}',
     );
     final r = await _client.getUrl(uri);
     r.followRedirects = false;
-    r.cookies.addAll(_cookies);
+    r.cookies.addAll(sessions.active);
     r.headers.set('Origin', origin.origin);
     final response = await r.close().timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) {
+      if (response.statusCode == 401) await invalidate();
       await response.drain<void>();
       throw ApiFailure(response.statusCode, 'Private photo unavailable.');
     }
@@ -192,15 +287,16 @@ class HttpOwnerApi implements OwnerApi {
         throw const ApiFailure(413, 'Preview too large.');
       }
     }
+    if (epoch != _epoch) throw const ApiFailure(401, 'Session changed; sign in again.');
     return bytes;
   }
 
   @override
   Future<void> logout() async {
     try {
-      await request('/api/owner/logout', body: {});
+      await request('/api/owner/logout', body: {}, skipRefresh: true);
     } finally {
-      _cookies.clear();
+      await invalidate();
     }
   }
 }

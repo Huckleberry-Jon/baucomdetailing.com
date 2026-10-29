@@ -31,13 +31,67 @@ class OwnerHome extends StatefulWidget {
   State<OwnerHome> createState() => _OwnerHomeState();
 }
 
-class _OwnerHomeState extends State<OwnerHome> {
+class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
   final email = TextEditingController(),
       password = TextEditingController(),
       previewCode = TextEditingController();
   bool signedIn = false, busy = false;
   String? error;
   List<Booking> rows = [];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final api = widget.api;
+    if (api is SessionOwnerApi) {
+      final sessionApi = api as SessionOwnerApi;
+      sessionApi.authChanges.addListener(sessionInvalidated);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => act(() async {
+          if (await sessionApi.restoreSession()) await refresh();
+        }),
+      );
+    }
+  }
+
+  void sessionInvalidated() {
+    if (!mounted) return;
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() {
+      signedIn = false;
+      rows = [];
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && signedIn && !busy) {
+      act(refresh);
+    }
+  }
+
+  Future<void> signOut({bool all = false}) async {
+    try {
+      if (all && widget.api is SessionOwnerApi) {
+        await (widget.api as SessionOwnerApi).revokeAllSessions();
+      } else {
+        await widget.api.logout();
+      }
+    } finally {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      if (mounted) {
+        setState(() {
+          signedIn = false;
+          rows = [];
+          password.clear();
+        });
+      }
+    }
+  }
+
   Future<void> act(Future<void> Function() work) async {
     setState(() {
       busy = true;
@@ -64,6 +118,12 @@ class _OwnerHomeState extends State<OwnerHome> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (widget.api is SessionOwnerApi) {
+      (widget.api as SessionOwnerApi).authChanges.removeListener(
+        sessionInvalidated,
+      );
+    }
     email.dispose();
     password.dispose();
     previewCode.dispose();
@@ -75,6 +135,12 @@ class _OwnerHomeState extends State<OwnerHome> {
     appBar: AppBar(
       title: const Text('DocDetailing'),
       actions: [
+        if (signedIn && widget.api is SessionOwnerApi)
+          IconButton(
+            tooltip: 'Sign out all devices',
+            onPressed: busy ? null : () => act(() => signOut(all: true)),
+            icon: const Icon(Icons.phonelink_erase),
+          ),
         if (signedIn)
           IconButton(
             tooltip: 'Refresh bookings',
@@ -84,17 +150,7 @@ class _OwnerHomeState extends State<OwnerHome> {
         if (signedIn)
           IconButton(
             tooltip: 'Sign out',
-            onPressed: busy
-                ? null
-                : () => act(() async {
-                    await widget.api.logout();
-                    if (mounted) {
-                      setState(() {
-                        signedIn = false;
-                        rows = [];
-                      });
-                    }
-                  }),
+            onPressed: busy ? null : () => act(signOut),
             icon: const Icon(Icons.logout),
           ),
       ],
