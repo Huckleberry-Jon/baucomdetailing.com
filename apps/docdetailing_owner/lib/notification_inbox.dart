@@ -189,7 +189,7 @@ class _NotificationInboxState extends State<NotificationInbox> {
             leading: Icon(
               row['read_at'] == null ? Icons.mark_email_unread : Icons.drafts,
             ),
-            title: Text(title(row['event'] as String)),
+            title: Text(title((row['event'] as String).split(':').first)),
             subtitle: Text('Open appointment details'),
             onTap: () => open(row),
             trailing: IconButton(

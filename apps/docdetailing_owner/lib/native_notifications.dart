@@ -226,14 +226,15 @@ class NativeNotifications extends ChangeNotifier {
         '/api/owner/booking?id=${Uri.encodeQueryComponent(bookingId)}',
       );
       if (!signedIn || epoch != _epoch) return;
-      _pending = null;
-      _seen.add(eventId);
-      await persist();
       await api.workspace(
         '/api/owner/read',
         method: 'POST',
         body: {'id': eventId},
       );
+      if (!signedIn || epoch != _epoch) return;
+      _pending = null;
+      _seen.add(eventId);
+      await persist();
       if (!signedIn || epoch != _epoch) return;
       await openBooking(bookingId);
       await synchronize();
@@ -251,6 +252,8 @@ class NativeNotifications extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _epoch++;
+    signedIn = false;
     platform.listen((_) {});
     super.dispose();
   }

@@ -2,6 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
 import 'job_photos.dart';
+import 'business_forms.dart';
+import 'money.dart';
+import 'document_screen.dart';
+import 'customer_details.dart';
+import 'business_time.dart';
 
 String dollars(dynamic cents) =>
     '\$${((cents as num? ?? 0) / 100).toStringAsFixed(2)}';
@@ -23,6 +28,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
   bool busy = false;
   int year = DateTime.now().year, quarter = (DateTime.now().month - 1) ~/ 3 + 1;
   final search = TextEditingController();
+  BusinessTime clock = BusinessTime("UTC");
   String get path {
     switch (widget.section) {
       case 'Customers':
@@ -35,8 +41,10 @@ class _WorkspaceState extends State<WorkspaceScreen> {
       case 'Payment Center':
         return '/api/owner/documents';
       case 'Financial Center':
-        final start = DateTime.utc(year, (quarter - 1) * 3 + 1),
-            end = DateTime.utc(year, quarter * 3 + 1);
+        final start = clock.startOfDay(
+              DateTime.utc(year, (quarter - 1) * 3 + 1),
+            ),
+            end = clock.startOfDay(DateTime.utc(year, quarter * 3 + 1));
         return '/api/owner/finance/report?${Uri(queryParameters: {'from': start.toIso8601String(), 'to': end.toIso8601String()}).query}';
       case 'Reviews':
         return '/api/owner/reviews';
@@ -72,6 +80,13 @@ class _WorkspaceState extends State<WorkspaceScreen> {
   }
 
   Future<void> load() => run(() async {
+    if (widget.section == "Financial Center") {
+      final dashboard =
+          await widget.api.workspace('/api/owner/dashboard') as Map;
+      clock = BusinessTime(
+        (dashboard['settings'] as Map?)?['timezone'] as String? ?? 'UTC',
+      );
+    }
     final value = await widget.api.workspace(path);
     if (mounted) setState(() => data = value);
   });
@@ -89,49 +104,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
     String title,
     Map<String, String> fields,
   ) async {
-    final controls = fields.map(
-      (k, v) => MapEntry(k, TextEditingController(text: v)),
-    );
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final e in controls.entries)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: TextField(
-                    controller: e.value,
-                    decoration: InputDecoration(labelText: e.key),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(
-              context,
-              controls.map((k, v) => MapEntry(k, v.text)),
-            ),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    // Dialog fields are disposed after its closing animation.
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    for (final c in controls.values) {
-      c.dispose();
-    }
-    return result;
+    return editFields(context, title, fields);
   }
 
   Future<String?> chooseAppointmentTime() async {
@@ -157,12 +130,12 @@ class _WorkspaceState extends State<WorkspaceScreen> {
     ).toUtc().toIso8601String();
   }
 
-  int cents(String? s) => (double.parse(s ?? '0') * 100).round();
+  int cents(String? s) => parseMoneyCents(s ?? '0');
   Future<void> addMaterial() async {
     final f = await form('Add material', {
       'Product': '',
       'Quantity': '1',
-      'Unit (oz/gallon/bottle)': 'oz',
+      'Unit (oz/gallon/bottle/piece)': 'oz',
       'Unit cost': '0',
       'Markup percent': '0',
       'Taxable (yes/no)': 'no',
@@ -170,64 +143,82 @@ class _WorkspaceState extends State<WorkspaceScreen> {
     if (f == null) return;
     await save('/api/owner/materials', {
       'product': f['Product'],
-      'quantityMillis': (double.parse(f['Quantity']!) * 1000).round(),
-      'unit': f['Unit (oz/gallon/bottle)'],
+      'quantityMillis': quantityMillis(f['Quantity']!),
+      'unit': f['Unit (oz/gallon/bottle/piece)'],
       'costCents': cents(f['Unit cost']),
-      'markupBps': (double.parse(f['Markup percent']!) * 100).round(),
+      'markupBps': parseMoneyCents(f['Markup percent']!),
       'taxable': f['Taxable (yes/no)'] == 'yes',
     });
   }
 
   Future<void> addDocument() async {
-    final customers = await widget.api.workspace('/api/owner/customers') as Map;
-    if (!mounted) return;
-    final options = (customers['records'] as List).cast<Map>();
-    if (options.isEmpty) {
-      throw const ApiFailure(409, 'Create a customer through a booking first.');
-    }
-    final customer = await showDialog<Map>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Choose customer'),
-        children: [
-          for (final row in options)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, row),
-              child: Text(
-                '${payload(row)['firstName']} ${payload(row)['lastName']}',
-              ),
-            ),
-        ],
-      ),
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => DocumentEditor(api: widget.api)),
     );
-    if (customer == null || !mounted) return;
-    final f = await form('Create draft', {
-      'Kind (estimate/invoice)': 'estimate',
-      'Description': 'Interior detailing',
-      'Quantity': '1',
-      'Unit price': '0',
-      'Estimated unit material cost': '0',
-      'Tax rate percent': '0',
-      'Taxable (yes/no)': 'no',
-      'Notes': '',
-    });
-    if (f == null) return;
-    await save('/api/owner/documents', {
-      'kind': f['Kind (estimate/invoice)'],
-      'customerId': customer['id'],
-      'taxBps': (double.parse(f['Tax rate percent']!) * 100).round(),
-      'notes': f['Notes'],
-      'lines': [
-        {
-          'description': f['Description'],
-          'unit': 'service',
-          'quantityMillis': (double.parse(f['Quantity']!) * 1000).round(),
-          'unitPriceCents': cents(f['Unit price']),
-          'unitCostCents': cents(f['Estimated unit material cost']),
-          'taxable': f['Taxable (yes/no)'] == 'yes',
+    await load();
+  }
+
+  Future<void> addRecord() async {
+    if (widget.section == "Customers") {
+      final f = await form('Add customer', {
+        'firstName': '',
+        'lastName': '',
+        'email': '',
+        'phone': '',
+        'address': '',
+        'notes': '',
+      });
+      if (f != null) await save('/api/owner/customers', {'data': f});
+    } else {
+      final d = await widget.api.workspace('/api/owner/customers') as Map;
+      if (!mounted) return;
+      final customer = await chooseRow(
+        context,
+        'Choose customer',
+        d['records'] as List,
+        (r) {
+          final v = payload(r);
+          return "${v['firstName']} ${v['lastName']}";
         },
-      ],
-    });
+      );
+      if (customer == null || !mounted) return;
+      final f = await form('Add vehicle', {
+        'year': '${DateTime.now().year}',
+        'make': '',
+        'model': '',
+        'color': '',
+        'bodyType': 'sedan',
+      });
+      if (f != null) {
+        await save('/api/owner/vehicles', {
+          'customerId': customer['id'],
+          'data': {...f, 'year': int.parse(f['year']!)},
+        });
+      }
+    }
+  }
+
+  Future<void> correctStock(Map row) async {
+    final d = payload(row),
+        f = await form('Count stock', {
+          'Available quantity in ${d['unit']}': quantityInput(
+            row['available_quantity_millis'] as int? ?? 0,
+          ),
+          'Reason': '',
+        });
+    if (f == null) return;
+    await save(
+      '/api/owner/inventory',
+      {
+        'kind': 'correction',
+        'materialId': row['id'],
+        'version': row['stock_version'] ?? 0,
+        'availableQuantityMillis': quantityMillis(f.values.first),
+        'reason': f['Reason'],
+      },
+      key: 'stock-${DateTime.now().microsecondsSinceEpoch}',
+    );
   }
 
   Future<void> recordMoney(Map? invoice) async {
@@ -263,7 +254,11 @@ class _WorkspaceState extends State<WorkspaceScreen> {
     final d = payload(row),
         f = await form(
           'Edit ${widget.section.toLowerCase()}',
-          d.map((k, v) => MapEntry(k, v.toString())),
+          {
+            ...d,
+            if (widget.section == 'Customers' && !d.containsKey('notes'))
+              'notes': '',
+          }.map((k, v) => MapEntry(k, v.toString())),
         );
     if (f == null) return;
     final values = <String, dynamic>{...f};
@@ -351,6 +346,13 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                   ),
                 ],
               ),
+            if (['Customers', 'Vehicles'].contains(section))
+              TextButton(
+                onPressed: busy ? null : () => run(addRecord),
+                child: Text(
+                  section == 'Customers' ? 'Add customer' : 'Add vehicle',
+                ),
+              ),
             if (section == 'Materials')
               FilledButton(
                 onPressed: busy ? null : () => run(addMaterial),
@@ -417,6 +419,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                   'cashFlowCents',
                   'salesTaxCollectedCents',
                   'taxRemittedCents',
+                  'outstandingCents',
                 ])
                   ListTile(
                     title: Text(
@@ -429,21 +432,25 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                         'cashFlowCents': 'Cash flow',
                         'salesTaxCollectedCents': 'Sales tax collected',
                         'taxRemittedCents': 'Tax remitted',
+                        'outstandingCents': 'All outstanding invoices',
                       }[key]!,
                     ),
                     trailing: Text(dollars((data as Map)[key])),
                   ),
-                const Text(
-                  'Quarter boundaries use UTC. Reports reflect entered records and are not a tax filing. Confirm business-local reporting periods before release.',
+                Text(
+                  'Quarter boundaries use ${clock.zone}. Cash figures reflect entered records. Job profitability below uses issued job invoices created in this period and saved job costs.',
                 ),
+                for (final j
+                    in (data as Map)['jobProfitability'] as List? ?? [])
+                  ListTile(
+                    title: Text(j['number'] as String),
+                    subtitle: Text('Job margin before overhead'),
+                    trailing: Text(dollars(j['profitCents'])),
+                  ),
                 for (final e in ((data as Map)['events'] as List? ?? []))
                   ListTile(
                     title: Text(e['kind'] as String),
-                    subtitle: Text(
-                      DateTime.fromMillisecondsSinceEpoch(
-                        e['occurred_at'] as int,
-                      ).toLocal().toString(),
-                    ),
+                    subtitle: Text(clock.label(e['occurred_at'])),
                     trailing: Text(dollars(e['amount_cents'])),
                   ),
               ],
@@ -511,6 +518,47 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           Text(description),
+                          if (section == 'Customers')
+                            TextButton(
+                              onPressed: () => Navigator.push<void>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CustomerDetails(
+                                    api: widget.api,
+                                    id: row['id'] as String,
+                                  ),
+                                ),
+                              ),
+                              child: const Text('Vehicles & service history'),
+                            ),
+                          if (section == 'Materials') ...[
+                            Text(
+                              'Available: ${quantityInput(row['available_quantity_millis'] as int? ?? 0)} ${d['unit']}',
+                            ),
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => run(() => correctStock(row)),
+                              child: const Text('Correct stock'),
+                            ),
+                          ],
+                          if ([
+                            'Estimates & invoices',
+                            'Payment Center',
+                          ].contains(section))
+                            TextButton(
+                              onPressed: () => Navigator.push<void>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DocumentScreen(
+                                    api: widget.api,
+                                    id: row['id'] as String,
+                                  ),
+                                ),
+                              ),
+                              child: const Text('Details, payments & PDF'),
+                            ),
+
                           if (section == 'Jobs') ...[
                             TextButton(
                               onPressed: busy

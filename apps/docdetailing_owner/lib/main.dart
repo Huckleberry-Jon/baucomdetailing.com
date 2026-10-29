@@ -7,6 +7,7 @@ import 'notification_inbox.dart';
 import 'session_store.dart';
 import 'booking_details.dart';
 import 'business_time.dart';
+import 'jobs_screen.dart';
 
 void main() {
   const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
@@ -215,6 +216,8 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                           MaterialPageRoute<void>(
                             builder: (context) => section == 'Calendar'
                                 ? OwnerCalendar(api: widget.api)
+                                : section == 'Jobs'
+                                ? JobsScreen(api: widget.api)
                                 : section == 'Notifications'
                                 ? NotificationInbox(
                                     api: widget.api,

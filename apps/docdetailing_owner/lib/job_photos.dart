@@ -48,6 +48,9 @@ class _JobPhotosState extends State<JobPhotos> {
     final selected = await ImagePicker().pickImage(
       source: source,
       requestFullMetadata: false,
+      maxWidth: 2048,
+      maxHeight: 2048,
+      imageQuality: 85,
     );
     if (selected == null) return;
     final bytes = await selected.readAsBytes();
@@ -75,7 +78,7 @@ class _JobPhotosState extends State<JobPhotos> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Originals remain private. Invoice selection does not publish a photograph. Provider HEIC processing and camera permissions still require physical iPhone verification.',
+            'Selected photos are optimized on this phone before private upload. Camera originals remain in your photo library. Invoice selection does not publish a photo.',
           ),
           if (widget.api.isDemo) const Text('Demo contains no photographs.'),
           if (busy) const LinearProgressIndicator(),
