@@ -1,3 +1,4 @@
+import { apnsBlocked, sendAPNs, APNS_FAILURES } from "./native-push.js";
 import { randomUUID } from "node:crypto";
 
 import { hash, requireThat, Problem } from "../src/security.js";
@@ -84,6 +85,43 @@ export async function saveSubscription(s, body, owner, key) {
     return { id, registeredAt: now };
   });
 }
+export async function reminders(s) {
+  const now = Date.now();
+  return s.atomic(async (b, commands) => {
+    if (b.delivery_hold) return;
+    const rows = await s.all(
+      "SELECT * FROM bookings WHERE business_id=? AND status IN ('confirmed','rescheduled') AND start_ms>? AND start_ms<=?",
+      s.tenant,
+      now,
+      now + 3600000,
+    );
+    for (const booking of rows) {
+      const id = hash(
+        s.tenant + ":reminder:" + booking.id + ":" + booking.start_ms,
+      );
+      commands.push(
+        s.command(
+          "INSERT OR IGNORE INTO history VALUES(?,?,?,?,?,?,?)",
+          id,
+          s.tenant,
+          booking.id,
+          "system",
+          "appointment.reminder",
+          JSON.stringify({ start_ms: booking.start_ms }),
+          now,
+        ),
+        s.command(
+          "INSERT OR IGNORE INTO notifications(id,business_id,booking_id,event,read_at,created_at) VALUES(?,?,?,?,NULL,?)",
+          id,
+          s.tenant,
+          booking.id,
+          "appointment.reminder:" + id,
+          now,
+        ),
+      );
+    }
+  });
+}
 export async function enqueue(s, origin, env) {
   return s.atomic(async (b, commands) => {
     if (b.delivery_hold) return;
@@ -96,6 +134,10 @@ export async function enqueue(s, origin, env) {
         "SELECT * FROM subscriptions WHERE business_id=? AND active=1",
         s.tenant,
       );
+    const native = await s.all(
+      "SELECT d.* FROM native_devices d JOIN sessions x ON x.business_id=d.business_id AND x.owner_id=d.owner_id AND x.token_hash=d.session_hash WHERE d.business_id=? AND d.active=1",
+      s.tenant,
+    );
     const queue = (n, channel, target, payload) =>
       commands.push(
         s.command(
@@ -141,6 +183,24 @@ export async function enqueue(s, origin, env) {
         eventId: n.id,
         to: settings.notificationPreferences?.ownerEmail ?? null,
       };
+      if (
+        n.actor === "customer" ||
+        event === "appointment.reminder" ||
+        event === "payment.recorded"
+      ) {
+        for (const device of native) {
+          if (device.registered_at <= n.created_at)
+            queue(n, "apns", device.id, {
+              ...owner,
+              title:
+                event === "appointment.reminder"
+                  ? "Appointment reminder"
+                  : owner.title,
+              to: device.owner_id,
+              bookingId: booking.id,
+            });
+        }
+      }
       if (n.actor === "customer") {
         for (const sub of subs)
           if (
@@ -202,6 +262,7 @@ function blocked(env, channel, to, settings) {
   const mode = env.COMMUNICATIONS_MODE ?? "disabled",
     prefs = settings.notificationPreferences ?? {};
   if (mode === "disabled") return "Outbound communications disabled";
+  if (channel === "apns") return apnsBlocked(env, to);
   if (channel === "push") {
     if (env.ALLOW_PUSH_SEND !== "true" || prefs.pushEnabled !== true)
       return "Push disabled";
@@ -226,6 +287,7 @@ function blocked(env, channel, to, settings) {
   return null;
 }
 export async function drain(s, origin, env) {
+  await reminders(s);
   await enqueue(s, origin, env);
   const business = await s.first(
     "SELECT * FROM businesses WHERE id=?",
@@ -278,7 +340,10 @@ export async function drain(s, origin, env) {
       provider = null;
     try {
       let response;
-      if (d.channel === "push") {
+      if (d.channel === "apns") {
+        response = await sendAPNs(s, env, d, payload);
+        provider = response.headers.get("apns-id") ?? d.id;
+      } else if (d.channel === "push") {
         requireThat(
           env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT,
           "VAPID keys not configured",
@@ -346,16 +411,34 @@ export async function drain(s, origin, env) {
         throw Object.assign(Error("Provider request failed"), {
           status: response.status,
         });
-      if (d.channel !== "push") provider = (await response.json()).id ?? null;
+      if (!["push", "apns"].includes(d.channel))
+        provider = (await response.json()).id ?? null;
     } catch (e) {
-      const expired = d.channel === "push" && [404, 410].includes(e.status);
+      const expired =
+        ["push", "apns"].includes(d.channel) && [404, 410].includes(e.status);
       state = expired ? "expired" : d.attempts + 1 >= 5 ? "failed" : "retry";
       error = expired
         ? "Subscription expired"
         : Number.isInteger(e.status)
           ? "Notification provider failed (HTTP " + e.status + ")"
           : "Notification transport failed";
-      if (expired)
+      if (
+        [
+          "Native token decryption failed",
+          "APNs credential import/signing failed",
+        ].includes(e.apnsCategory)
+      )
+        error = e.apnsCategory;
+      if (APNS_FAILURES.includes(e.apnsCategory)) error = e.apnsCategory;
+      if (expired && d.channel === "apns")
+        await s
+          .statement(
+            "UPDATE native_devices SET active=0 WHERE business_id=? AND id=?",
+            s.tenant,
+            d.target,
+          )
+          .run();
+      if (expired && d.channel === "push")
         await s
           .statement(
             "UPDATE subscriptions SET active=0 WHERE business_id=? AND id=?",
@@ -387,7 +470,8 @@ export async function drain(s, origin, env) {
         claim,
       ),
     ]);
-    if (provider) await reconcile(s, provider);
+    if (provider && !["push", "apns"].includes(d.channel))
+      await reconcile(s, provider);
   }
 }
 export async function reconcile(s, provider) {

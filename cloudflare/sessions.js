@@ -36,6 +36,16 @@ export async function rotateSession(s, cookie, user) {
       Date.now(),
     ),
     s.statement(
+      "UPDATE native_devices SET session_hash=? WHERE business_id=? AND owner_id=? AND session_hash=? AND EXISTS(SELECT 1 FROM sessions WHERE token_hash=? AND business_id=? AND owner_id=?)",
+      hash(secret),
+      s.tenant,
+      user.id,
+      old,
+      hash(secret),
+      s.tenant,
+      user.id,
+    ),
+    s.statement(
       "DELETE FROM sessions WHERE business_id=? AND owner_id=? AND token_hash=?",
       s.tenant,
       user.id,

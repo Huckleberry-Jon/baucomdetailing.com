@@ -123,6 +123,7 @@ class HttpOwnerApi implements OwnerApi, SessionOwnerApi {
   @override
   Future<void> revokeAllSessions() async {
     try {
+      await _refreshing;
       await request(
         '/api/owner/session/revoke-all',
         body: {},
@@ -296,6 +297,7 @@ class HttpOwnerApi implements OwnerApi, SessionOwnerApi {
   @override
   Future<void> logout() async {
     try {
+      await _refreshing;
       await request('/api/owner/logout', body: {}, skipRefresh: true);
     } finally {
       await invalidate();

@@ -1,3 +1,4 @@
+import { saveNativeDevice, nativeInbox } from "./native-push.js";
 import { sessionCookie, sessionInfo, rotateSession } from "./sessions.js";
 import { randomUUID } from "node:crypto";
 import {
@@ -389,6 +390,43 @@ export async function route(request, env, ctx) {
   if (path.startsWith("/api/owner/")) {
     const user = signedOwner,
       id = url.searchParams.get("id");
+    if (path === "/api/owner/inbox" && method === "GET")
+      return json(await nativeInbox(s, url.searchParams));
+    if (path === "/api/owner/native-device" && method === "POST") {
+      await rate(s, "native-registration:" + user.id, 60);
+      return json(await saveNativeDevice(s, body, user, cookie.session));
+    }
+    if (path === "/api/owner/native-device" && method === "DELETE") {
+      await s.db.batch([
+        s.statement(
+          "UPDATE deliveries SET status='revoked' WHERE business_id=? AND channel='apns' AND target IN (SELECT id FROM native_devices WHERE business_id=? AND owner_id=? AND device_id=?) AND status IN ('queued','retry','blocked','sending')",
+          s.tenant,
+          s.tenant,
+          user.id,
+          body.deviceId,
+        ),
+        s.statement(
+          "DELETE FROM native_devices WHERE business_id=? AND owner_id=? AND device_id=?",
+          s.tenant,
+          user.id,
+          body.deviceId,
+        ),
+      ]);
+      return json({ ok: true });
+    }
+    if (path === "/api/owner/native-push-config" && method === "GET")
+      return json({
+        transmissionEnabled:
+          (env.COMMUNICATIONS_MODE ?? "disabled") !== "disabled" &&
+          env.ALLOW_NATIVE_PUSH_SEND === "true",
+        providerConfigured: Boolean(
+          env.APNS_KEY_ID &&
+            env.APNS_TEAM_ID &&
+            env.APNS_PRIVATE_KEY &&
+            env.APNS_TOPIC,
+        ),
+        environment: env.APNS_ENVIRONMENT ?? null,
+      });
     if (path === "/api/owner/session" && method === "GET")
       return json(await sessionInfo(s, cookie.session, user));
     if (path === "/api/owner/session/refresh" && method === "POST") {
@@ -399,13 +437,24 @@ export async function route(request, env, ctx) {
       });
     }
     if (path === "/api/owner/session/revoke-all" && method === "POST") {
-      await s
-        .statement(
+      await s.db.batch([
+        s.statement(
+          "UPDATE deliveries SET status='revoked' WHERE business_id=? AND channel='apns' AND target IN (SELECT id FROM native_devices WHERE business_id=? AND owner_id=?) AND status IN ('queued','retry','blocked','sending')",
+          s.tenant,
+          s.tenant,
+          user.id,
+        ),
+        s.statement(
+          "DELETE FROM native_devices WHERE business_id=? AND owner_id=?",
+          s.tenant,
+          user.id,
+        ),
+        s.statement(
           "DELETE FROM sessions WHERE business_id=? AND owner_id=?",
           s.tenant,
           user.id,
-        )
-        .run();
+        ),
+      ]);
       return json({ ok: true }, 200, {
         "Set-Cookie": sessionCookie("", origin, 0),
       });
@@ -466,13 +515,26 @@ export async function route(request, env, ctx) {
         ),
       );
     if (path === "/api/owner/logout" && method === "POST") {
-      await s
-        .statement(
+      await s.db.batch([
+        s.statement(
+          "UPDATE deliveries SET status='revoked' WHERE business_id=? AND channel='apns' AND target IN (SELECT id FROM native_devices WHERE business_id=? AND owner_id=? AND session_hash=?) AND status IN ('queued','retry','blocked','sending')",
+          s.tenant,
+          s.tenant,
+          user.id,
+          hash(cookie.session ?? ""),
+        ),
+        s.statement(
+          "DELETE FROM native_devices WHERE business_id=? AND owner_id=? AND session_hash=?",
+          s.tenant,
+          user.id,
+          hash(cookie.session ?? ""),
+        ),
+        s.statement(
           "DELETE FROM sessions WHERE business_id=? AND token_hash=?",
           s.tenant,
           hash(cookie.session ?? ""),
-        )
-        .run();
+        ),
+      ]);
       return json({ ok: true }, 200, {
         "Set-Cookie":
           "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0" +

@@ -1,4 +1,5 @@
 {
   "DEMO_MODE": false,
-  "API_ORIGIN": "https://docdetailing-site-staging.huckleberryservices.workers.dev"
+  "API_ORIGIN": "https://docdetailing-site-staging.huckleberryservices.workers.dev",
+  "APNS_ENVIRONMENT": "production"
 }

@@ -16,36 +16,48 @@ export async function runtime(overrides = {}, options = {}) {
     convertV4MiniflareOptions({
       host: "127.0.0.1",
       port: options.port,
-      modules: true,
-      script,
-      compatibilityDate: "2026-08-01",
-      compatibilityFlags: ["nodejs_compat"],
-      d1Databases: ["DB"],
-      r2Buckets: ["MEDIA"],
-      images: { binding: "IMAGES" },
-      assets: {
-        directory: resolve("public"),
-        binding: "ASSETS",
-        assetConfig: { html_handling: "none" },
-        routerConfig: {
-          has_user_worker: true,
-          invoke_user_worker_ahead_of_assets: true,
+      workers: [
+        {
+          name: "main",
+          modules: true,
+          script,
+          compatibilityDate: "2026-08-01",
+          compatibilityFlags: ["nodejs_compat"],
+          d1Databases: { DB: "shared-fixture-db" },
+          r2Buckets: ["MEDIA"],
+          images: { binding: "IMAGES" },
+          assets: {
+            directory: resolve("public"),
+            binding: "ASSETS",
+            assetConfig: { html_handling: "none" },
+            routerConfig: {
+              has_user_worker: true,
+              invoke_user_worker_ahead_of_assets: true,
+            },
+          },
+          serviceBindings: { APNS_TEST_TRANSPORT: "native-push-test" },
+          // Every global fetch also terminates in-process, including unexpected paths.
+          outboundService: "native-push-test",
+          bindings: {
+            CLOUDFLARE_ENV: "local",
+            DATA_NAMESPACE: "local",
+            SITE_OPEN: "true",
+            COMMUNICATIONS_MODE: "disabled",
+            ALLOW_PUSH_SEND: "false",
+            ALLOW_EMAIL_SEND: "false",
+            ...overrides,
+          },
         },
-      },
-      outboundService: async (request) =>
-        new Response(JSON.stringify({ error: "Synthetic provider outage" }), {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        }),
-      bindings: {
-        CLOUDFLARE_ENV: "local",
-        DATA_NAMESPACE: "local",
-        SITE_OPEN: "true",
-        COMMUNICATIONS_MODE: "disabled",
-        ALLOW_PUSH_SEND: "false",
-        ALLOW_EMAIL_SEND: "false",
-        ...overrides,
-      },
+        {
+          name: "native-push-test",
+          modules: true,
+          script: readFileSync("test-cloudflare/apns-test-service.js", "utf8"),
+          compatibilityDate: "2026-08-01",
+          d1Databases: { DB: "shared-fixture-db" },
+          // This service cannot reach any external host.
+          outboundService: async () => new Response(null, { status: 503 }),
+        },
+      ],
     }),
   );
   const fixture = async (path, body) => {
@@ -100,6 +112,9 @@ export async function runtime(overrides = {}, options = {}) {
       .join(" ")
       .replace(/\n/g, " "),
   );
+  await db.exec(
+    "CREATE TABLE apns_test_status(id INTEGER PRIMARY KEY,status INTEGER NOT NULL); INSERT INTO apns_test_status VALUES(1,503); CREATE TABLE apns_test_requests(id TEXT PRIMARY KEY,body TEXT,collapse_id TEXT);",
+  );
   return { mf, db, bucket, fixture };
 }
 export async function seed(db, id = "baucom", host = "localhost:4334") {
@@ -131,16 +146,14 @@ export async function seed(db, id = "baucom", host = "localhost:4334") {
       .prepare("INSERT INTO owners VALUES(?,?,?,?)")
       .bind(ownerId, id, "owner@example.invalid", passwordHash(password)),
     ...[...packages, ...addons].map((p) =>
-      db
-        .prepare("INSERT INTO services VALUES(?,?,1,?)")
-        .bind(
-          p.id,
-          id,
-          JSON.stringify({
-            ...p,
-            durationMinutes: p.kind === "package" ? 90 : 30,
-          }),
-        ),
+      db.prepare("INSERT INTO services VALUES(?,?,1,?)").bind(
+        p.id,
+        id,
+        JSON.stringify({
+          ...p,
+          durationMinutes: p.kind === "package" ? 90 : 30,
+        }),
+      ),
     ),
   ]);
   return { ownerId, cfg };

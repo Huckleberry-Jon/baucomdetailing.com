@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'owner_api.dart';
 import 'workspace.dart';
 import 'calendar_screen.dart';
+import 'native_notifications.dart';
+import 'notification_inbox.dart';
+import 'session_store.dart';
+import 'booking_details.dart';
+import 'business_time.dart';
 
 void main() {
   const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
@@ -39,11 +44,34 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
   bool signedIn = false, busy = false;
   String? error;
   List<Booking> rows = [];
+  NativeNotifications? notifications;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     final api = widget.api;
+    if (api is HttpOwnerApi) {
+      notifications = NativeNotifications(
+        api,
+        KeychainSessionStore(),
+        IPhoneNotifications(),
+        "${api.origin.origin}/notification-device",
+        (id) async {
+          final dashboard = await api.workspace('/api/owner/dashboard') as Map;
+          final clock = BusinessTime(
+            (dashboard['settings'] as Map)['timezone'] as String,
+          );
+          if (!mounted || !signedIn) return;
+          await Navigator.push<void>(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  BookingDetails(api: api, bookingId: id, clock: clock),
+            ),
+          );
+        },
+      );
+    }
     if (api is SessionOwnerApi) {
       final sessionApi = api as SessionOwnerApi;
       sessionApi.authChanges.addListener(sessionInvalidated);
@@ -56,6 +84,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
   }
 
   void sessionInvalidated() {
+    notifications?.locked();
     if (!mounted) return;
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
@@ -74,6 +103,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
   }
 
   Future<void> signOut({bool all = false}) async {
+    notifications?.locked();
     try {
       if (all && widget.api is SessionOwnerApi) {
         await (widget.api as SessionOwnerApi).revokeAllSessions();
@@ -114,11 +144,13 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
         rows = updated;
         signedIn = true;
       });
+      await notifications?.authenticated();
     }
   }
 
   @override
   void dispose() {
+    notifications?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     if (widget.api is SessionOwnerApi) {
       (widget.api as SessionOwnerApi).authChanges.removeListener(
@@ -183,6 +215,11 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                           MaterialPageRoute<void>(
                             builder: (context) => section == 'Calendar'
                                 ? OwnerCalendar(api: widget.api)
+                                : section == 'Notifications'
+                                ? NotificationInbox(
+                                    api: widget.api,
+                                    native: notifications,
+                                  )
                                 : WorkspaceScreen(
                                     api: widget.api,
                                     section: section,

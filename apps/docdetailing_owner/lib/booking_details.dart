@@ -149,7 +149,9 @@ class _BookingDetailsState extends State<BookingDetails> {
                 for (final e in controls.entries)
                   TextFormField(
                     controller: e.value,
-                    keyboardType: TextInputType.numberWithOptions(decimal: e.key != 'Duration minutes'),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: e.key != 'Duration minutes',
+                    ),
                     decoration: InputDecoration(labelText: e.key),
                     validator: (v) {
                       if (e.key == 'Duration minutes') {

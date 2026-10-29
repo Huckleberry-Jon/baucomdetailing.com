@@ -27,9 +27,22 @@ assert.match(
 );
 assert.deepEqual(JSON.parse(read(app + "config/staging.json")), {
   DEMO_MODE: false,
+  APNS_ENVIRONMENT: "production",
   API_ORIGIN:
     "https://docdetailing-site-staging.huckleberryservices.workers.dev",
 });
+assert.equal(
+  [
+    ...project.matchAll(
+      /CODE_SIGN_ENTITLEMENTS = Runner\/Runner.entitlements;/g,
+    ),
+  ].length,
+  3,
+);
+assert.match(
+  read(app + "ios/Runner/Runner.entitlements"),
+  /<key>aps-environment<\/key>\s*<string>production<\/string>/,
+);
 const yaml = read("codemagic.yaml");
 assert.equal(yaml, read(app + "codemagic.yaml"));
 assert(!/^\s*(publishing|triggering):/m.test(yaml));

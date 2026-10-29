@@ -20,6 +20,7 @@ export const TABLES = [
   "owners",
   "sessions",
   "subscriptions",
+  "native_devices",
   "deliveries",
   "delivery_attempts",
   "webhook_receipts",
@@ -179,6 +180,8 @@ export async function restoreCloudBackup({
         id + "/manifest.enc",
       ).toString(),
     );
+  // Native device registrations did not exist in earlier snapshots.
+  m.rows.native_devices ??= [];
   // Backups created before business-management tables remain recoverable.
   if (m.schemaRevision === undefined) {
     for (const table of [
@@ -241,7 +244,7 @@ export async function restoreCloudBackup({
         row.delivery_hold = 1;
         row.revision += 1;
       }
-      if (table === "subscriptions") row.active = 0;
+      if (["subscriptions", "native_devices"].includes(table)) row.active = 0;
       if (table === "notifications") row.enqueued_at = Date.now();
       if (table === "deliveries") {
         row.status = "recovery_hold";
