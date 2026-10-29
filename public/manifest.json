@@ -5,19 +5,19 @@
   "start_url": "/owner",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f1e9",
-  "theme_color": "#192e29",
+  "background_color": "#000000",
+  "theme_color": "#d6ae65",
   "icons": [
     {
       "sizes": "192x192",
       "purpose": "any",
-      "src": "/icon-192.png",
+      "src": "/icon-192.png?v=brush1",
       "type": "image/png"
     },
     {
       "sizes": "512x512",
       "purpose": "any maskable",
-      "src": "/icon-512.png",
+      "src": "/icon-512.png?v=brush1",
       "type": "image/png"
     }
   ]

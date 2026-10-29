@@ -53,6 +53,7 @@ const types = {
   ".json": "application/manifest+json",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".ico": "image/x-icon",
 };
 export function createApplication(db, config = {}) {
   const service = new BookingService(db),
@@ -685,6 +686,9 @@ export function createApplication(db, config = {}) {
           "/sw.js": "sw.js",
           "/manifest.json": "manifest.json",
           "/icon.svg": "icon.svg",
+          "/favicon.ico": "favicon.ico",
+          "/favicon-16.png": "favicon-16.png",
+          "/favicon-32.png": "favicon-32.png",
           "/website-photos.js": "website-photos.js",
           "/icon-192.png": "icon-192.png",
           "/icon-512.png": "icon-512.png",

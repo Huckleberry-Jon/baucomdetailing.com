@@ -8,7 +8,7 @@ self.addEventListener("push", (event) => {
       body: data.body || "Open your dashboard.",
       tag: data.eventId || "booking",
       data: { url: data.url || "/owner" },
-      icon: "/icon.svg",
+      icon: "/icon-192.png?v=brush1",
     }),
   );
 });
