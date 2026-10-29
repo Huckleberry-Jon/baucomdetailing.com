@@ -674,6 +674,7 @@ export function createApplication(db, config = {}) {
           "/privacy": "privacy.html",
           "/terms": "terms.html",
           "/app.js": "app.js",
+          "/social-links.js": "social-links.js",
           "/owner.js": "owner.js",
           "/directory.js": "directory.js",
           "/calendar.js": "calendar.js",

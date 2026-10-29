@@ -1,3 +1,5 @@
+Latest staging update: [editable social links and verification](docs/social-links-staging-report.md).
+
 Latest mobile correction: [booking contrast, responsive checks and staging results](docs/mobile-booking-contrast-report.md).
 
 Latest website update: [approved Baucom assets and black/gold staging verification](docs/website-assets-staging-report.md).

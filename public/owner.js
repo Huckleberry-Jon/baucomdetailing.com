@@ -217,6 +217,9 @@ async function refresh() {
     await api("resume-delivery", "POST", {});
     await refresh();
   });
+  for (const platform of ["instagram", "facebook", "tiktok"])
+    $("#social-" + platform).value =
+      dashboard.settings.socialLinks?.[platform] ?? "";
   $("#public-contact").value =
     typeof dashboard.settings.contact === "string"
       ? dashboard.settings.contact
@@ -275,6 +278,19 @@ $("#refresh").onclick = safe(refresh);
 $("#logout").onclick = safe(async () => {
   await api("logout", "POST", {});
   location.reload();
+});
+$("#social-links-form").onsubmit = safe(async (e) => {
+  e.preventDefault();
+  const socialLinks = Object.fromEntries(
+    ["instagram", "facebook", "tiktok"].map((k) => [
+      k,
+      $("#social-" + k).value.trim() || null,
+    ]),
+  );
+  const current = await api("dashboard");
+  await api("settings", "PUT", { ...current.settings, socialLinks });
+  await refresh();
+  $("#status").textContent = "Social media links saved.";
 });
 $("#contact-form").onsubmit = safe(async (e) => {
   e.preventDefault();

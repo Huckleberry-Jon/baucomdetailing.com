@@ -1,3 +1,4 @@
+import { socialLinks } from "./social-links.js";
 import { googleReviewUrl } from "./reviews.js";
 import { storePhotos } from "./media.js";
 import { randomUUID } from "node:crypto";
@@ -456,6 +457,7 @@ export class BookingService {
       );
     }
     s.googleReviewUrl = googleReviewUrl(s.googleReviewUrl);
+    s.socialLinks = socialLinks(s.socialLinks);
     this.db
       .prepare("UPDATE businesses SET settings=? WHERE id=?")
       .run(JSON.stringify(s), BUSINESS);

@@ -1,3 +1,4 @@
+import { socialLinks } from "../src/social-links.js";
 import { requireThat, text } from "../src/security.js";
 export const reserved = (b) =>
   ["confirmed", "rescheduled", "in_progress"].includes(b.status) ||
@@ -193,5 +194,9 @@ export function validateSettings(s, bookings) {
       ownerEmail: p.ownerEmail,
     };
   }
-  return { ...s, googleReviewUrl: googleReviewUrl(s.googleReviewUrl) };
+  return {
+    ...s,
+    socialLinks: socialLinks(s.socialLinks),
+    googleReviewUrl: googleReviewUrl(s.googleReviewUrl),
+  };
 }

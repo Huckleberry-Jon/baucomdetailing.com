@@ -24,6 +24,7 @@ async function load() {
   if (!r.ok) throw Error(catalog.error);
   $("#notice").textContent = catalog.notice;
   $("#service-area").textContent = catalog.settings.serviceArea;
+  globalThis.BaucomSocial?.render(catalog.settings);
   const note = $("#contact-booking-note");
   if (note)
     note.textContent = catalog.runtime?.siteOpen

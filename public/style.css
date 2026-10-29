@@ -878,3 +878,88 @@ summary {
   outline: 3px solid #f2cc82;
   outline-offset: 3px;
 }
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+}
+.social-links[hidden] {
+  display: none !important;
+}
+.social-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #8f7850;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #dfbc78;
+  background: #18140e;
+}
+.social-links a:hover {
+  background: #352a19;
+}
+.social-links a:focus-visible {
+  outline: 3px solid #f2cc82;
+  outline-offset: 3px;
+}
+.social-links svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+.social-links-compact {
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+}
+.social-links-compact a {
+  padding: 8px;
+}
+.social-links-compact span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .route66 header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .route66 header nav {
+    grid-column: 1/-1;
+  }
+  .route66 header .brand {
+    font-size: 20px;
+    min-width: 0;
+  }
+  .route66 header .branding-photo img {
+    width: 40px;
+    height: 34px;
+    margin-right: 6px;
+  }
+  .route66 header .social-links {
+    gap: 2px;
+  }
+}
+@media (max-width: 380px) {
+  .route66 header .brand {
+    font-size: 18px;
+  }
+  .route66 header .branding-photo {
+    display: none;
+  }
+}
