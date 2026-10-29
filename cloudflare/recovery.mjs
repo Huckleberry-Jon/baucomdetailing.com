@@ -35,6 +35,9 @@ export const TABLES = [
   "audit_events",
   "backup_runs",
   "materials",
+  "job_details",
+  "inventory_balances",
+  "inventory_movements",
   "financial_documents",
   "financial_events",
   "tenant_entitlements",
@@ -182,10 +185,19 @@ export async function restoreCloudBackup({
     );
   // Native device registrations did not exist in earlier snapshots.
   m.rows.native_devices ??= [];
+  for (const table of [
+    "job_details",
+    "inventory_balances",
+    "inventory_movements",
+  ])
+    m.rows[table] ??= [];
   // Backups created before business-management tables remain recoverable.
   if (m.schemaRevision === undefined) {
     for (const table of [
       "materials",
+      "job_details",
+      "inventory_balances",
+      "inventory_movements",
       "financial_documents",
       "financial_events",
       "tenant_entitlements",

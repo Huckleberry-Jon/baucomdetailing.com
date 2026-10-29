@@ -1,0 +1,14 @@
+# Core business workflow checkpoint — 2026-10-29
+
+The shared Cloudflare backend now supports versioned job charge/cost records, manually created customers and vehicles, customer notes/history, inventory counts and confirmed job usage, completed-job invoices, discounts, partial payments and deposits, customer receipts, outstanding balances and job profitability.
+
+Migration 0006 is additive: job_details, inventory_balances and inventory_movements. Apply after 0005, only to the isolated staging database. Existing jobs and website booking calculations remain intact. New products start with zero available stock until the owner records a counted balance. Catalog quantity is the default line quantity, not stock. Stock movements are idempotent, audited and versioned; concurrent usage cannot overdraw. Historical product unit/price/cost snapshots remain on each usage record. A product's unit cannot be changed; create another product instead.
+
+The native job screen selects configured services/add-ons, records approved charges and labor/travel costs, consumes inventory, opens the shared appointment for status transitions, and uses existing private before/after photography. Completed-job invoices derive their service/material lines and cost snapshots on the server. One job has one job invoice; issued documents remain immutable. Draft edits preserve the job association and historical job costs.
+
+Amounts use integer cents and quantities use thousandths. Discounts reduce the taxable basis proportionally. Financial Center uses business-timezone quarter boundaries, cash receipts/expenses/tips and all outstanding invoices. Job margin uses issued job invoices created in the period and saved direct costs; it is distinct from cash profit and excludes unrecorded costs/overhead. Payment entries record money received externally; no Square, billing or QuickBooks activation. For uncertain save responses, refresh the immutable ledger before recording again.
+
+PDFs are generated on-device with bundled Noto Sans regular/bold fonts, selected job photos and clickable review links. Fonts originate from https://github.com/notofonts/noto-fonts/tree/main/hinted/ttf/NotoSans and the bundled OFL.txt retains the license. The app does not fetch remote fonts. Physical iPhone PDF sharing, photo/camera permissions, Keychain and APNs remain acceptance requirements. Native photo selection requests optimization through the iOS image-picker pipeline; original camera files remain in the phone's library. Direct browser HEIC processing still needs hosted/device acceptance.
+
+Encrypted restoration tests now include inventory balances/history and native device registrations. Restores disable communications and native registrations, discard sessions and detach domains. No production resources or other Doc projects were modified.
+

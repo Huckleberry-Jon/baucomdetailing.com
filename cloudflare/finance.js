@@ -1,3 +1,4 @@
+import { jobView, jobInvoiceLines } from "./operations.js";
 import { randomUUID } from "node:crypto";
 import { requireThat, text, hash } from "../src/security.js";
 const integer = (v, name, max = 100000000) => {
@@ -15,7 +16,7 @@ export function material(input) {
     taxable: input.taxable,
   };
   requireThat(
-    ["oz", "gallon", "bottle"].includes(d.unit) &&
+    ["oz", "gallon", "bottle", "piece"].includes(d.unit) &&
       typeof d.taxable === "boolean" &&
       d.quantityMillis > 0,
     "Invalid material unit, tax or quantity",
@@ -47,7 +48,7 @@ export function priceDocument(body) {
       taxable: l.taxable,
     };
     requireThat(
-      ["service", "each", "hour", "oz", "gallon", "bottle"].includes(
+      ["service", "each", "hour", "oz", "gallon", "bottle", "piece"].includes(
         line.unit,
       ) &&
         line.quantityMillis > 0 &&
@@ -66,10 +67,16 @@ export function priceDocument(body) {
   });
   const taxBps = integer(body.taxBps, "tax rate", 10000),
     subtotalCents = lines.reduce((n, l) => n + l.totalCents, 0),
+    discountCents = integer(body.discountCents ?? 0, "discount"),
+    taxableSubtotal = lines
+      .filter((l) => l.taxable)
+      .reduce((n, l) => n + l.totalCents, 0);
+  requireThat(discountCents <= subtotalCents, "Discount exceeds subtotal");
+  const taxableDiscount = subtotalCents
+      ? round(BigInt(discountCents) * BigInt(taxableSubtotal), subtotalCents)
+      : 0,
     taxCents = round(
-      BigInt(
-        lines.filter((l) => l.taxable).reduce((n, l) => n + l.totalCents, 0),
-      ) * BigInt(taxBps),
+      BigInt(taxableSubtotal - taxableDiscount) * BigInt(taxBps),
       10000,
     );
   integer(subtotalCents + taxCents, "document total", 1000000000);
@@ -79,7 +86,8 @@ export function priceDocument(body) {
     taxBps,
     subtotalCents,
     taxCents,
-    totalCents: subtotalCents + taxCents,
+    discountCents,
+    totalCents: subtotalCents - discountCents + taxCents,
     materialCostCents: lines.reduce((n, l) => n + l.costCents, 0),
     notes: typeof body.notes === "string" ? body.notes.slice(0, 3000) : "",
   };
@@ -98,6 +106,11 @@ export async function saveMaterial(s, body, owner) {
     requireThat(
       !old || old.version === body.version,
       "Material changed; refresh",
+      409,
+    );
+    requireThat(
+      !old || JSON.parse(old.data).unit === value.unit,
+      "Create a separate product to change its stock unit",
       409,
     );
     const id = old?.id ?? randomUUID();
@@ -144,6 +157,13 @@ export async function saveDocument(s, body, owner) {
       ["estimate", "invoice"].includes(body.kind),
       "Invalid document kind",
     );
+    if (old && JSON.parse(old.data).jobId)
+      requireThat(
+        body.bookingId === old.booking_id &&
+          body.customerId === old.customer_id &&
+          body.kind === "invoice",
+        "Job invoice association cannot change",
+      );
     const customer = await s.first(
       "SELECT * FROM customers WHERE business_id=? AND id=?",
       s.tenant,
@@ -162,8 +182,45 @@ export async function saveDocument(s, body, owner) {
         400,
       );
     }
+    let job = null;
+    if (body.jobId) {
+      job = await jobView(s, body.jobId);
+      requireThat(
+        job.status === "completed" && job.version === body.jobVersion,
+        "Complete the job and refresh before invoicing",
+        409,
+      );
+      requireThat(
+        body.kind === "invoice" &&
+          body.customerId === job.customer_id &&
+          body.bookingId === job.booking_id,
+        "Job invoice mismatch",
+      );
+      const duplicate = await s.first(
+        "SELECT id FROM financial_documents WHERE business_id=? AND booking_id=? AND kind='invoice' AND id!=?",
+        s.tenant,
+        job.booking_id,
+        old?.id ?? "",
+      );
+      requireThat(!duplicate, "An invoice already exists for this job", 409);
+      body = { ...body, lines: jobInvoiceLines(job) };
+    }
     const data = priceDocument(body),
       id = old?.id ?? randomUUID();
+    if (!job && old) {
+      const prior = JSON.parse(old.data);
+      if (prior.jobId) {
+        data.jobId = prior.jobId;
+        data.jobCostCents = prior.jobCostCents;
+      }
+    }
+    if (job) {
+      data.jobId = job.id;
+      data.jobCostCents =
+        job.materials.reduce((n, m) => n + m.cost_cents, 0) +
+        (job.data.laborCostCents ?? 0) +
+        (job.data.travelCostCents ?? 0);
+    }
     data.customer = JSON.parse(customer.data);
     data.businessName = JSON.parse(b.settings).name;
     const photos = body.photoIds ?? [];
@@ -283,7 +340,8 @@ export async function recordEvent(s, body, owner, key) {
       "Choose an external payment method",
     );
     let tax = 0,
-      documentId = null;
+      documentId = null,
+      paidBookingId = null;
     if (body.kind === "payment") {
       const row = await s.first(
         "SELECT * FROM financial_documents WHERE business_id=? AND id=? AND kind='invoice' AND status='issued'",
@@ -309,6 +367,7 @@ export async function recordEvent(s, body, owner, key) {
           : round(BigInt(amount) * BigInt(d.taxCents), d.totalCents);
       tax = Math.min(tax, d.taxCents - paid.tax);
       documentId = row.id;
+      paidBookingId = row.booking_id;
     } else
       requireThat(
         tip === 0 && !body.documentId,
@@ -343,6 +402,11 @@ export async function recordEvent(s, body, owner, key) {
         digest,
       ),
     );
+    if (paidBookingId)
+      s.event(c, paidBookingId, "payment.recorded", "owner", {
+        paymentId: id,
+        amountCents: amount,
+      });
     s.audit(c, owner, "finance." + body.kind + ".recorded", id);
     return { id, duplicate: false };
   });
@@ -376,7 +440,32 @@ export async function report(s, from, to) {
   const taxRemittedCents = expenses
     .filter((r) => JSON.parse(r.data).category === "tax_remittance")
     .reduce((n, r) => n + r.amount_cents, 0);
+  const invoices = await s.all(
+    "SELECT d.*,coalesce((SELECT sum(amount_cents) FROM financial_events e WHERE e.business_id=d.business_id AND e.document_id=d.id AND e.kind='payment'),0) paid_cents FROM financial_documents d WHERE d.business_id=? AND d.kind='invoice' AND d.status='issued'",
+    s.tenant,
+  );
+  const outstandingCents = invoices.reduce(
+    (n, r) => n + JSON.parse(r.data).totalCents - r.paid_cents,
+    0,
+  );
+  const jobProfitability = invoices
+    .filter(
+      (r) => r.created_at >= a && r.created_at < z && JSON.parse(r.data).jobId,
+    )
+    .map((r) => {
+      const d = JSON.parse(r.data);
+      return {
+        invoiceId: r.id,
+        jobId: d.jobId,
+        number: r.number,
+        revenueExcludingTaxCents: d.totalCents - d.taxCents,
+        costCents: d.jobCostCents,
+        profitCents: d.totalCents - d.taxCents - d.jobCostCents,
+      };
+    });
   return {
+    outstandingCents,
+    jobProfitability,
     from: new Date(a).toISOString(),
     to: new Date(z).toISOString(),
     currency: "USD",

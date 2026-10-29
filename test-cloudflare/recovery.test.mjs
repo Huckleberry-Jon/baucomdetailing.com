@@ -33,6 +33,21 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       }),
     });
     assert.equal(booking.status, 201);
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/native-device", {
+          method: "POST",
+          cookie,
+          body: {
+            deviceId: "recovery-device-test-1",
+            deviceToken: "ab".repeat(32),
+            environment: "production",
+            enabled: true,
+          },
+        })
+      ).status,
+      200,
+    );
     await call(source.mf, "/api/owner/transition", {
       method: "POST",
       cookie,
@@ -64,6 +79,23 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       },
     });
     assert.equal(material.status, 201);
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/inventory", {
+          method: "POST",
+          cookie,
+          key: "recovery-stock",
+          body: {
+            kind: "correction",
+            materialId: material.data.id,
+            version: 0,
+            availableQuantityMillis: 2500,
+            reason: "Recovery stock count",
+          },
+        })
+      ).status,
+      201,
+    );
     const document = await call(source.mf, "/api/owner/documents", {
       method: "POST",
       cookie,
@@ -165,6 +197,8 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       "notifications",
       "jobs",
       "materials",
+      "inventory_balances",
+      "inventory_movements",
       "financial_documents",
       "financial_events",
       "tenant_entitlements",
@@ -186,6 +220,8 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
     }
     for (const table of [
       "materials",
+      "inventory_balances",
+      "inventory_movements",
       "financial_documents",
       "financial_events",
       "tenant_entitlements",
@@ -203,6 +239,11 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
         ).results,
       );
     }
+    assert.equal(
+      (await target.db.prepare("SELECT active FROM native_devices").first())
+        .active,
+      0,
+    );
     const photo = await target.db.prepare("SELECT * FROM media").first();
     assert.deepEqual(
       Buffer.from(

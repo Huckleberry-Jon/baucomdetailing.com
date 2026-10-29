@@ -1,3 +1,4 @@
+import { jobView, saveJob, stockMovement } from "./operations.js";
 import { saveNativeDevice, nativeInbox } from "./native-push.js";
 import { sessionCookie, sessionInfo, rotateSession } from "./sessions.js";
 import { randomUUID } from "node:crypto";
@@ -17,7 +18,12 @@ import {
   recordEvent,
   report,
 } from "./finance.js";
-import { directory, updateRecord } from "./records.js";
+import {
+  directory,
+  updateRecord,
+  createRecord,
+  customerHistory,
+} from "./records.js";
 import { CloudBookings } from "./bookings.js";
 import {
   prepareMedia,
@@ -471,12 +477,37 @@ export async function route(request, env, ctx) {
         return json(await directory(s, kind, url.searchParams));
       if (method === "PUT")
         return json(await updateRecord(s, kind, body, user.id));
+      if (method === "POST")
+        return json(await createRecord(s, kind, body, user.id), 201);
     }
+    if (path === "/api/owner/customer" && method === "GET")
+      return json(await customerHistory(s, id));
+    if (path === "/api/owner/jobs" && method === "GET")
+      return json({
+        records: await s.all(
+          "SELECT j.*,b.status,b.start_ms,c.data customer FROM jobs j JOIN bookings b ON b.id=j.booking_id AND b.business_id=j.business_id JOIN customers c ON c.id=j.customer_id AND c.business_id=j.business_id WHERE j.business_id=? ORDER BY b.start_ms DESC LIMIT 300",
+          s.tenant,
+        ),
+      });
+    if (path === "/api/owner/job") {
+      if (method === "GET") return json(await jobView(s, id));
+      if (method === "PUT") return json(await saveJob(s, body, user.id));
+    }
+    if (path === "/api/owner/inventory" && method === "POST")
+      return json(
+        await stockMovement(
+          s,
+          body,
+          user.id,
+          request.headers.get("Idempotency-Key"),
+        ),
+        201,
+      );
     if (path === "/api/owner/materials") {
       if (method === "GET")
         return json({
           records: await s.all(
-            "SELECT * FROM materials WHERE business_id=? ORDER BY rowid DESC LIMIT 300",
+            "SELECT m.*,coalesce(b.quantity_millis,0) available_quantity_millis,coalesce(b.version,0) stock_version FROM materials m LEFT JOIN inventory_balances b ON b.material_id=m.id AND b.business_id=m.business_id WHERE m.business_id=? ORDER BY m.rowid DESC LIMIT 300",
             s.tenant,
           ),
         });
@@ -487,12 +518,30 @@ export async function route(request, env, ctx) {
       if (method === "GET")
         return json({
           records: await s.all(
-            "SELECT * FROM financial_documents WHERE business_id=? ORDER BY created_at DESC LIMIT 300",
+            "SELECT d.*,coalesce((SELECT sum(amount_cents) FROM financial_events e WHERE e.business_id=d.business_id AND e.document_id=d.id AND e.kind='payment'),0) paid_cents FROM financial_documents d WHERE d.business_id=? ORDER BY d.created_at DESC LIMIT 300",
             s.tenant,
           ),
         });
       if (method === "POST")
         return json(await saveDocument(s, body, user.id), 201);
+    }
+    if (path === "/api/owner/document" && method === "GET") {
+      const document = await s.first(
+        "SELECT * FROM financial_documents WHERE business_id=? AND id=?",
+        s.tenant,
+        id,
+      );
+      requireThat(document, "Document not found", 404);
+      const payments = await s.all(
+        "SELECT * FROM financial_events WHERE business_id=? AND document_id=? ORDER BY occurred_at,id",
+        s.tenant,
+        id,
+      );
+      return json({
+        ...document,
+        payments,
+        paid_cents: payments.reduce((n, p) => n + p.amount_cents, 0),
+      });
     }
     if (path === "/api/owner/documents/issue" && method === "POST")
       return json(await issueDocument(s, body, user.id));
