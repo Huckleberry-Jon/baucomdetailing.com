@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { sign } from "node:crypto";
+import { sign, createPrivateKey } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 export const appBundle = "com.docincorporated.docdetailing";
@@ -16,8 +16,21 @@ export function appleAPIToken(
     "Apple integration Issuer ID is missing or invalid",
   );
   assert(
-    typeof privateKey === "string" && privateKey.includes("BEGIN PRIVATE KEY"),
-    "Apple integration private key is unavailable",
+    typeof privateKey === "string" && privateKey.trim().length > 0,
+    "Apple integration private key environment variable is missing or empty",
+  );
+  // Codemagic can serialize EC keys as SEC1 (EC PRIVATE KEY), not only PKCS8.
+  // Parse in memory; never print the supplied value or parser errors.
+  let signingKey;
+  try {
+    signingKey = createPrivateKey(privateKey);
+  } catch {
+    assert.fail("Apple integration private key could not be parsed securely");
+  }
+  assert(
+    signingKey.asymmetricKeyType === "ec" &&
+      signingKey.asymmetricKeyDetails?.namedCurve === "prime256v1",
+    "Apple integration requires an ES256 P-256 private key",
   );
   const encode = (x) => Buffer.from(JSON.stringify(x)).toString("base64url");
   const header = encode({ alg: "ES256", kid: keyId, typ: "JWT" });
@@ -32,7 +45,7 @@ export function appleAPIToken(
     data +
     "." +
     sign("sha256", Buffer.from(data), {
-      key: privateKey,
+      key: signingKey,
       dsaEncoding: "ieee-p1363",
     }).toString("base64url")
   );

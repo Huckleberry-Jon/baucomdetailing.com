@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateKeyPairSync, verify } from "node:crypto";
+import { generateKeyPairSync, verify, createPrivateKey } from "node:crypto";
 import {
   appleAPIToken,
   lookupAppleApp,
@@ -71,4 +71,21 @@ test("Apple upload preflight is restricted to read-only lookup of the expected a
     ),
     /HTTP 401/,
   );
+});
+
+
+test("Codemagic SEC1 EC keys and PKCS8 keys both sign valid ES256 tokens", () => {
+  const sec1 = createPrivateKey(keys.privateKey).export({type: "sec1", format: "pem"});
+  assert(sec1.includes("BEGIN EC PRIVATE KEY"));
+  for (const privateKey of [sec1, keys.privateKey]) {
+    const [h, p, s] = appleAPIToken({...credentials, privateKey}).split(".");
+    assert(verify("sha256", Buffer.from(h + "." + p),
+      {key: keys.publicKey, dsaEncoding: "ieee-p1363"}, Buffer.from(s, "base64url")));
+  }
+  assert.throws(() => appleAPIToken({...credentials, privateKey: undefined}), /missing or empty/);
+  const secret = "sensitive-invalid-key-never-echo";
+  assert.throws(() => appleAPIToken({...credentials, privateKey: secret}), error =>
+    error.message.includes("could not be parsed securely") && !error.message.includes(secret));
+  const wrong = generateKeyPairSync("ec", {namedCurve: "secp384r1"}).privateKey.export({type:"pkcs8",format:"pem"});
+  assert.throws(() => appleAPIToken({...credentials, privateKey: wrong}), /P-256/);
 });
