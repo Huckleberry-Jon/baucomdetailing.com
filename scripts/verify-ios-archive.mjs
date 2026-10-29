@@ -111,7 +111,7 @@ function verify(archive) {
   );
   const prefix = path.join(temp, "signer");
   try {
-    run("codesign", ["-d", "--extract-certificates", prefix, app]);
+    run("codesign", ["-d", "--extract-certificates=" + prefix, app]);
     const signerDer = fs.readFileSync(prefix + "0"),
       cert = new X509Certificate(signerDer);
     assert(
