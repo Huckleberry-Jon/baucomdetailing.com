@@ -6,6 +6,6 @@ Run flutter pub get, flutter analyze and flutter test here. Default flutter run 
 
 Implemented: booking management, calendar agenda, customers/vehicles, reviews, private job photos, materials, invoice/payment/expense foundations and financial reports. Remaining release gates include secure session persistence, native APNs, complete calendar controls, financial recovery/UX and real-device acceptance. See ../../docs/apple-testflight-preparation.md.
 
-Select repository-root codemagic.yaml on main. The app-local copy is mirrored; node scripts/ios-preflight.mjs from the repository root checks identity/configuration consistency. Workflows are manual, with no publishing. Signing assets belong only in Codemagic secure storage. No signed build has been made here.
+Select repository-root codemagic.yaml on main. The app-local copy is mirrored; node scripts/ios-preflight.mjs from the repository root checks identity/configuration consistency. Workflows are manual, with no publishing. Signing assets belong only in Codemagic secure storage. A controlled signing-only engineering archive has passed on Codemagic; see ../../docs/controlled-ios-archive-report.md. No Apple upload has occurred.
 
 The Flutter native app icon remains a development placeholder. The approved gold B brush emblem is the Baucom website favicon, not approved commercial DocDetailing app artwork.

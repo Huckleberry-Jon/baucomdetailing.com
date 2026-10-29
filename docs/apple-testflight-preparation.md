@@ -1,6 +1,6 @@
 # Flutter / Apple / Codemagic preparation
 
-October 28, 2026. Local development only; no signed iOS build, Apple upload or TestFlight invitation has occurred. Local signing identity is configured from the owner-provided registration.
+October 28, 2026. Controlled signed engineering archive completed; no Apple upload or TestFlight invitation has occurred. See controlled-ios-archive-report.md for the successful build and exact signing evidence.
 
 ## Current native application
 
@@ -16,7 +16,7 @@ Financial limitations before commercial acceptance: PDF/print/share presentation
 
 ## Signing and notifications
 
-The owner supplied registered team UDDPKPR3CJ and bundle ID com.docincorporated.docdetailing. All Runner build configurations and test identifiers now use this identity. No Apple account registration is needed. A matching DocDetailing App Store distribution provisioning profile and signing certificate/private key are still required in Codemagic secure storage. Enable Push Notifications and provide app-specific APNs credentials only when that implementation and activation are separately approved. Never revoke or replace another Doc app's certificate/profile.
+The owner supplied registered team UDDPKPR3CJ and bundle ID com.docincorporated.docdetailing. All Runner build configurations and test identifiers now use this identity. No Apple account registration is needed. The existing stored certificate reference docfamily_distribution_master_2026_09 is reused. The existing DocDetailing_AppStore_2026 profile (UUID 389636fe-c1d0-46f9-a477-dcb2f464d855) was added to Codemagic as docdetailing_appstore_2026; Codemagic confirms the matching certificate. No certificate was reuploaded, generated, revoked or replaced. Enable Push Notifications and provide app-specific APNs credentials only when that implementation and activation are separately approved. Never revoke or replace another Doc app's certificate/profile.
 
 Native APNs registration/device-token storage/delivery adapter and secure persisted session/credential storage are still implementation gates. Existing website web-push infrastructure is not native APNs. No entitlement is attached to an unsigned target merely to claim capability readiness.
 
@@ -26,14 +26,13 @@ Photo picker 1.2.4 is installed, with app-specific camera/library purpose string
 
 Root codemagic.yaml is the configuration to select for this repository on main. The nested app copy is identical for compatibility; scripts/ios-preflight.mjs rejects drift. There are no automatic triggers or publishing steps. Validation runs analysis/tests. Unsigned iOS validation requires IOS_BUILD_APPROVED=true and SHARED_BACKEND_ACCEPTED=true. Both native build workflows use config/staging.json with DEMO_MODE=false and the existing isolated HTTPS Cloudflare origin; no credentials are embedded.
 
-The ios-signed-staging workflow additionally requires IOS_SIGNING_APPROVED=true and a positive APP_BUILD_NUMBER (first proposed build 1; verify uniqueness before each build). It selects uploaded app_store signing assets for the exact registered bundle, applies profiles, and builds an IPA with build-name 1.0. Artifacts remain private CI downloads. This workflow has not run on macOS and is not proof of signing or native connectivity. Team/profile, archive entitlements, expiration and embedded bundle/version must be inspected before any upload.
+The ios-signed-staging workflow additionally requires IOS_SIGNING_APPROVED=true and a positive APP_BUILD_NUMBER (first proposed build 1; verify uniqueness before each build). It pins the existing certificate and DocDetailing profile by reference, applies the profile in the ephemeral build checkout, and builds an IPA with build-name 1.0.0. It does not use automatic Apple certificate/profile generation. Artifacts remain private CI downloads. A controlled macOS run now produces an IPA; current verification status is recorded in controlled-ios-archive-report.md. Signing-only verification is distinct from native APNs/device acceptance. Team/profile, archive entitlements, expiration and embedded bundle/version must be inspected before any upload.
 
-Next setup steps:
-1. Select this GitHub repository and main in a separate DocDetailing Codemagic application; select root codemagic.yaml. Source pushes are authorized; no other app configuration is to be reused or changed.
-2. Securely upload a DocDetailing-specific matching profile and authorized signing certificate/private key for team UDDPKPR3CJ in Codemagic. Do not commit .p12, .mobileprovision, .p8, passwords or API keys. The artifact-only workflow does not need an ASC upload API key.
-3. Run flutter-validation first after approving any CI usage. Record backend acceptance and explicit build/signing flags only after the remaining native gates are addressed. Then run unsigned and signed staging builds on macOS.
-4. Inspect the archive/signature/profile and test staging gate/login, booking changes and photographs on an iPhone. An App Store-signed IPA is not directly sideloadable; TestFlight upload remains a separate approval. A local development-signed device run would need its own approved device profile.
-5. Complete metadata/privacy/support and approve the exact candidate upload/tester group separately. No upload or tester invitation is configured here.
+The separate Codemagic application is 6ae2ac00cda6068e457c2738. YAML mode is active; the inactive Workflow Editor automatic-signing configuration was not used to run the archive. Root YAML has no publishing/integration/automatic trigger stanza. Its signing configuration only references stored assets. Apple profile capability includes production APNs; native app code and entitlements are not complete. The archive verifier has a strict default and an explicit --signing-only mode for this engineering build, reporting the actual APNs entitlement instead of claiming notification readiness.
+
+Current state: the separate application, main branch, pinned stored certificate/profile, manual build and signing-only archive verification have completed. See [controlled archive report](controlled-ios-archive-report.md). Do not reupload or regenerate the certificate.
+
+Next: complete native APNs, secure sessions and calendar acceptance. Keep communications disabled. Record physical-device and metadata/privacy acceptance, then separately authorize a specific upload. The successful engineering artifact alone is not release acceptance.
 
 [Codemagic iOS signing](https://docs.codemagic.io/yaml-code-signing/signing-ios/) documents uploaded profile selection and xcode-project use-profiles. [Flutter build workflow](https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/) documents IPA artifacts.
 

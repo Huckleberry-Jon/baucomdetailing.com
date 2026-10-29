@@ -1,3 +1,5 @@
+Controlled iOS archive: [verified build and remaining release gates](docs/controlled-ios-archive-report.md).
+
 Current favicon and Apple registration preparation: [verification report](docs/favicon-apple-registration-report.md).
 
 Latest staging update: [editable social links and verification](docs/social-links-staging-report.md).
