@@ -5,6 +5,31 @@ import { drain, reconcile } from "../cloudflare/notifications.js";
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (
+      env.CLOUDFLARE_ENV === "local" &&
+      url.pathname === "/__responsive" &&
+      request.method === "GET"
+    ) {
+      const width = [320, 390, 430].includes(
+        Number(url.searchParams.get("width")),
+      )
+        ? Number(url.searchParams.get("width"))
+        : 390;
+      return new Response(
+        '<!doctype html><html><head><title>Local mobile booking verification</title></head><body style="margin:0;background:#ddd;font:16px system-ui"><p style="margin:12px">Local responsive fixture · ' +
+          width +
+          ' × 844 CSS pixels</p><iframe title="Mobile website" src="/#book" style="display:block;width:' +
+          width +
+          'px;height:844px;border:0;margin:12px"></iframe></body></html>',
+        {
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+          },
+        },
+      );
+    }
+
     if (url.pathname.startsWith("/__fixture/")) {
       if (request.headers.get("X-Fixture") !== "synthetic-local-only")
         return new Response("Forbidden", { status: 403 });
@@ -56,6 +81,21 @@ export default {
         return Response.json({ error: String(e) }, { status: 500 });
       }
     }
-    return app.fetch(request, env, ctx);
+    const response = await app.fetch(request, env, ctx);
+    // Same-origin embedding is enabled only in the synthetic loopback visual fixture.
+    // Production uses cloudflare/worker.js directly and retains DENY / frame-ancestors none.
+    if (env.CLOUDFLARE_ENV === "local" && env.LOCAL_RESPONSIVE_QA === "true") {
+      const headers = new Headers(response.headers);
+      headers.set("X-Frame-Options", "SAMEORIGIN");
+      headers.set(
+        "Content-Security-Policy",
+        (headers.get("Content-Security-Policy") ?? "").replace(
+          "frame-ancestors 'none'",
+          "frame-ancestors 'self'",
+        ),
+      );
+      return new Response(response.body, { status: response.status, headers });
+    }
+    return response;
   },
 };

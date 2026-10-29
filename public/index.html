@@ -157,6 +157,7 @@
           <label
             >Detailing location<input
               name="address"
+              placeholder="Street address, city and ZIP"
               autocomplete="street-address"
               maxlength="500"
               required
@@ -188,6 +189,7 @@
             <label
               >Specific concerns<textarea
                 name="notes"
+                placeholder="Stains, pet hair, or other concerns"
                 maxlength="2000"
                 rows="3"
               ></textarea>
@@ -204,7 +206,10 @@
               photos as JPEG first.</small
             ></label
           >
-          <aside>
+          <aside
+            class="booking-notice"
+            aria-label="Pricing and vehicle condition notice"
+          >
             <strong>Pricing &amp; Vehicle Condition Notice</strong>
             <p id="notice"></p>
             <p id="estimate"></p>
@@ -220,7 +225,7 @@
               tabindex="-1"
               autocomplete="off" /></label
           ><button type="submit">Send appointment request ↗</button>
-          <p role="status" id="booking-status"></p>
+          <p role="status" id="booking-status" aria-live="polite"></p>
         </form>
       </section>
       <section id="gallery">

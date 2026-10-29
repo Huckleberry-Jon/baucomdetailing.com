@@ -738,3 +738,143 @@ summary {
     height: 44px;
   }
 }
+
+/* Explicit booking surfaces prevent inherited gold text on legacy light cards. */
+.route66 #book {
+  --form-text: #f3e5c8;
+  --form-surface: #18140e;
+  --field-text: #21180e;
+  --field-surface: #fffaf0;
+  --field-hint: #66563f;
+  color: var(--form-text);
+}
+.route66 #book label,
+.route66 #book legend,
+.route66 #book label small {
+  color: var(--form-text);
+}
+.route66 #book label {
+  font-size: 15px;
+  line-height: 1.6;
+}
+.route66 #book label small {
+  font-size: 13px;
+}
+.route66 #book input:not([type="checkbox"]):not([type="file"]),
+.route66 #book textarea,
+.route66 #book select {
+  background: var(--field-surface);
+  color: var(--field-text);
+  -webkit-text-fill-color: var(--field-text);
+  border-color: #8f7850;
+  font-size: 16px;
+  min-width: 0;
+  min-height: 48px;
+  color-scheme: light;
+}
+.route66 #book input::placeholder,
+.route66 #book textarea::placeholder {
+  color: var(--field-hint);
+  -webkit-text-fill-color: var(--field-hint);
+  opacity: 1;
+}
+.route66 #book .booking-notice {
+  background: #241d12;
+  color: var(--form-text);
+  border: 1px solid #d6ae65;
+  border-left-width: 4px;
+}
+.route66 #book .booking-notice strong,
+.route66 #book .booking-notice p,
+.route66 #book .booking-notice label {
+  color: var(--form-text);
+}
+.route66 #book .booking-notice p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.route66 #book .check {
+  color: var(--form-text);
+  min-height: 44px;
+  font-size: 15px;
+}
+.route66 #book input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  accent-color: #d6ae65;
+  color-scheme: dark;
+}
+.route66 #booking-photos {
+  background: #241d12;
+  color: #f3e5c8;
+  border: 1px solid #d6ae65;
+  padding: 12px;
+  font-size: 16px;
+  color-scheme: dark;
+}
+.route66 #booking-photos::file-selector-button {
+  background: #d6ae65;
+  color: #17120b;
+  border: 0;
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin: 0 12px 8px 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.route66 #booking-photos::-webkit-file-upload-button {
+  background: #d6ae65;
+  color: #17120b;
+  border: 0;
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin: 0 12px 8px 0;
+  font: inherit;
+  font-weight: 700;
+}
+.route66 #book :focus-visible {
+  outline: 3px solid #f2cc82;
+  outline-offset: 3px;
+}
+.route66 #booking-status:not(:empty),
+.route66 #availability-status:not(:empty) {
+  background: #241d12;
+  color: #f3e5c8;
+  border: 1px solid #d6ae65;
+  padding: 14px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+.route66 #booking-status[data-state="error"],
+.route66 #availability-status[data-state="error"] {
+  background: #3a1811;
+  color: #ffc4b8;
+  border-color: #f2a48a;
+}
+.route66 #book button:disabled {
+  opacity: 1;
+  background: #bca474;
+  color: #21180e;
+  cursor: wait;
+}
+@media (max-width: 650px) {
+  .route66 #booking-photos {
+    max-width: 100%;
+  }
+  .route66 #book fieldset,
+  .route66 #book .booking-notice {
+    padding: 16px;
+    min-width: 0;
+  }
+}
+
+.route66 #book input[type="checkbox"] {
+  outline: 1px solid #d6ae65;
+  outline-offset: 1px;
+}
+.route66 #book input[type="checkbox"]:focus-visible {
+  outline: 3px solid #f2cc82;
+  outline-offset: 3px;
+}

@@ -132,6 +132,7 @@ $("#booking-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const button = e.submitter;
   button.disabled = true;
+  $("#booking-status").dataset.state = "pending";
   try {
     const f = new FormData(e.target),
       body = Object.fromEntries(f);
@@ -159,6 +160,7 @@ $("#booking-form").addEventListener("submit", async (e) => {
       if (r.status === 409) submissionKey = crypto.randomUUID();
       throw Error(b.error);
     }
+    $("#booking-status").dataset.state = "success";
     $("#booking-status").replaceChildren(
       document.createTextNode(
         `Request saved. Status: ${b.status}. This appointment is not confirmed. `,
@@ -179,20 +181,24 @@ $("#booking-form").addEventListener("submit", async (e) => {
     submissionKey = crypto.randomUUID();
     estimate();
   } catch (err) {
-    $("#booking-status").textContent = err.message;
+    $("#booking-status").dataset.state = "error";
+    $("#booking-status").textContent = "Request not sent: " + err.message;
   } finally {
     button.disabled = false;
   }
 });
 document.addEventListener("DOMContentLoaded", () => {
   load().catch((e) => {
-    $("#booking-status").textContent = e.message;
+    $("#booking-status").dataset.state = "error";
+    $("#booking-status").textContent =
+      "Booking form could not load: " + e.message;
   });
 });
 document.querySelector("#check-availability").onclick = async () => {
   const status = document.querySelector("#availability-status"),
     root = document.querySelector("#availability-times");
   root.replaceChildren();
+  status.dataset.state = "pending";
   try {
     const q = new URLSearchParams({
       day: document.querySelector("#availability-day").value,
@@ -203,6 +209,7 @@ document.querySelector("#check-availability").onclick = async () => {
     const r = await fetch("/api/availability?" + q),
       data = await r.json();
     if (!r.ok) throw Error(data.error);
+    status.dataset.state = "success";
     status.textContent =
       data.message + (data.slots.length ? "" : " No available times shown.");
     for (const slot of data.slots) {
@@ -227,6 +234,7 @@ document.querySelector("#check-availability").onclick = async () => {
       root.append(b);
     }
   } catch (e) {
-    status.textContent = e.message;
+    status.dataset.state = "error";
+    status.textContent = "Availability could not be checked: " + e.message;
   }
 };

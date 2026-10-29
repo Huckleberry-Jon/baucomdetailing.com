@@ -11,6 +11,7 @@ const host = "http://localhost:4335";
 const { mf, db } = await runtime(
   {
     SITE_OPEN: "false",
+    LOCAL_RESPONSIVE_QA: "true",
     PREVIEW_PASSWORD_HASH: passwordHash("Synthetic-browser-access-only"),
     PREVIEW_SIGNING_KEY:
       "synthetic-browser-gate-signing-key-at-least-43-characters",
