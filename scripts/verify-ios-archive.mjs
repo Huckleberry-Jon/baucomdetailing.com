@@ -4,7 +4,7 @@ import { X509Certificate } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 const bundle = "com.docincorporated.docdetailing";
 const team = "UDDPKPR3CJ";
@@ -86,9 +86,11 @@ function verify(archive) {
     execFileSync(cmd, args, { maxBuffer: 8 * 1024 * 1024 });
   const plist = (bytes) =>
     JSON.parse(
-      execFileSync("plutil", ["-convert", "json", "-o", "-", "-"], {
-        input: bytes,
-      }),
+      execFileSync(
+        "python3",
+        [fileURLToPath(new URL("./decode-apple-plist.py", import.meta.url))],
+        { input: bytes },
+      ),
     );
   run("codesign", ["--verify", "--deep", "--strict", app]);
   const info = plist(fs.readFileSync(path.join(app, "Info.plist")));

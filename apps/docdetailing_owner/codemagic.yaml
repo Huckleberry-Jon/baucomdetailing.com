@@ -68,6 +68,7 @@ workflows:
         script: |
           set -eu
           node scripts/ios-preflight.mjs
+          python3 -B -m unittest discover -s test -p test_ios_plist.py
           cd apps/docdetailing_owner
           flutter pub get
           flutter analyze
