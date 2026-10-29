@@ -16,16 +16,28 @@ class _NotificationInboxState extends State<NotificationInbox> {
   final List<Map<String, dynamic>> rows = [];
   String? cursor, error;
   int unread = 0;
-  bool busy = false, onlyUnread = false;
+  bool busy = false, onlyUnread = false, refreshPending = false;
+  int? nativeUnread;
   @override
   void initState() {
     super.initState();
+    nativeUnread = widget.native?.unread;
     widget.native?.addListener(update);
     load();
   }
 
   void update() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final count = widget.native?.unread;
+    if (count != nativeUnread) {
+      nativeUnread = count;
+      if (busy) {
+        refreshPending = true;
+      } else {
+        load();
+      }
+    }
+    setState(() {});
   }
 
   @override
@@ -68,7 +80,13 @@ class _NotificationInboxState extends State<NotificationInbox> {
         );
       }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() => busy = false);
+        if (refreshPending) {
+          refreshPending = false;
+          load();
+        }
+      }
     }
   }
 
