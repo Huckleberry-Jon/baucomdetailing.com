@@ -44,9 +44,16 @@ workflows:
     environment:
       flutter: 3.44.6
       xcode: latest
+      vars:
+        IOS_BUILD_APPROVED: "true"
+        SHARED_BACKEND_ACCEPTED: "true"
+        IOS_SIGNING_APPROVED: "true"
+        APP_BUILD_NUMBER: "1"
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.docincorporated.docdetailing
+        certificates:
+          - docfamily_distribution_master_2026_09
+        provisioning_profiles:
+          - docdetailing_appstore_2026
     scripts:
       - name: Require approved source, backend and signing
         script: |
@@ -75,7 +82,12 @@ workflows:
           set -eu
           cd apps/docdetailing_owner
           flutter build ipa --release --build-name=1.0 --build-number="$APP_BUILD_NUMBER" --dart-define-from-file=config/staging.json --export-options-plist=/Users/builder/export_options.plist
+      - name: Verify signed archive identity (native APNs remains a release gate)
+        script: |
+          set -eu
+          node scripts/verify-ios-archive.mjs apps/docdetailing_owner/build/ios/archive/Runner.xcarchive --signing-only > ios-signing-verification.json
     artifacts:
+      - ios-signing-verification.json
       - apps/docdetailing_owner/build/ios/ipa/*.ipa
       - apps/docdetailing_owner/build/ios/archive/*.xcarchive
       - /tmp/xcodebuild_logs/*.log

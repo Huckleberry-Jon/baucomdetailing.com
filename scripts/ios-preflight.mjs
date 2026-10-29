@@ -33,7 +33,15 @@ assert.deepEqual(JSON.parse(read(app + "config/staging.json")), {
 const yaml = read("codemagic.yaml");
 assert.equal(yaml, read(app + "codemagic.yaml"));
 assert(!/^\s*(publishing|triggering):/m.test(yaml));
-assert.match(yaml, /bundle_identifier: com\.docincorporated\.docdetailing/);
+assert(yaml.includes("- docfamily_distribution_master_2026_09"));
+assert(yaml.includes("- docdetailing_appstore_2026"));
+assert(
+  !/distribution_type:|bundle_identifier:|fetch-signing-files|certificates create|profiles create|--create|revoke/.test(
+    yaml,
+  ),
+);
+assert(yaml.includes("node scripts/verify-ios-archive.mjs"));
+
 for (const flag of [
   "IOS_BUILD_APPROVED",
   "SHARED_BACKEND_ACCEPTED",
