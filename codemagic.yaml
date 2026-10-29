@@ -1,5 +1,23 @@
 # Manual preparation only. No triggers, publishing, credentials or production backend.
 workflows:
+  apple-upload-preflight:
+    name: Read-only Apple upload preflight (no upload)
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      xcode: "26.6"
+    scripts:
+      - name: Require the approved source branch
+        script: test "$CM_BRANCH" = main
+      - name: Read only the registered DocDetailing Apple app record
+        script: |
+          set -eu
+          mkdir -p artifacts
+          node scripts/apple-upload-preflight.mjs > artifacts/apple-upload-preflight.json
+    artifacts:
+      - artifacts/apple-upload-preflight.json
+
   flutter-validation:
     name: DocDetailing Flutter foundation
     instance_type: mac_mini_m2
