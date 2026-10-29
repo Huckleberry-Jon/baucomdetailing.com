@@ -14,3 +14,6 @@ config/ngrok.device-test.local.yml
 
 # Supplied asset archives may contain private personal photographs.
 /*.zip
+
+# Controlled local build reports
+/artifacts/

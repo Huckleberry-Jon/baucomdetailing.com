@@ -48,7 +48,7 @@ workflows:
         IOS_BUILD_APPROVED: "true"
         SHARED_BACKEND_ACCEPTED: "true"
         IOS_SIGNING_APPROVED: "true"
-        APP_BUILD_NUMBER: "1"
+        APP_BUILD_NUMBER: "2"
       ios_signing:
         certificates:
           - docfamily_distribution_master_2026_09
@@ -64,15 +64,8 @@ workflows:
           test "$IOS_SIGNING_APPROVED" = true
           case "$APP_BUILD_NUMBER" in ''|*[!0-9]*) exit 1 ;; esac
           test "$APP_BUILD_NUMBER" -gt 0
-      - name: Validate app and backend configuration
-        script: |
-          set -eu
-          node scripts/ios-preflight.mjs
-          python3 -B -m unittest discover -s test -p test_ios_plist.py
-          cd apps/docdetailing_owner
-          flutter pub get
-          flutter analyze
-          flutter test
+      - name: Validate app and backend configuration and retain reports
+        script: bash scripts/ci-validate-ios.sh
       - name: Apply only uploaded DocDetailing signing assets
         script: |
           set -eu
@@ -81,14 +74,16 @@ workflows:
       - name: Archive staging client without publishing
         script: |
           set -eu
-          cd apps/docdetailing_owner
-          flutter build ipa --release --build-name=1.0.0 --build-number="$APP_BUILD_NUMBER" --dart-define-from-file=config/staging.json --export-options-plist=/Users/builder/export_options.plist
-      - name: Verify signed archive identity (native APNs remains a release gate)
+          bash scripts/ci-archive-ios.sh
+          ditto -c -k --sequesterRsrc --keepParent apps/docdetailing_owner/build/ios/archive/Runner.xcarchive artifacts/Runner.xcarchive.zip
+          if [ -d /tmp/xcodebuild_logs ]; then cp -R /tmp/xcodebuild_logs artifacts/xcodebuild_logs; fi
+      - name: Verify archive signing and production push entitlements
         script: |
           set -eu
-          node scripts/verify-ios-archive.mjs apps/docdetailing_owner/build/ios/archive/Runner.xcarchive --signing-only > ios-signing-verification.json
+          result=0
+          node scripts/verify-ios-archive.mjs apps/docdetailing_owner/build/ios/archive/Runner.xcarchive > artifacts/ios-signing-verification.json 2> artifacts/ios-signing-errors.log || result=$?
+          node scripts/ios-artifact-manifest.mjs
+          exit "$result"
     artifacts:
-      - ios-signing-verification.json
+      - artifacts/**
       - apps/docdetailing_owner/build/ios/ipa/*.ipa
-      - apps/docdetailing_owner/build/ios/archive/*.xcarchive
-      - /tmp/xcodebuild_logs/*.log
