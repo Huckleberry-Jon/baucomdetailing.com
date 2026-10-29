@@ -1,3 +1,4 @@
+import { stripJpegMetadata } from "./jpeg.js";
 import { randomUUID } from "node:crypto";
 import { hash, requireThat, Problem, text } from "../src/security.js";
 export function slots(catalog) {
@@ -86,7 +87,7 @@ export async function prepareMedia(env, tenant, photos = []) {
         })
         .output({ format: "image/jpeg", quality: 80 });
       const response = result.response();
-      preview = Buffer.from(await response.arrayBuffer());
+      preview = stripJpegMetadata(Buffer.from(await response.arrayBuffer()));
       requireThat(
         preview.length > 0 && preview.length <= 4 * 1024 * 1024,
         "Invalid image preview",
