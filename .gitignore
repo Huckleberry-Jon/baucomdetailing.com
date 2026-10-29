@@ -17,3 +17,7 @@ config/ngrok.device-test.local.yml
 
 # Controlled local build reports
 /artifacts/
+
+# Private local acceptance reports contain staging and signing metadata.
+/docs/native-core-report-*.md
+/docs/native-core-verification-*.json
