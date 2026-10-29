@@ -217,6 +217,7 @@ export async function saveDocument(s, body, owner) {
     if (job) {
       data.jobId = job.id;
       data.jobCostCents =
+        job.data.lines.reduce((n, l) => n + l.costCents, 0) +
         job.materials.reduce((n, m) => n + m.cost_cents, 0) +
         (job.data.laborCostCents ?? 0) +
         (job.data.travelCostCents ?? 0);

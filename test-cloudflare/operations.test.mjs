@@ -96,7 +96,7 @@ test("actual D1 job, stock, invoice, payment and profitability workflow is trans
       unit: "service",
       quantityMillis: 1000,
       unitPriceCents: 10000,
-      unitCostCents: 0,
+      unitCostCents: 200,
       taxable: true,
     };
     const saved = await call(f.mf, "/api/owner/job", {
@@ -111,6 +111,7 @@ test("actual D1 job, stock, invoice, payment and profitability workflow is trans
             {
               ...line,
               description: "Travel",
+              unitCostCents: 0,
               unitPriceCents: 1000,
               taxable: false,
             },
@@ -162,7 +163,7 @@ test("actual D1 job, stock, invoice, payment and profitability workflow is trans
     const invoice = await post("/api/owner/documents", invoiceBody);
     assert.equal(invoice.status, 201, JSON.stringify(invoice.data));
     assert.equal(invoice.data.data.lines.length, 3);
-    assert.equal(invoice.data.data.jobCostCents, 3333);
+    assert.equal(invoice.data.data.jobCostCents, 3533);
     assert.equal(invoice.data.data.lines[0].unitPriceCents, 10000);
     assert.equal((await post("/api/owner/documents", invoiceBody)).status, 409);
     await post("/api/owner/documents/issue", {
@@ -212,7 +213,7 @@ test("actual D1 job, stock, invoice, payment and profitability workflow is trans
       report.data.outstandingCents,
       invoice.data.data.totalCents - 3000,
     );
-    assert.equal(report.data.jobProfitability[0].costCents, 3333);
+    assert.equal(report.data.jobProfitability[0].costCents, 3533);
     const customer = await call(
       f.mf,
       "/api/owner/customer?id=" + job.customer_id,
