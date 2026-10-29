@@ -1,5 +1,7 @@
 # Baucom website assets — private staging update
 
+Current featured Meet Joseph image: Joseph-approved sunset portrait; see the latest update at the end of this report. Earlier asset mapping is retained below as history.
+
 October 28, 2026.
 
 ## Result
@@ -65,3 +67,18 @@ No native app files changed; the existing eight Flutter tests were not rerun for
 .gitignore; cloudflare/media.js; src/website-photos.js; public/index.html; public/app.js; public/style.css; test/website-photos.test.js; README.md; docs/website-assets-staging-report.md.
 
 Private originals, optimized images, manifests and upload proof are ignored under data/. Asset archives at project root are now explicitly ignored to prevent accidental Git publication of private photographs.
+
+## Latest update — Joseph-approved sunset portrait
+
+The project owner supplied Sunset Texas Mobile Detailing Portrait.png and confirmed Joseph's approval for featured use in Meet Joseph on private staging.
+
+Replaced only the action-1 image through the existing authenticated photo/permission workflow. The image now spans the section at its original 3:2 aspect ratio; the separate truck photo remains secondary. The original desktop PNG is unchanged and a byte-identical private master is retained under ignored data/website-assets. The previous approved portrait/master remains preserved.
+
+Original: 2,687,481 bytes; hosted JPEG preview: 302,787 bytes, 1536×1024, no EXIF. The full supplied composition is retained. No image or credentials were added to Git.
+
+Hosted image download and anonymous-access rejection passed. Booking records before/after the update matched exactly, approved service pricing remained unchanged, and the existing private customer booking link still returned its saved status. No booking endpoint or code was changed. Only CSS and this report changed in source; the full regression suites were not repeated for this presentation-only change.
+
+Current staging Worker version: 4eba3dc3-a689-42c0-b8b7-b1ae296395aa.
+Visual inspection of the same layout/image was completed in the isolated loopback fixture. Screenshot: joseph-sunset-feature-preview.png in the task's private visualizations folder.
+
+Public launch, DNS and outbound communication settings remain unchanged and disabled.

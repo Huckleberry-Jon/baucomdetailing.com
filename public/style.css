@@ -690,8 +690,17 @@ summary {
 .route66 #at-work .photo-slot {
   aspect-ratio: 4/3;
 }
+.route66 #at-work [data-photo-slot="action-1"] {
+  grid-column: 1 / -1;
+  aspect-ratio: 3 / 2;
+}
 .route66 #at-work [data-photo-slot="action-1"] img {
-  object-position: 50% 0%;
+  object-fit: contain;
+}
+.route66 #at-work [data-photo-slot="action-2"] {
+  grid-column: 1 / -1;
+  width: min(100%, 540px);
+  justify-self: center;
 }
 .route66 #at-work [data-photo-slot="action-2"] img {
   object-fit: contain;
