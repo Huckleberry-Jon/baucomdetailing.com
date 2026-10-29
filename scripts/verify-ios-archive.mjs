@@ -19,7 +19,7 @@ export function validateArchiveMetadata({
   assert.equal(info.CFBundleIdentifier, bundle, "Wrong application bundle");
   assert.equal(
     info.CFBundleShortVersionString,
-    "1.0",
+    "1.0.0",
     "Wrong marketing version",
   );
   assert.match(

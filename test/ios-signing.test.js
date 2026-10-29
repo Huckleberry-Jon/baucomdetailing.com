@@ -11,7 +11,7 @@ const fixture = () => {
   return {
     info: {
       CFBundleIdentifier: "com.docincorporated.docdetailing",
-      CFBundleShortVersionString: "1.0",
+      CFBundleShortVersionString: "1.0.0",
       CFBundleVersion: "1",
     },
     profile: {
@@ -36,6 +36,7 @@ test("archive release policy rejects wrong identity, expired/development profile
     "synthetic-profile",
   );
   const changes = [
+    (x) => (x.info.CFBundleShortVersionString = "1.1.0"),
     (x) => (x.info.CFBundleIdentifier = "com.docinvoices.app"),
     (x) => (x.profile.TeamIdentifier = ["OTHER"]),
     (x) => (x.profile.ExpirationDate = "2026-01-01"),
