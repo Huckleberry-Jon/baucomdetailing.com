@@ -369,3 +369,117 @@ test("actual D1 inbox paginates without overlap, read state is scoped and remind
     await f.mf.dispose();
   }
 });
+
+test("customer request for another time preserves reservation and durable notification until owner proposal", async () => {
+  const f = await runtime();
+  try {
+    await seed(f.db);
+    const cookie = await login(f.mf);
+    const created = await call(f.mf, "/api/bookings", {
+      method: "POST",
+      body: input(),
+      key: "request-another-time",
+    });
+    const id = created.data.id,
+      secret = created.data.accessToken;
+    assert.equal(
+      (
+        await call(f.mf, "/api/owner/transition", {
+          method: "POST",
+          cookie,
+          body: { id, version: 1, action: "confirm", durationMinutes: 90 },
+        })
+      ).status,
+      200,
+    );
+    const request = {
+      id,
+      version: 2,
+      action: "request_reschedule",
+      startAt: new Date(
+        Date.parse(created.data.requestedAt) + 86400000,
+      ).toISOString(),
+      note: "Synthetic request",
+    };
+    assert.equal(
+      (
+        await call(f.mf, "/api/customer/booking", {
+          method: "POST",
+          body: request,
+        })
+      ).status,
+      403,
+    );
+    const result = await call(f.mf, "/api/customer/booking", {
+      method: "POST",
+      secret,
+      body: request,
+    });
+    assert.equal(result.status, 200, JSON.stringify(result.data));
+    assert.equal(result.data.status, "confirmed");
+    assert.equal(result.data.requestedAt, created.data.requestedAt);
+    assert.equal(result.data.rescheduleRequest.note, "Synthetic request");
+    const duplicate = await call(f.mf, "/api/customer/booking", {
+      method: "POST",
+      secret,
+      body: request,
+    });
+    assert.equal(duplicate.status, 409);
+    const rival = await call(f.mf, "/api/bookings", {
+      method: "POST",
+      body: input(),
+      key: "request-conflict",
+    });
+    assert.equal(
+      (
+        await call(f.mf, "/api/owner/transition", {
+          method: "POST",
+          cookie,
+          body: {
+            id: rival.data.id,
+            version: 1,
+            action: "confirm",
+            durationMinutes: 90,
+          },
+        })
+      ).status,
+      409,
+    );
+    const proposal = await call(f.mf, "/api/owner/transition", {
+      method: "POST",
+      cookie,
+      body: {
+        id,
+        version: 3,
+        action: "propose",
+        startAt: created.data.requestedAt,
+        durationMinutes: 90,
+        priceCents: 10000,
+      },
+    });
+    assert.equal(proposal.status, 200);
+    assert.equal(proposal.data.rescheduleRequest, null);
+    assert.equal(
+      (
+        await call(f.mf, "/api/customer/booking", {
+          method: "POST",
+          secret,
+          body: { id, version: 4, action: "accept" },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await f.db
+          .prepare(
+            "SELECT count(*) n FROM notifications WHERE event LIKE 'customer.reschedule_requested:%'",
+          )
+          .first()
+      ).n,
+      1,
+    );
+  } finally {
+    await f.mf.dispose();
+  }
+});

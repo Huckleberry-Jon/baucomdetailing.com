@@ -312,7 +312,7 @@ export async function route(request, env, ctx) {
     if (method === "GET") return json(s.view(b));
     if (method === "POST") {
       requireThat(
-        ["accept", "cancel"].includes(body.action),
+        ["accept", "cancel", "request_reschedule"].includes(body.action),
         "Invalid customer action",
       );
       const result = await s.transition(b.id, body.action, body, "customer");

@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { requireThat, text, hash } from "../src/security.js";
 import { priceDocument } from "./finance.js";
-const qty = (n, name = "quantity") => {
-  requireThat(
-    Number.isSafeInteger(n) && n >= 0 && n <= 1000000000,
-    "Invalid " + name,
-  );
+const qty = (n, name = "quantity", max = 1000000000) => {
+  requireThat(Number.isSafeInteger(n) && n >= 0 && n <= max, "Invalid " + name);
   return n;
 };
 export async function jobView(s, id) {
@@ -38,6 +35,12 @@ export async function saveJob(s, body, owner) {
     );
     const d = body.data ?? {};
     const priced = priceDocument({ lines: d.lines, taxBps: 0 });
+    requireThat(
+      priced.lines.length +
+        job.materials.filter((m) => m.quantity_millis < 0).length <=
+        100,
+      "Use at most 100 invoice charge/material lines",
+    );
     const data = {
       lines: priced.lines,
       notes: typeof d.notes === "string" ? d.notes.slice(0, 3000) : "",
@@ -102,7 +105,13 @@ export async function stockMovement(s, body, owner, key) {
         "Job is not open for material use",
         409,
       );
-      delta = -qty(body.quantityMillis);
+      requireThat(
+        Math.max(job.data.lines?.length ?? 0, 1) +
+          job.materials.filter((m) => m.quantity_millis < 0).length <
+          100,
+        "Job invoice line limit reached",
+      );
+      delta = -qty(body.quantityMillis, "usage", 1000000);
       requireThat(delta < 0, "Usage must be positive");
       cost = Number(
         (BigInt(-delta) * BigInt(material.costCents) + 500n) / 1000n,

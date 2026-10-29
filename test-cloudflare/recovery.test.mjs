@@ -96,6 +96,53 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       ).status,
       201,
     );
+    const job = (await call(source.mf, "/api/owner/jobs", { cookie })).data
+      .records[0];
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/job", {
+          method: "PUT",
+          cookie,
+          body: {
+            id: job.id,
+            version: 0,
+            data: {
+              lines: [
+                {
+                  description: "Recovery job",
+                  unit: "service",
+                  quantityMillis: 1000,
+                  unitPriceCents: 10000,
+                  unitCostCents: 0,
+                  taxable: false,
+                },
+              ],
+              laborCostCents: 2500,
+              travelCostCents: 500,
+            },
+          },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/inventory", {
+          method: "POST",
+          cookie,
+          key: "recovery-usage",
+          body: {
+            kind: "usage",
+            materialId: material.data.id,
+            jobId: job.id,
+            version: 1,
+            quantityMillis: 500,
+            reason: "Confirmed recovery fixture usage",
+          },
+        })
+      ).status,
+      201,
+    );
     const document = await call(source.mf, "/api/owner/documents", {
       method: "POST",
       cookie,
@@ -197,6 +244,7 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       "notifications",
       "jobs",
       "materials",
+      "job_details",
       "inventory_balances",
       "inventory_movements",
       "financial_documents",
@@ -220,6 +268,7 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
     }
     for (const table of [
       "materials",
+      "job_details",
       "inventory_balances",
       "inventory_movements",
       "financial_documents",

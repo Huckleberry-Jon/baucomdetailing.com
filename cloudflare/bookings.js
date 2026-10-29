@@ -53,6 +53,7 @@ export class CloudBookings extends TenantRepository {
       snapshot: JSON.parse(b.snapshot),
       proposal: b.proposal ? JSON.parse(b.proposal) : null,
       version: b.version,
+      rescheduleRequest: JSON.parse(b.data).rescheduleRequest ?? null,
     };
   }
   async customerToken(b) {
@@ -291,6 +292,7 @@ export class CloudBookings extends TenantRepository {
         "Booking changed; refresh before trying again",
         409,
       );
+      let nextData = b.data;
       let status = b.status,
         start = b.start_ms,
         end = b.end_ms,
@@ -298,7 +300,44 @@ export class CloudBookings extends TenantRepository {
         proposal = b.proposal;
       const settings = JSON.parse(business.settings),
         ctx = await this.context();
-      if (action === "propose") {
+      if (action === "request_reschedule") {
+        requireThat(
+          actor === "customer" && ["confirmed", "rescheduled"].includes(status),
+          "Cannot request another time now",
+          409,
+        );
+        const at = Date.parse(input.startAt);
+        requireThat(
+          Number.isFinite(at) &&
+            at > Date.now() &&
+            at < Date.now() + 366 * 86400000,
+          "Request a date within the next year",
+        );
+        const request = {
+          startAt: at,
+          note: typeof input.note === "string" ? input.note.slice(0, 1000) : "",
+          createdAt: Date.now(),
+        };
+        nextData = JSON.stringify({
+          ...JSON.parse(b.data),
+          rescheduleRequest: request,
+        });
+        commands.push(
+          this.command(
+            "UPDATE bookings SET data=? WHERE business_id=? AND id=?",
+            nextData,
+            this.tenant,
+            id,
+          ),
+        );
+        this.event(
+          commands,
+          id,
+          "customer.reschedule_requested",
+          "customer",
+          request,
+        );
+      } else if (action === "propose") {
         requireThat(
           actor === "owner" &&
             [
@@ -396,6 +435,22 @@ export class CloudBookings extends TenantRepository {
           this.tenant,
         ),
       );
+      if (
+        action !== "request_reschedule" &&
+        JSON.parse(b.data).rescheduleRequest
+      ) {
+        const data = JSON.parse(b.data);
+        delete data.rescheduleRequest;
+        nextData = JSON.stringify(data);
+        commands.push(
+          this.command(
+            "UPDATE bookings SET data=? WHERE business_id=? AND id=?",
+            JSON.stringify(data),
+            this.tenant,
+            id,
+          ),
+        );
+      }
       if (["confirmed", "rescheduled"].includes(status)) {
         commands.push(
           this.command(
@@ -416,14 +471,16 @@ export class CloudBookings extends TenantRepository {
           ),
         );
       }
-      this.event(commands, id, "booking." + action, actor, {
-        from: b.status,
-        to: status,
-        start_ms: start,
-        proposal: proposal ? JSON.parse(proposal) : null,
-      });
+      if (action !== "request_reschedule")
+        this.event(commands, id, "booking." + action, actor, {
+          from: b.status,
+          to: status,
+          start_ms: start,
+          proposal: proposal ? JSON.parse(proposal) : null,
+        });
       return this.view({
         ...b,
+        data: nextData,
         status,
         start_ms: start,
         end_ms: end,

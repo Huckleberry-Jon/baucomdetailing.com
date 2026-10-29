@@ -173,9 +173,14 @@ export async function enqueue(s, origin, env) {
         );
       const owner = {
         title:
-          event === "booking.requested"
-            ? "New booking request"
-            : "Customer booking update",
+          {
+            "booking.requested": "New booking request",
+            "booking.cancel": "Customer cancellation",
+            "booking.accept": "Customer accepted proposed time",
+            "customer.reschedule_requested": "Customer reschedule request",
+            "appointment.reminder": "Appointment reminder",
+            "payment.recorded": "Payment recorded",
+          }[event] ?? "Customer booking update",
         body: "Open your private dashboard to review the booking.",
         subject: "Booking update",
         text: event + "\nReview: " + origin + "/owner?booking=" + booking.id,
