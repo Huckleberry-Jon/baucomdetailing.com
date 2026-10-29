@@ -78,7 +78,7 @@ class _JobPhotosState extends State<JobPhotos> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Selected photos are optimized on this phone before private upload. Camera originals remain in your photo library. Invoice selection does not publish a photo.',
+            'Photos are optimized before private upload. Existing library originals stay on your phone. Invoice selection does not publish a photo.',
           ),
           if (widget.api.isDemo) const Text('Demo contains no photographs.'),
           if (busy) const LinearProgressIndicator(),

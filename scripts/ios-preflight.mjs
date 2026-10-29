@@ -20,7 +20,7 @@ assert.equal(
   [...project.matchAll(/DEVELOPMENT_TEAM = UDDPKPR3CJ;/g)].length,
   6,
 );
-assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+2$/m);
+assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+3$/m);
 assert.match(
   read(app + "ios/Runner/Info.plist"),
   /<key>CFBundleDisplayName<\/key>\s*<string>DocDetailing<\/string>/,
@@ -55,7 +55,7 @@ assert(
 );
 assert(yaml.includes("node scripts/verify-ios-archive.mjs"));
 assert(!yaml.includes("--signing-only"));
-assert(yaml.includes('APP_BUILD_NUMBER: "2"'));
+assert(yaml.includes('APP_BUILD_NUMBER: "3"'));
 assert(yaml.includes("artifacts/**"));
 
 for (const flag of [

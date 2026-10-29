@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.6
-      xcode: latest
+      xcode: "26.6"
     scripts:
       - name: Require approved source branch
         script: test "$CM_BRANCH" = main
@@ -23,7 +23,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.6
-      xcode: latest
+      xcode: "26.6"
     scripts:
       - name: Require acceptance approval
         script: |
@@ -43,12 +43,12 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.6
-      xcode: latest
+      xcode: "26.6"
       vars:
         IOS_BUILD_APPROVED: "true"
         SHARED_BACKEND_ACCEPTED: "true"
         IOS_SIGNING_APPROVED: "true"
-        APP_BUILD_NUMBER: "2"
+        APP_BUILD_NUMBER: "3"
       ios_signing:
         certificates:
           - docfamily_distribution_master_2026_09

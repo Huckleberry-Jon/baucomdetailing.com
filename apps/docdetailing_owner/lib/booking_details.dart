@@ -356,6 +356,15 @@ class _BookingDetailsState extends State<BookingDetails> {
                 'Duration: ${b['end_ms'] == null ? 'Not yet confirmed' : '${((b['end_ms'] as int) - (b['start_ms'] as int)) ~/ 60000} minutes'}',
               ),
               Text('Notes: ${data['concerns'] ?? ''}'),
+              if (data['rescheduleRequest'] case final request?)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      'Customer requested: ${widget.clock.label(request['startAt'])}\n${request['note'] ?? ''}\nThe existing appointment remains reserved until another time is agreed.',
+                    ),
+                  ),
+                ),
               if (b['proposal'] != null)
                 Text(
                   'Proposed time: ${widget.clock.label(objectMap(b['proposal'])['startAt'])}\nWaiting for the customer to accept. The existing reservation remains in place.',

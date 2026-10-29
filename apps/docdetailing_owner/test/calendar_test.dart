@@ -9,6 +9,7 @@ import 'package:docdetailing_owner/business_time.dart';
 class CalendarFixture extends DemoOwnerApi {
   final writes = <Map<String, dynamic>>[], queries = <String>[];
   String status = 'pending';
+  Map<String, dynamic>? rescheduleRequest;
   String get now => DateTime.now().toUtc().toIso8601String();
   Map<String, dynamic> get settings => {
     'timezone': 'UTC',
@@ -42,7 +43,11 @@ class CalendarFixture extends DemoOwnerApi {
       'addons': [],
       'estimatedMin': 12000,
     },
-    'data': {'concerns': 'Fixture notes', 'requestedAt': now},
+    'data': {
+      'concerns': 'Fixture notes',
+      'requestedAt': now,
+      if (rescheduleRequest != null) 'rescheduleRequest': rescheduleRequest,
+    },
   };
   @override
   bool get isDemo => false;
@@ -157,6 +162,31 @@ void main() {
         'durationMinutes': 90,
       });
       expect(find.text('Confirmed'), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'owner sees a customer reschedule request without losing confirmed appointment',
+    (tester) async {
+      final api = CalendarFixture()
+        ..status = 'confirmed'
+        ..rescheduleRequest = {
+          'startAt': DateTime.utc(2026, 12, 1, 15).millisecondsSinceEpoch,
+          'note': 'Please move to afternoon',
+        };
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BookingDetails(
+            api: api,
+            bookingId: 'booking-1',
+            clock: BusinessTime('UTC'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Customer requested:'), findsOneWidget);
+      expect(find.textContaining('Please move to afternoon'), findsOneWidget);
+      expect(find.text('Confirmed'), findsOneWidget);
+      expect(api.writes, isEmpty);
     },
   );
 }

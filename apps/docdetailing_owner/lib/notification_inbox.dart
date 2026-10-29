@@ -115,6 +115,8 @@ class _NotificationInboxState extends State<NotificationInbox> {
       const {
         'booking.requested': 'New booking request',
         'booking.cancelled': 'Appointment cancelled',
+        'booking.cancel': 'Appointment cancelled',
+        'booking.accept': 'Customer accepted proposed time',
         'customer.cancelled': 'Customer cancelled',
         'customer.reschedule_requested': 'Customer requested another time',
         'customer.accepted': 'Customer accepted appointment',

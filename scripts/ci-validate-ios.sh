@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p artifacts
+task_root="$(pwd)"
+trap '(cd "$task_root" && node scripts/ios-artifact-manifest.mjs)' EXIT
 node scripts/ios-preflight.mjs 2>&1 | tee artifacts/source-preflight.log
 python3 -B -m unittest discover -s test -p test_ios_plist.py 2>&1 | tee artifacts/plist-tests.log
 git rev-parse HEAD > artifacts/source-commit.txt

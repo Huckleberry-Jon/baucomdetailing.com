@@ -131,17 +131,20 @@ class _WorkspaceState extends State<WorkspaceScreen> {
   }
 
   int cents(String? s) => parseMoneyCents(s ?? '0');
-  Future<void> addMaterial() async {
-    final f = await form('Add material', {
-      'Product': '',
-      'Quantity': '1',
-      'Unit (oz/gallon/bottle/piece)': 'oz',
-      'Unit cost': '0',
-      'Markup percent': '0',
-      'Taxable (yes/no)': 'no',
+  Future<void> addMaterial([Map? row]) async {
+    final product = row == null ? <String, dynamic>{} : payload(row);
+    final f = await form(row == null ? 'Add material' : 'Edit material', {
+      'Product': product['product'] as String? ?? '',
+      'Quantity': quantityInput(product['quantityMillis'] as int? ?? 1000),
+      'Unit (oz/gallon/bottle/piece)': product['unit'] as String? ?? 'oz',
+      'Unit cost': moneyInput(product['costCents'] as int? ?? 0),
+      'Markup percent': moneyInput(product['markupBps'] as int? ?? 0),
+      'Taxable (yes/no)': product['taxable'] == true ? 'yes' : 'no',
     });
     if (f == null) return;
     await save('/api/owner/materials', {
+      if (row != null) 'id': row['id'],
+      if (row != null) 'version': row['version'],
       'product': f['Product'],
       'quantityMillis': quantityMillis(f['Quantity']!),
       'unit': f['Unit (oz/gallon/bottle/piece)'],
@@ -532,6 +535,16 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                               child: const Text('Vehicles & service history'),
                             ),
                           if (section == 'Materials') ...[
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () => run(() => addMaterial(row)),
+                              child: const Text('Edit product'),
+                            ),
+                            const Text(
+                              'Product quantity is the default charge quantity. Available stock is recorded separately.',
+                            ),
+
                             Text(
                               'Available: ${quantityInput(row['available_quantity_millis'] as int? ?? 0)} ${d['unit']}',
                             ),

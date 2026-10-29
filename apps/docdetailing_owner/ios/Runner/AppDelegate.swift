@@ -158,7 +158,11 @@ private final class NativePushCoordinator: NSObject, UNUserNotificationCenterDel
   func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     if let value = payload(notification.request.content, type: "foreground") { emit(value) }
-    completionHandler([.banner, .list, .sound, .badge])
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .list, .sound, .badge])
+    } else {
+      completionHandler([.alert, .sound, .badge])
+    }
   }
   func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void) {
