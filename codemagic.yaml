@@ -1,0 +1,81 @@
+# Manual preparation only. No triggers, publishing, credentials or production backend.
+workflows:
+  flutter-validation:
+    name: DocDetailing Flutter foundation
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.44.6
+      xcode: latest
+    scripts:
+      - name: Require approved source branch
+        script: test "$CM_BRANCH" = main
+      - name: Resolve dependencies
+        script: |
+          cd apps/docdetailing_owner
+          flutter pub get
+      - name: Analyze and test
+        script: |
+          cd apps/docdetailing_owner
+          flutter analyze
+          flutter test
+  ios-unsigned:
+    name: Approved unsigned iOS connectivity validation
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.44.6
+      xcode: latest
+    scripts:
+      - name: Require acceptance approval
+        script: |
+          test "$CM_BRANCH" = main
+          test "$IOS_BUILD_APPROVED" = true
+          test "$SHARED_BACKEND_ACCEPTED" = true
+      - name: Analyze, test and build unsigned only
+        script: |
+          cd apps/docdetailing_owner
+          flutter pub get
+          flutter analyze
+          flutter test
+          flutter build ios --release --no-codesign --dart-define-from-file=config/staging.json
+
+  ios-signed-staging:
+    name: Approved DocDetailing staging archive (no upload)
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.44.6
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.docincorporated.docdetailing
+    scripts:
+      - name: Require approved source, backend and signing
+        script: |
+          set -eu
+          test "$CM_BRANCH" = main
+          test "$IOS_BUILD_APPROVED" = true
+          test "$SHARED_BACKEND_ACCEPTED" = true
+          test "$IOS_SIGNING_APPROVED" = true
+          case "$APP_BUILD_NUMBER" in ''|*[!0-9]*) exit 1 ;; esac
+          test "$APP_BUILD_NUMBER" -gt 0
+      - name: Validate app and backend configuration
+        script: |
+          set -eu
+          node scripts/ios-preflight.mjs
+          cd apps/docdetailing_owner
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Apply only uploaded DocDetailing signing assets
+        script: |
+          set -eu
+          cd apps/docdetailing_owner
+          xcode-project use-profiles
+      - name: Archive staging client without publishing
+        script: |
+          set -eu
+          cd apps/docdetailing_owner
+          flutter build ipa --release --build-name=1.0 --build-number="$APP_BUILD_NUMBER" --dart-define-from-file=config/staging.json --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - apps/docdetailing_owner/build/ios/ipa/*.ipa
+      - apps/docdetailing_owner/build/ios/archive/*.xcarchive
+      - /tmp/xcodebuild_logs/*.log

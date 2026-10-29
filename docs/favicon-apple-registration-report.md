@@ -1,0 +1,13 @@
+# Favicon and registered iOS identity — October 28, 2026
+
+The approved Vintage Gold Detailing Brush Emblem.png is now the website favicon, Apple touch icon and website notification/PWA icon. The exact original remains preserved privately under data/website-assets and on the Desktop. Generated PNGs (16, 32, 180, 192, 512) and a multi-size ICO are source controlled. All six website HTML documents reference versioned assets; no booking/pricing/backend behavior changed. The commercial native app icon is still the Flutter placeholder pending approval of its separate artwork.
+
+Private staging: https://docdetailing-site-staging.huckleberryservices.workers.dev/
+Worker version: cb363916-4f04-48a3-800d-e76e6e8cae7e.
+Hosted verification: exact bytes/dimensions/MIME for all five PNGs, exact ICO bytes, favicon markup on home/owner/booking/privacy/terms, blocked unauthenticated catalog and owner dashboard, successful authorized owner login/dashboard and catalog. The generated 512px asset was visually inspected in the local browser. No new booking was created by this narrowly scoped hosted check; booking/conflict behavior was covered by the full local actual-workerd suite. Private gate remains enabled; outbound email/push remain disabled. Production DNS, Netlify and other Doc projects were untouched.
+
+Verification: npm test 48/48; npm run test:cloudflare 29/29; flutter analyze clean; flutter test 8/8. node scripts/ios-preflight.mjs passes. Prettier successfully parsed both Codemagic YAML copies. No macOS/Xcode or remote Codemagic build was executed.
+
+Owner-provided Apple registration is configured locally: DocDetailing, com.docincorporated.docdetailing, team UDDPKPR3CJ, App Store version 1.0; source 1.0.0+1. SKU DOCDETAILING-IOS-001 is recorded as owner-selected. No ASC screenshot/account inspection was performed here. Root codemagic.yaml provides manual validation, unsigned staging and gated signed artifact-only workflows on main. No publishing, automatic triggers or credentials are included. Non-demo staging configuration carries only the approved HTTPS origin.
+
+Exact next step: add/select a separate DocDetailing Codemagic application for this repository, main and root codemagic.yaml; securely supply its matching team/bundle App Store profile and signing certificate/private key; run flutter-validation after approving CI usage. Native acceptance, secure persisted sessions, APNs, complete calendar/financial UX, final native icon and HEIC handling remain release gates. Approve a particular signed candidate and Apple upload separately after those gates and device checks. See apple-testflight-preparation.md for the complete sequence.

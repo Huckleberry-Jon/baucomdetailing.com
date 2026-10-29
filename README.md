@@ -1,3 +1,5 @@
+Current favicon and Apple registration preparation: [verification report](docs/favicon-apple-registration-report.md).
+
 Latest staging update: [editable social links and verification](docs/social-links-staging-report.md).
 
 Latest mobile correction: [booking contrast, responsive checks and staging results](docs/mobile-booking-contrast-report.md).

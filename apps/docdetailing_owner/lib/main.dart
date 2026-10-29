@@ -15,7 +15,7 @@ class OwnerApp extends StatelessWidget {
   final OwnerApi api;
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'DocDetailing Owner — development',
+    title: 'DocDetailing — development',
     theme: ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff244f41)),
       useMaterial3: true,
@@ -73,7 +73,7 @@ class _OwnerHomeState extends State<OwnerHome> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('DocDetailing Owner'),
+      title: const Text('DocDetailing'),
       actions: [
         if (signedIn)
           IconButton(

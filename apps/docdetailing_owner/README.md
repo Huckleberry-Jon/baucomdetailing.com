@@ -1,17 +1,11 @@
-# DocDetailing Owner — Flutter foundation
+# DocDetailing Flutter application
 
-Independent app directory; separate provisional iOS bundle identity, not registered with Apple. No DocInvoices signing material is used. Current source lives in this repository; a separate remote app repository and App Store Connect record have not been created.
+Registered identity supplied by the owner: com.docincorporated.docdetailing, team UDDPKPR3CJ, name DocDetailing, App Store version 1.0. No other Doc app signing material is used.
 
-Implemented: explicit synthetic demo dashboard, sign-in flow, booking list, versioned confirmation, refresh/logout, provider-neutral OwnerApi, HTTPS-only origin-bound transport with redirect rejection, and optional private-preview gate access. Sessions stay in memory; no password/session is written to preferences. Backend membership/authorization remains authoritative.
+Run flutter pub get, flutter analyze and flutter test here. Default flutter run uses synthetic demo data. For the isolated backend use flutter run --dart-define-from-file=config/staging.json; enter the tester gate and owner credentials interactively. Credentials are never compile-time constants. Sessions remain in memory.
 
-From this directory:
-- flutter pub get
-- flutter analyze
-- flutter test
-- flutter run (synthetic demo by default)
+Implemented: booking management, calendar agenda, customers/vehicles, reviews, private job photos, materials, invoice/payment/expense foundations and financial reports. Remaining release gates include secure session persistence, native APNs, complete calendar controls, financial recovery/UX and real-device acceptance. See ../../docs/apple-testflight-preparation.md.
 
-Live transport is opt-in with DEMO_MODE=false and an approved HTTPS API_ORIGIN. No live app connectivity has been tested. Keychain persistence, APNs, calendar/photo/review UI and the remaining commercial modules are pending. Never mark this foundation as a functional TestFlight release.
+Select repository-root codemagic.yaml on main. The app-local copy is mirrored; node scripts/ios-preflight.mjs from the repository root checks identity/configuration consistency. Workflows are manual, with no publishing. Signing assets belong only in Codemagic secure storage. No signed build has been made here.
 
-codemagic.yaml has no automatic triggers, publishing or signing credentials. Its unsigned iOS workflow requires explicit IOS_BUILD_APPROVED and SHARED_BACKEND_ACCEPTED flags. Verify the workflow working directory if moving this app into a separate repository. Windows tests do not establish an Xcode archive; a separately approved Mac build and independent signing/ASC setup remain required.
-
-The scaffold's icon/launch resources are temporary Flutter development assets. Joseph's final app name/artwork, privacy/support pages and permission strings must be approved before TestFlight. No camera/APNs permissions are requested by this foundation.
+The Flutter native app icon remains a development placeholder. The approved gold B brush emblem is the Baucom website favicon, not approved commercial DocDetailing app artwork.
