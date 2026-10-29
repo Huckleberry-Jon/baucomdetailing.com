@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { generateKeyPairSync, verify, createPrivateKey } from "node:crypto";
 import {
   appleAPIToken,
+  resolveIntegrationKey,
   lookupAppleApp,
   appBundle,
 } from "../scripts/apple-upload-preflight.mjs";
@@ -88,4 +89,22 @@ test("Codemagic SEC1 EC keys and PKCS8 keys both sign valid ES256 tokens", () =>
     error.message.includes("could not be parsed securely") && !error.message.includes(secret));
   const wrong = generateKeyPairSync("ec", {namedCurve: "secp384r1"}).privateKey.export({type:"pkcs8",format:"pem"});
   assert.throws(() => appleAPIToken({...credentials, privateKey: wrong}), /P-256/);
+});
+
+
+test("integration key references and encoded PEM resolve without revealing secrets", async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "docdetailing-key-test-"));
+  const file = path.join(dir, "synthetic.p8");
+  try {
+    fs.writeFileSync(file, keys.privateKey);
+    for (const privateKey of ["@file:" + file, Buffer.from(keys.privateKey).toString("base64"), keys.privateKey.replaceAll("\n", "\\n")]) {
+      const [h,p,s] = appleAPIToken({...credentials,privateKey}).split(".");
+      assert(verify("sha256",Buffer.from(h+"."+p),{key:keys.publicKey,dsaEncoding:"ieee-p1363"},Buffer.from(s,"base64url")));
+    }
+    assert.equal(resolveIntegrationKey("@env:TEST_KEY",{TEST_KEY:keys.privateKey}),keys.privateKey.trim());
+    assert.throws(() => resolveIntegrationKey("@file:"+file+"-missing"), error => !error.message.includes(file));
+  } finally { fs.unlinkSync(file); fs.rmdirSync(dir); }
 });

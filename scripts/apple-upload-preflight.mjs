@@ -2,7 +2,31 @@ import assert from "node:assert/strict";
 import { sign, createPrivateKey } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
 export const appBundle = "com.docincorporated.docdetailing";
+export function resolveIntegrationKey(value, env = process.env) {
+  assert(typeof value === "string" && value.trim(), "Apple integration private key environment variable is missing or empty");
+  let key = value.trim();
+  // Match Codemagic CLI's documented @file:/@env: secret references.
+  for (let depth = 0; depth < 3; depth++) {
+    if (key.startsWith("@env:")) {
+      key = env[key.slice(5)]?.trim() ?? "";
+    } else if (key.startsWith("@file:")) {
+      try {
+        const file = key.slice(6);
+        const stat = fs.statSync(file);
+        assert(stat.isFile() && stat.size <= 16384);
+        key = fs.readFileSync(file, "utf8").trim();
+      } catch { assert.fail("Apple integration key file reference is unavailable"); }
+    } else break;
+  }
+  if (/^[A-Za-z0-9+/=\s]+$/.test(key)) {
+    const decoded = Buffer.from(key, "base64").toString("utf8");
+    if (decoded.startsWith("-----BEGIN ")) key = decoded;
+  }
+  if (key.startsWith("-----BEGIN ")) key = key.replaceAll("\\n", "\n");
+  return key;
+}
 export function appleAPIToken(
   { keyId, issuerId, privateKey },
   now = Date.now(),
@@ -21,9 +45,10 @@ export function appleAPIToken(
   );
   // Codemagic can serialize EC keys as SEC1 (EC PRIVATE KEY), not only PKCS8.
   // Parse in memory; never print the supplied value or parser errors.
+  const keyMaterial = resolveIntegrationKey(privateKey);
   let signingKey;
   try {
-    signingKey = createPrivateKey(privateKey);
+    signingKey = createPrivateKey(keyMaterial);
   } catch {
     assert.fail("Apple integration private key could not be parsed securely");
   }
