@@ -1,3 +1,5 @@
+Superseded status: R2 was subsequently enabled by the owner and the private preview is now deployed. See cloudflare-hosted-preview-report.md for current hosted results. The following preserves the earlier provisioning checkpoint.
+
 # Cloudflare staging provisioning — October 28, 2026
 
 ## Current result
