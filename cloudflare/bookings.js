@@ -3,6 +3,20 @@ import { hash, token, text, requireThat } from "../src/security.js";
 import { notice } from "../src/catalog.js";
 import { TenantRepository } from "./repository.js";
 import { schedule, validateSettings, reserved, dayKey } from "./domain.js";
+const preserveReservations = (settings, ctx) => {
+  for (const booking of ctx.bookings) {
+    if (reserved(booking) && booking.start_ms > Date.now()) {
+      schedule(
+        settings,
+        ctx.bookings,
+        ctx.blocks,
+        booking.start_ms,
+        (booking.end_ms - booking.start_ms) / 60000,
+        booking.id,
+      );
+    }
+  }
+};
 export class CloudBookings extends TenantRepository {
   async settings() {
     return JSON.parse(
@@ -16,7 +30,10 @@ export class CloudBookings extends TenantRepository {
   }
   async catalog() {
     return (
-      await this.all("SELECT * FROM services WHERE business_id=? ORDER BY rowid", this.tenant)
+      await this.all(
+        "SELECT * FROM services WHERE business_id=? ORDER BY rowid",
+        this.tenant,
+      )
     ).map((s) => ({ ...JSON.parse(s.data), version: s.version }));
   }
   async get(id) {
@@ -212,6 +229,7 @@ export class CloudBookings extends TenantRepository {
           JSON.stringify(snapshot),
           JSON.stringify({
             concerns,
+            requestedAt: new Date(start).toISOString(),
             location: customer.address,
             noticeAcceptedAt: now,
           }),
@@ -229,6 +247,7 @@ export class CloudBookings extends TenantRepository {
       );
       this.event(commands, id, "booking.requested", "customer", {
         noticeAcceptedAt: now,
+        start_ms: start,
       });
       return {
         id,
@@ -418,6 +437,7 @@ export class CloudBookings extends TenantRepository {
     return this.atomic(async (business, commands) => {
       const ctx = await this.context(),
         s = validateSettings({ ...input }, ctx.bookings);
+      preserveReservations(s, ctx);
       commands.push(
         this.command(
           "UPDATE businesses SET settings=? WHERE id=?",
@@ -427,6 +447,37 @@ export class CloudBookings extends TenantRepository {
       );
       this.audit(commands, actor, "settings.updated", this.tenant);
       return s;
+    });
+  }
+  async updateScheduleSettings(input, actor) {
+    const allowed = [
+      "workingDays",
+      "openMinute",
+      "closeMinute",
+      "closedDates",
+      "bufferMinutes",
+      "maxDaily",
+    ];
+    requireThat(
+      Object.keys(input).every((k) => allowed.includes(k)),
+      "Only scheduling fields may be changed",
+    );
+    return this.atomic(async (business, commands) => {
+      const ctx = await this.context();
+      const next = validateSettings(
+        { ...JSON.parse(business.settings), ...input, scheduleConfirmed: true },
+        ctx.bookings,
+      );
+      preserveReservations(next, ctx);
+      commands.push(
+        this.command(
+          "UPDATE businesses SET settings=? WHERE id=?",
+          JSON.stringify(next),
+          this.tenant,
+        ),
+      );
+      this.audit(commands, actor, "schedule.settings.updated", this.tenant);
+      return next;
     });
   }
   async addBlock(input, actor) {

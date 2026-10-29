@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
 import 'workspace.dart';
+import 'calendar_screen.dart';
 
 void main() {
   const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
@@ -180,10 +181,12 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                         Navigator.push(
                           context,
                           MaterialPageRoute<void>(
-                            builder: (context) => WorkspaceScreen(
-                              api: widget.api,
-                              section: section,
-                            ),
+                            builder: (context) => section == 'Calendar'
+                                ? OwnerCalendar(api: widget.api)
+                                : WorkspaceScreen(
+                                    api: widget.api,
+                                    section: section,
+                                  ),
                           ),
                         );
                       },

@@ -621,6 +621,8 @@ export async function route(request, env, ctx) {
           return { ok: true };
         }),
       );
+    if (path === "/api/owner/schedule-settings" && method === "PUT")
+      return json(await s.updateScheduleSettings(body, user.id));
     if (path === "/api/owner/calendar" && method === "GET")
       return json(
         await s.calendar(

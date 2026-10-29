@@ -287,7 +287,9 @@ class HttpOwnerApi implements OwnerApi, SessionOwnerApi {
         throw const ApiFailure(413, 'Preview too large.');
       }
     }
-    if (epoch != _epoch) throw const ApiFailure(401, 'Session changed; sign in again.');
+    if (epoch != _epoch) {
+      throw const ApiFailure(401, 'Session changed; sign in again.');
+    }
     return bytes;
   }
 
@@ -371,7 +373,19 @@ class DemoOwnerApi implements OwnerApi {
     if (method != "GET") {
       throw const ApiFailure(409, "Use an approved backend to save records.");
     }
-    if (path.contains("/calendar")) return {"bookings": [], "blocks": []};
+    if (path.contains("/calendar")) {
+      return {
+        "bookings": [],
+        "blocks": [],
+        "settings": {
+          "timezone": "UTC",
+          "workingDays": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+          "openMinute": 540,
+          "closeMinute": 1020,
+          "closedDates": [],
+        },
+      };
+    }
     if (path.contains("/finance/report")) {
       return {
         "basis": "Demo: no financial activity recorded.",
@@ -389,7 +403,14 @@ class DemoOwnerApi implements OwnerApi {
     if (path.contains("/dashboard")) {
       return {
         "notifications": [],
-        "settings": {"googleReviewUrl": null},
+        "settings": {
+          "googleReviewUrl": null,
+          "timezone": "UTC",
+          "workingDays": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+          "openMinute": 540,
+          "closeMinute": 1020,
+          "closedDates": [],
+        },
       };
     }
     return {"records": []};
