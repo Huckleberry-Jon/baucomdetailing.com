@@ -15,6 +15,7 @@ export function validateArchiveMetadata({
   signerDer,
   now = new Date(),
   requirePush = true,
+  expectedBuild,
 }) {
   assert.equal(info.CFBundleIdentifier, bundle, "Wrong application bundle");
   assert.equal(
@@ -27,6 +28,12 @@ export function validateArchiveMetadata({
     /^[1-9][0-9]*$/,
     "Positive build number required",
   );
+  if (expectedBuild !== undefined)
+    assert.equal(
+      String(info.CFBundleVersion),
+      String(expectedBuild),
+      "Unexpected build number",
+    );
   assert.deepEqual(profile.TeamIdentifier, [team], "Wrong profile team");
   assert(profile.UUID && profile.Name, "Profile identity is missing");
   assert(new Date(profile.ExpirationDate) > now, "Profile expired");
@@ -135,6 +142,7 @@ function verify(archive) {
       entitlements,
       signerDer,
       requirePush: !process.argv.includes("--signing-only"),
+      expectedBuild: process.env.APP_BUILD_NUMBER,
     });
     console.log(
       JSON.stringify(

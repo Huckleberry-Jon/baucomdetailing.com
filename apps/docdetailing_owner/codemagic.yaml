@@ -48,7 +48,7 @@ workflows:
         IOS_BUILD_APPROVED: "true"
         SHARED_BACKEND_ACCEPTED: "true"
         IOS_SIGNING_APPROVED: "true"
-        APP_BUILD_NUMBER: "3"
+        APP_BUILD_NUMBER: "4"
       ios_signing:
         certificates:
           - docfamily_distribution_master_2026_09
@@ -82,6 +82,7 @@ workflows:
           set -eu
           result=0
           node scripts/verify-ios-archive.mjs apps/docdetailing_owner/build/ios/archive/Runner.xcarchive > artifacts/ios-signing-verification.json 2> artifacts/ios-signing-errors.log || result=$?
+          node scripts/verify-ios-ipa.mjs apps/docdetailing_owner/build/ios/ipa/docdetailing_owner.ipa > artifacts/ios-ipa-verification.json 2> artifacts/ios-ipa-errors.log || result=$?
           node scripts/ios-artifact-manifest.mjs
           exit "$result"
     artifacts:

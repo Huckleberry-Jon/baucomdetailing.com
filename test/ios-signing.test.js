@@ -53,3 +53,15 @@ test("archive release policy rejects wrong identity, expired/development profile
     assert.throws(() => validateArchiveMetadata(x));
   }
 });
+
+test("archive policy requires the exact selected build when supplied", () => {
+  const x = fixture();
+  assert.equal(
+    validateArchiveMetadata({ ...x, expectedBuild: "1" }).build,
+    "1",
+  );
+  assert.throws(
+    () => validateArchiveMetadata({ ...x, expectedBuild: "4" }),
+    /Unexpected build number/,
+  );
+});
