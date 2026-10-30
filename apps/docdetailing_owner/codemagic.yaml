@@ -1,5 +1,29 @@
 # Manual preparation only. No triggers, publishing, credentials or production backend.
 workflows:
+  ios-approved-upload:
+    name: Approved build 4 upload only (no review or release)
+    instance_type: mac_mini_m2
+    inputs:
+      artifact_url:
+        description: Verified build 4 Codemagic IPA artifact URL
+        type: string
+      approval:
+        description: Explicit approval token for this upload
+        type: string
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      xcode: "26.6"
+      vars:
+        APPROVED_IPA_URL: ${{ inputs.artifact_url }}
+        APPROVED_BUILD_UPLOAD: ${{ inputs.approval }}
+        APP_BUILD_NUMBER: "4"
+    scripts:
+      - name: Verify exact approved IPA and upload without review or release
+        script: node scripts/upload-approved-ios.mjs
+    artifacts:
+      - artifacts/*.json
+
   apple-upload-preflight:
     name: Read-only Apple upload preflight (no upload)
     instance_type: mac_mini_m2
