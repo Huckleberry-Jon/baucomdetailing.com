@@ -1,29 +1,5 @@
-# Manual preparation only. No triggers, publishing, credentials or production backend.
+# Manual workflows only. Upload requires explicit approval; no review, invitations or public release.
 workflows:
-  ios-approved-upload:
-    name: Approved build 4 upload only (no review or release)
-    instance_type: mac_mini_m2
-    inputs:
-      artifact_url:
-        description: Verified build 4 Codemagic IPA artifact URL
-        type: string
-      approval:
-        description: Explicit approval token for this upload
-        type: string
-    integrations:
-      app_store_connect: Codemagic
-    environment:
-      xcode: "26.6"
-      vars:
-        APPROVED_IPA_URL: ${{ inputs.artifact_url }}
-        APPROVED_BUILD_UPLOAD: ${{ inputs.approval }}
-        APP_BUILD_NUMBER: "4"
-    scripts:
-      - name: Verify exact approved IPA and upload without review or release
-        script: node scripts/upload-approved-ios.mjs
-    artifacts:
-      - artifacts/*.json
-
   apple-upload-preflight:
     name: Read-only Apple upload preflight (no upload)
     instance_type: mac_mini_m2
@@ -81,7 +57,14 @@ workflows:
           flutter build ios --release --no-codesign --dart-define-from-file=config/staging.json
 
   ios-signed-staging:
-    name: Approved DocDetailing staging archive (no upload)
+    name: Controlled DocDetailing build and approved upload
+    inputs:
+      approval:
+        description: Leave blank for archive only; upload-build-5 authorizes upload only
+        type: string
+        default: ""
+    integrations:
+      app_store_connect: Codemagic
     instance_type: mac_mini_m2
     environment:
       flutter: 3.44.6
@@ -90,7 +73,8 @@ workflows:
         IOS_BUILD_APPROVED: "true"
         SHARED_BACKEND_ACCEPTED: "true"
         IOS_SIGNING_APPROVED: "true"
-        APP_BUILD_NUMBER: "4"
+        APP_BUILD_NUMBER: "5"
+        APPROVED_BUILD_UPLOAD: ${{ inputs.approval }}
       ios_signing:
         certificates:
           - docfamily_distribution_master_2026_09
@@ -116,7 +100,7 @@ workflows:
       - name: Archive staging client without publishing
         script: |
           set -eu
-          bash scripts/ci-archive-ios.sh
+          env -u APP_STORE_CONNECT_PRIVATE_KEY -u APP_STORE_CONNECT_ISSUER_ID -u APP_STORE_CONNECT_KEY_IDENTIFIER bash scripts/ci-archive-ios.sh
           ditto -c -k --sequesterRsrc --keepParent apps/docdetailing_owner/build/ios/archive/Runner.xcarchive artifacts/Runner.xcarchive.zip
           if [ -d /tmp/xcodebuild_logs ]; then cp -R /tmp/xcodebuild_logs artifacts/xcodebuild_logs; fi
       - name: Verify archive signing and production push entitlements
@@ -127,6 +111,8 @@ workflows:
           node scripts/verify-ios-ipa.mjs apps/docdetailing_owner/build/ios/ipa/docdetailing_owner.ipa > artifacts/ios-ipa-verification.json 2> artifacts/ios-ipa-errors.log || result=$?
           node scripts/ios-artifact-manifest.mjs
           exit "$result"
+      - name: Upload verified build only when explicitly approved
+        script: node scripts/upload-fresh-ios.mjs
     artifacts:
       - artifacts/**
       - apps/docdetailing_owner/build/ios/ipa/*.ipa

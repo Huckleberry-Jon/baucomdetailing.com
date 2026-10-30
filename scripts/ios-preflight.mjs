@@ -20,7 +20,7 @@ assert.equal(
   [...project.matchAll(/DEVELOPMENT_TEAM = UDDPKPR3CJ;/g)].length,
   6,
 );
-assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+4$/m);
+assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+5$/m);
 assert.match(
   read(app + "ios/Runner/Info.plist"),
   /<key>CFBundleDisplayName<\/key>\s*<string>DocDetailing<\/string>/,
@@ -69,7 +69,7 @@ assert(
 assert(yaml.includes("node scripts/verify-ios-archive.mjs"));
 assert(yaml.includes("node scripts/verify-ios-ipa.mjs"));
 assert(!yaml.includes("--signing-only"));
-assert(yaml.includes('APP_BUILD_NUMBER: "4"'));
+assert(yaml.includes('APP_BUILD_NUMBER: "5"'));
 assert(yaml.includes("artifacts/**"));
 
 for (const flag of [
@@ -80,5 +80,6 @@ for (const flag of [
   assert(yaml.includes('test "$' + flag + '" = true'));
 assert(yaml.includes("--dart-define-from-file=config/staging.json"));
 console.log(
-  "iOS source preflight passed: registered identity, team, isolated staging origin and manual artifact-only workflow. Signing/Xcode/device verification still required.",
+  "iOS source preflight passed: registered identity, team, isolated staging origin and manual workflow with explicit upload approval. Signing/Xcode/device verification still required.",
 );
+
