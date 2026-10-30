@@ -14,7 +14,7 @@ export const websiteSlots = [
   ...["1", "2", "3", "4"].flatMap((n) =>
     ["before", "after"].map((kind) => ({
       slot: "gallery-" + n + "-" + kind,
-      label: "Transformation " + n + " â€” " + kind,
+      label: "Transformation " + n + " — " + kind,
       ratio: "3:2",
     })),
   ),
