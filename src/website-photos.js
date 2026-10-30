@@ -11,10 +11,10 @@ export const websiteSlots = [
   { slot: "action-1", label: "Owner portrait", ratio: "3:2" },
   { slot: "action-2", label: "Owner truck", ratio: "3:2" },
   { slot: "branding-logo", label: "Business logo / branding", ratio: "1:1" },
-  ...["1", "2"].flatMap((n) =>
+  ...["1", "2", "3", "4"].flatMap((n) =>
     ["before", "after"].map((kind) => ({
       slot: "gallery-" + n + "-" + kind,
-      label: "Transformation " + n + " — " + kind,
+      label: "Transformation " + n + " â€” " + kind,
       ratio: "3:2",
     })),
   ),

@@ -963,3 +963,22 @@ summary {
     display: none;
   }
 }
+
+/* Preserve the full documentary view after removing source black borders. */
+.before-after-grid .photo-slot.has-photo {
+  display: block;
+  aspect-ratio: auto;
+  background: #111;
+}
+.before-after-grid .photo-slot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.before-after-grid .photo-slot figcaption {
+  position: static;
+  background: #171717;
+  color: #fff;
+  font-size: 14px;
+}

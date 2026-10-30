@@ -72,7 +72,7 @@ test("website photographs stay private drafts until explicit permission and revo
   saveWebsitePhoto(db, input, photo, owner);
   assert.equal(publicWebsitePhotos(db).length, 0);
   assert.equal(db.prepare("SELECT count(*) n FROM audit_events").get().n, 3);
-  assert.equal(websiteSlots.length, 12);
+  assert.equal(websiteSlots.length, 16);
   db.close();
 });
 test("website slots cover every supplied package plus distinct action, gallery and branding locations", () => {
@@ -85,7 +85,7 @@ test("website slots cover every supplied package plus distinct action, gallery a
     "action-2",
     "branding-logo",
     "gallery-1-before",
-    "gallery-1-after",
+    "gallery-1-after", "gallery-3-before", "gallery-3-after", "gallery-4-before", "gallery-4-after",
   ])
     assert.ok(websiteSlots.some((s) => s.slot === slot));
   const { db } = fixture();
@@ -98,3 +98,4 @@ test("website slots cover every supplied package plus distinct action, gallery a
   );
   db.close();
 });
+
