@@ -46,6 +46,32 @@ test("private Cloudflare preview gates assets/APIs and production cookies remain
       ).status,
       401,
     );
+    for (const [path, text] of [
+      ["/app-privacy", /DocDetailing privacy policy/],
+      ["/app-support", /DocDetailing support/],
+    ]) {
+      const info = await call(r.mf, path, { host });
+      assert.equal(info.status, 200);
+      assert.match(info.data, text);
+      assert.doesNotMatch(info.data, /booking-form/);
+      assert.equal(
+        (await call(r.mf, path, { host, method: "POST", body: {} })).status,
+        401,
+      );
+    }
+    assert.equal(
+      (await call(r.mf, "/app-information.css", { host })).status,
+      200,
+    );
+    for (const path of ["/owner", "/booking", "/privacy", "/app-privacy.html"])
+      assert.match(
+        (await call(r.mf, path, { host })).data,
+        /Private development test/,
+      );
+    assert.equal(
+      (await call(r.mf, "/api/owner/dashboard", { host })).status,
+      401,
+    );
     const gate = await call(r.mf, "/dev-access", {
       method: "POST",
       host,

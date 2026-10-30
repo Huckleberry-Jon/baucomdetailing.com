@@ -1,0 +1,39 @@
+body {
+  margin: 0;
+  background: #111;
+  color: #f5f2e9;
+  font:
+    18px/1.65 system-ui,
+    sans-serif;
+}
+main {
+  max-width: 760px;
+  margin: auto;
+  padding: 36px 22px 70px;
+}
+h1,
+h2 {
+  line-height: 1.25;
+  color: #f3d384;
+}
+h2 {
+  margin-top: 32px;
+  font-size: 1.25em;
+}
+a {
+  color: #f3d384;
+}
+nav {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+footer {
+  margin-top: 40px;
+  border-top: 1px solid #666;
+  padding-top: 20px;
+}
+a:focus-visible {
+  outline: 3px solid white;
+  outline-offset: 4px;
+}

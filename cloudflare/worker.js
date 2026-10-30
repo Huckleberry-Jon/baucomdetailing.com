@@ -39,6 +39,8 @@ const staticPaths = {
   "/owner": "owner.html",
   "/booking": "booking.html",
   "/privacy": "privacy.html",
+  "/app-privacy": "app-privacy.html",
+  "/app-support": "app-support.html",
   "/terms": "terms.html",
   "/dev-access": "dev-access.html",
 };
@@ -227,6 +229,12 @@ export async function route(request, env, ctx) {
       "Request origin rejected",
       403,
     );
+  // Public app information contains no business records and grants no tester access.
+  if (
+    ["GET", "HEAD"].includes(method) &&
+    ["/app-privacy", "/app-support", "/app-information.css"].includes(path)
+  )
+    return serveAsset(env, request, path);
   const gateOpen =
     env.SITE_OPEN === "true" ||
     validGateSession(cookie.dev_access, env.PREVIEW_SIGNING_KEY);
