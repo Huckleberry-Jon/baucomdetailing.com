@@ -8,8 +8,8 @@ if (!approval || approval === "archive-only") { console.log("Archive only: Apple
 let stage = "approval validation";
 try {
   assert.equal(process.env.CM_BRANCH,"main");
-  assert.equal(approval,"upload-build-6");
-  assert.equal(process.env.APP_BUILD_NUMBER,"6");
+  assert.equal(approval,"upload-build-7");
+  assert.equal(process.env.APP_BUILD_NUMBER,"7");
   stage = "fresh IPA signing verification";
   const file = "apps/docdetailing_owner/build/ios/ipa/docdetailing_owner.ipa";
   const signing = verifyExportedIPA(file);
@@ -20,7 +20,7 @@ try {
   const env = Object.fromEntries(Object.entries(process.env).filter(([k])=>!k.startsWith("APP_STORE_CONNECT_") || auth.includes(k)));
   stage = "Apple package validation and upload";
   execFileSync("app-store-connect",["publish","--path",file,"--enable-package-validation","--altool-retries","1"],{env,stdio:"inherit"});
-  fs.writeFileSync("artifacts/upload-result.json",JSON.stringify({version:"1.0.0",build:"6",sha256:signing.sha256,uploadCommandSucceeded:true,reviewSubmitted:false,testersInvited:false,publicRelease:false},null,2));
+  fs.writeFileSync("artifacts/upload-result.json",JSON.stringify({version:"1.0.0",build:"7",sha256:signing.sha256,uploadCommandSucceeded:true,reviewSubmitted:false,testersInvited:false,publicRelease:false},null,2));
 } catch {
   console.error("Controlled upload stopped at "+stage+". No credential values are printed by this script.");
   process.exitCode=1;
