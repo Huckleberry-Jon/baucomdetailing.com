@@ -10,6 +10,7 @@ import 'booking_details.dart';
 import 'business_time.dart';
 import 'jobs_screen.dart';
 import 'home_dashboard.dart';
+import 'website_link.dart';
 
 void main() {
   const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
@@ -257,6 +258,21 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
               child: ListView(
                 children: [
                   const DrawerHeader(child: Text('Business workspace')),
+                  if (widget.api is HttpOwnerApi)
+                    ListTile(
+                      leading: const Icon(Icons.web),
+                      title: const Text('Edit website & photos'),
+                      onTap: busy
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              act(
+                                () => openOwnerWebsite(
+                                  (widget.api as HttpOwnerApi).origin,
+                                ),
+                              );
+                            },
+                    ),
                   for (final section in [
                     'Calendar',
                     'Jobs',
@@ -390,6 +406,12 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
           ] else ...[
             HomeDashboard(
               bookings: rows,
+              onWebsite: widget.api is HttpOwnerApi && !busy
+                  ? () => act(
+                      () =>
+                          openOwnerWebsite((widget.api as HttpOwnerApi).origin),
+                    )
+                  : null,
               onCalendar: () => Navigator.push<void>(
                 context,
                 MaterialPageRoute(

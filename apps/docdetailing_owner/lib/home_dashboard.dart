@@ -7,9 +7,11 @@ class HomeDashboard extends StatelessWidget {
     required this.bookings,
     required this.onCalendar,
     required this.onCustomers,
+    this.onWebsite,
   });
   final List<Booking> bookings;
   final VoidCallback onCalendar, onCustomers;
+  final VoidCallback? onWebsite;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +43,18 @@ class HomeDashboard extends StatelessWidget {
         Text('Ready for the road.', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 6),
         const Text('Your appointments, customers and next steps in one place.'),
+        if (onWebsite != null) ...[
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onWebsite,
+            icon: const Icon(Icons.web),
+            label: const Text('Edit website & photos'),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Opens the owner dashboard in your browser. Sign in there to edit website photos and settings.',
+          ),
+        ],
         const SizedBox(height: 20),
         Wrap(
           spacing: 12,

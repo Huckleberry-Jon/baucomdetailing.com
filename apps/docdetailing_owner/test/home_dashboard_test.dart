@@ -11,7 +11,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      var calendar = 0, customers = 0;
+      var calendar = 0, customers = 0, website = 0;
       final future = DateTime.now().add(const Duration(days: 2));
       await tester.pumpWidget(
         MaterialApp(
@@ -43,6 +43,7 @@ void main() {
                 ],
                 onCalendar: () => calendar++,
                 onCustomers: () => customers++,
+                onWebsite: () => website++,
               ),
             ),
           ),
@@ -50,7 +51,11 @@ void main() {
       );
       expect(find.text('1'), findsNWidgets(2));
       expect(find.textContaining('(device time)'), findsOneWidget);
+      await tester.tap(find.text('Edit website & photos'));
+      expect(website, 1);
+      await tester.ensureVisible(find.text('Open calendar'));
       await tester.tap(find.text('Open calendar'));
+      await tester.ensureVisible(find.text('Customer records'));
       await tester.tap(find.text('Customer records'));
       expect(calendar, 1);
       expect(customers, 1);
