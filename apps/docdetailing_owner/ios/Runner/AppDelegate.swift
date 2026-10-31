@@ -3,12 +3,14 @@ import UIKit
 import Security
 import UserNotifications
 import MessageUI
+import Vision
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var sessionChannel: FlutterMethodChannel?
   private let notifications = NativePushCoordinator()
   private let documentComposer = DocumentComposer()
+  private let receiptScanner = ReceiptScanner()
 
   override func application(
     _ application: UIApplication,
@@ -29,6 +31,9 @@ import MessageUI
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocDetailingReceipts") {
+      receiptScanner.attach(FlutterMethodChannel(name: "com.docincorporated.docdetailing/receipts", binaryMessenger: registrar.messenger()))
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocDetailingDocuments") {
       documentComposer.attach(FlutterMethodChannel(name: "com.docincorporated.docdetailing/documents", binaryMessenger: registrar.messenger()))
     }
@@ -240,5 +245,46 @@ private final class DocumentComposer: NSObject, MFMailComposeViewControllerDeleg
   }
   func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
     finish(controller, status: result == .sent ? "sent" : result == .failed ? "failed" : "cancelled")
+  }
+}
+
+private final class ReceiptScanner {
+  private var channel: FlutterMethodChannel?
+  func attach(_ channel: FlutterMethodChannel) {
+    self.channel = channel
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "recognize" else { result(FlutterMethodNotImplemented); return }
+      guard let args = call.arguments as? [String: Any], let bytes = args["bytes"] as? FlutterStandardTypedData,
+        bytes.data.count > 0, bytes.data.count <= 4 * 1024 * 1024 else {
+        result(FlutterError(code: "invalid_image", message: "Use a receipt photo under 4 MB.", details: nil)); return
+      }
+      DispatchQueue.global(qos: .userInitiated).async {
+        do {
+          let request = VNRecognizeTextRequest()
+          request.recognitionLevel = .accurate
+          request.recognitionLanguages = ["en-US"]
+          request.usesLanguageCorrection = true
+          let handler = VNImageRequestHandler(data: bytes.data, options: [:])
+          try handler.perform([request])
+          let observations = request.results ?? []
+          // Preserve receipt reading order; columns on one row are merged for line-item parsing.
+          let ordered = observations.sorted { a, b in
+            if a.boundingBox.midY == b.boundingBox.midY { return a.boundingBox.minX < b.boundingBox.minX }
+            return a.boundingBox.midY > b.boundingBox.midY
+          }
+          var rows: [(Double, String)] = []
+          for item in ordered {
+            guard let text = item.topCandidates(1).first?.string else { continue }
+            let y = Double(item.boundingBox.midY)
+            if let last = rows.last, abs(last.0-y) < 0.012 { rows[rows.count-1].1 += "  " + text }
+            else { rows.append((y,text)) }
+          }
+          let text = rows.map { $0.1 }.joined(separator: "\n")
+          DispatchQueue.main.async { result(String(text.prefix(30000))) }
+        } catch {
+          DispatchQueue.main.async { result(FlutterError(code: "recognition_failed", message: "Receipt text could not be read. Retake the photo or enter items manually.", details: nil)) }
+        }
+      }
+    }
   }
 }

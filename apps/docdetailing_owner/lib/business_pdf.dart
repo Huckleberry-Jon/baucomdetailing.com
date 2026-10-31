@@ -8,6 +8,7 @@ Future<Uint8List> businessPdf(
   Map<String, dynamic> data, {
   List<Uint8List> photos = const [],
   bool receipt = false,
+  Uint8List? logo,
 }) async {
   final regular = pw.Font.ttf(
     await rootBundle.load('assets/fonts/NotoSans-Regular.ttf'),
@@ -25,10 +26,26 @@ Future<Uint8List> businessPdf(
       pageFormat: PdfPageFormat.a4,
       maxPages: 100,
       build: (_) => [
+        if (logo != null)
+          pw.Image(
+            pw.MemoryImage(logo),
+            width: 110,
+            height: 80,
+            fit: pw.BoxFit.contain,
+          ),
         pw.Header(
           level: 0,
           child: pw.Text(data['businessName'] as String? ?? 'Business'),
         ),
+        for (final value in [
+          data['businessAddress'],
+          data['businessPhone'],
+          data['businessEmail'],
+          data['businessContact'],
+        ])
+          if (value is String && value.isNotEmpty) pw.Text(value),
+        if ((data['invoiceFooter'] as String? ?? '').isNotEmpty)
+          pw.Text(data['invoiceFooter'] as String),
         pw.Text(
           '${receipt ? 'Payment receipt' : row['kind']} ${row['number'] ?? 'DRAFT'}',
           style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),

@@ -1,3 +1,4 @@
+import 'receipt_import_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
@@ -140,6 +141,10 @@ class _WorkspaceState extends State<WorkspaceScreen> {
       'Unit cost': moneyInput(product['costCents'] as int? ?? 0),
       'Markup percent': moneyInput(product['markupBps'] as int? ?? 0),
       'Taxable (yes/no)': product['taxable'] == true ? 'yes' : 'no',
+      'Low stock alert quantity (blank disables)':
+          product['lowStockMillis'] == null
+          ? ''
+          : quantityInput(product['lowStockMillis'] as int),
     });
     if (f == null) return;
     await save('/api/owner/materials', {
@@ -151,6 +156,10 @@ class _WorkspaceState extends State<WorkspaceScreen> {
       'costCents': cents(f['Unit cost']),
       'markupBps': parseMoneyCents(f['Markup percent']!),
       'taxable': f['Taxable (yes/no)'] == 'yes',
+      'lowStockMillis':
+          f['Low stock alert quantity (blank disables)']!.trim().isEmpty
+          ? null
+          : quantityMillis(f['Low stock alert quantity (blank disables)']!),
     });
   }
 
@@ -377,6 +386,32 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                   section == 'Customers' ? 'Add customer' : 'Add vehicle',
                 ),
               ),
+            if (section == 'Materials') ...[
+              OutlinedButton.icon(
+                onPressed: busy
+                    ? null
+                    : () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ReceiptImportScreen(api: widget.api),
+                          ),
+                        );
+                        await load();
+                      },
+                icon: const Icon(Icons.document_scanner),
+                label: const Text('Scan receipt to inventory'),
+              ),
+              const Text(
+                'Low-stock alerts appear here and on Home. Set a threshold per product. Outbound notifications remain disabled.',
+              ),
+              if (rows.any((r) => r['low_stock'] == true))
+                Text(
+                  'Low stock: ${rows.where((r) => r['low_stock'] == true).length} product(s)',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+            ],
             if (section == 'Materials')
               FilledButton(
                 onPressed: busy ? null : () => run(addMaterial),
@@ -508,7 +543,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                     case 'Materials':
                       title = d['product'] as String;
                       description =
-                          '${(d['quantityMillis'] as num) / 1000} ${d['unit']} · ${dollars(d['sellingCents'])}\nCost ${dollars(d['costCents'])}/unit · markup ${(d['markupBps'] as num) / 100}% · taxable ${d['taxable']}';
+                          '${row['low_stock'] == true ? 'LOW STOCK · ' : ''}Available ${quantityInput(row['available_quantity_millis'] as int? ?? 0)} ${d['unit']}\nDefault use ${(d['quantityMillis'] as num) / 1000} ${d['unit']} · ${dollars(d['sellingCents'])}\nCost ${dollars(d['costCents'])}/unit · markup ${(d['markupBps'] as num) / 100}% · taxable ${d['taxable']}';
                       break;
                     case 'Estimates & invoices':
                     case 'Payment Center':

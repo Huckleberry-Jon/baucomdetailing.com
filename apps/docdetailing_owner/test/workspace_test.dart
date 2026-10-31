@@ -62,7 +62,29 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Payment Center'),
+      150,
+      scrollable: find
+          .descendant(
+            of: find.byType(Drawer),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Payment Center'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Materials'),
+      -150,
+      scrollable: find
+          .descendant(
+            of: find.byType(Drawer),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Materials'));
     await tester.pumpAndSettle();
     expect(find.text('Add material'), findsOneWidget);

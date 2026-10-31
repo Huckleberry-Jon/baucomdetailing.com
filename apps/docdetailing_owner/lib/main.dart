@@ -1,3 +1,4 @@
+import 'business_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'owner_api.dart';
@@ -280,6 +281,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                     'Customers',
                     'Vehicles',
                     'Materials',
+                    'Business settings',
                     'Estimates & invoices',
                     'Payment Center',
                     'Financial Center',
@@ -292,7 +294,9 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                         Navigator.push(
                           context,
                           MaterialPageRoute<void>(
-                            builder: (context) => section == 'Calendar'
+                            builder: (context) => section == 'Business settings'
+                                ? BusinessSettingsScreen(api: widget.api)
+                                : section == 'Calendar'
                                 ? OwnerCalendar(api: widget.api)
                                 : section == 'Jobs'
                                 ? JobsScreen(api: widget.api)
@@ -404,6 +408,36 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
               ),
             ),
           ] else ...[
+            FutureBuilder<Object?>(
+              future: widget.api.workspace('/api/owner/materials'),
+              builder: (context, snapshot) {
+                final value = snapshot.data;
+                final list = value is Map
+                    ? (value['records'] as List? ?? [])
+                    : [];
+                final low = list.where((r) => r['low_stock'] == true).toList();
+                return low.isEmpty
+                    ? const SizedBox.shrink()
+                    : Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.warning_amber),
+                          title: Text('Low stock: ${low.length} product(s)'),
+                          subtitle: const Text(
+                            'Review supplies before your next job',
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkspaceScreen(
+                                api: widget.api,
+                                section: 'Materials',
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+              },
+            ),
             HomeDashboard(
               bookings: rows,
               onWebsite: widget.api is HttpOwnerApi && !busy

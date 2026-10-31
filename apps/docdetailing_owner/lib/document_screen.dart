@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'invoice_composer.dart';
 import 'document_totals.dart';
 import 'dart:typed_data';
@@ -64,7 +65,22 @@ class _DocumentScreenState extends State<DocumentScreen> {
         if (!mounted) return;
       }
     }
-    final bytes = await businessPdf(row!, d, photos: images, receipt: receipt);
+    Uint8List? logo;
+    if (d['invoiceLogoId'] != null) {
+      final asset =
+          await widget.api.workspace(
+                '/api/owner/business-asset?id=${Uri.encodeQueryComponent(d['invoiceLogoId'] as String)}',
+              )
+              as Map;
+      logo = base64Decode(asset['base64'] as String);
+    }
+    final bytes = await businessPdf(
+      row!,
+      d,
+      photos: images,
+      receipt: receipt,
+      logo: logo,
+    );
     if (!mounted) return;
     if (email != null) {
       final outcome = await InvoiceComposer().compose(
