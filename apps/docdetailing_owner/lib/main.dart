@@ -164,6 +164,25 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> openBooking(Booking booking) => act(() async {
+    final dashboard = await widget.api.workspace('/api/owner/dashboard') as Map;
+    final clock = BusinessTime(
+      (dashboard['settings'] as Map)['timezone'] as String,
+    );
+    if (!mounted || !signedIn) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BookingDetails(
+          api: widget.api,
+          bookingId: booking.id,
+          clock: clock,
+        ),
+      ),
+    );
+    if (mounted && signedIn) await refresh();
+  });
+
   @override
   void dispose() {
     notifications?.dispose();
@@ -370,58 +389,38 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                   !['cancelled', 'completed', 'declined'].contains(b.status),
             ))
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        b.customer,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Text(b.status.replaceAll('_', ' ')),
-                      Text('${b.start.toLocal()} · device time'),
-                      SelectableText('Booking: ${b.id}'),
-                      if (b.status == 'pending')
-                        FilledButton(
-                          onPressed: busy
-                              ? null
-                              : () => act(() async {
-                                  final duration = await showDialog<int>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Confirm appointment'),
-                                      content: const Text(
-                                        'Confirm this appointment with a 90-minute duration? Availability is checked again. The customer and vehicle details are already saved in Customers.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, 90),
-                                          child: const Text(
-                                            'Confirm 90 minutes',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (duration != null) {
-                                    await widget.api.transition(
-                                      b,
-                                      'confirm',
-                                      durationMinutes: duration,
-                                    );
-                                    await refresh();
-                                  }
-                                }),
-                          child: const Text('Review confirmation'),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: busy ? null : () => openBooking(b),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                b.customer,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right),
+                          ],
                         ),
-                    ],
+                        Text(statusLabel(b.status)),
+                        Text('${b.start.toLocal()} · device time'),
+                        const SizedBox(height: 8),
+                        Text(
+                          b.status == 'pending'
+                              ? 'View details & review appointment'
+                              : 'View appointment details',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
