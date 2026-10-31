@@ -165,6 +165,9 @@ class _WorkspaceState extends State<WorkspaceScreen> {
   Future<void> addRecord() async {
     if (widget.section == "Customers") {
       final f = await form('Add customer', {
+        'company': '',
+        'make': '',
+        'model': '',
         'firstName': '',
         'lastName': '',
         'email': '',
@@ -172,7 +175,19 @@ class _WorkspaceState extends State<WorkspaceScreen> {
         'address': '',
         'notes': '',
       });
-      if (f != null) await save('/api/owner/customers', {'data': f});
+      if (f != null) {
+        final make = f.remove('make')!.trim(),
+            model = f.remove('model')!.trim();
+        if ((make.isEmpty) != (model.isEmpty)) {
+          throw const FormatException(
+            'Enter both vehicle make and model, or leave both blank.',
+          );
+        }
+        await save('/api/owner/customers', {
+          'data': f,
+          if (make.isNotEmpty) 'vehicle': {'make': make, 'model': model},
+        });
+      }
     } else {
       final d = await widget.api.workspace('/api/owner/customers') as Map;
       if (!mounted) return;
@@ -259,13 +274,19 @@ class _WorkspaceState extends State<WorkspaceScreen> {
           'Edit ${widget.section.toLowerCase()}',
           {
             ...d,
+            if (widget.section == 'Customers' && !d.containsKey('company'))
+              'company': '',
             if (widget.section == 'Customers' && !d.containsKey('notes'))
               'notes': '',
-          }.map((k, v) => MapEntry(k, v.toString())),
+          }.map((k, v) => MapEntry(k, v?.toString() ?? '')),
         );
     if (f == null) return;
     final values = <String, dynamic>{...f};
-    if (widget.section == 'Vehicles') values['year'] = int.parse(f['year']!);
+    if (widget.section == 'Vehicles') {
+      values['year'] = f['year'] == null || f['year']!.trim().isEmpty
+          ? null
+          : int.parse(f['year']!);
+    }
     await save('/api/owner/${widget.section.toLowerCase()}', {
       'id': row['id'],
       'version': row['version'],
@@ -473,10 +494,12 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                     case 'Customers':
                       title = '${d['firstName']} ${d['lastName']}';
                       description =
-                          '${d['phone']} · ${d['email']}\n${d['address']}';
+                          '${d['company'] ?? ''}\n${d['phone']} · ${d['email']}\n${d['address']}'
+                              .trim();
                       break;
                     case 'Vehicles':
-                      title = '${d['year']} ${d['make']} ${d['model']}';
+                      title = '${d['year'] ?? ''} ${d['make']} ${d['model']}'
+                          .trim();
                       description = '${d['color']} · ${d['bodyType']}';
                       break;
                     case 'Materials':

@@ -104,6 +104,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
           Text(
             '${r['data']['phone']}\n${r['data']['email']}\n${r['data']['address']}',
           ),
+          Text(r['data']['company'] as String? ?? ''),
           Text(r['data']['notes'] as String? ?? ''),
           TextButton(
             onPressed: busy
@@ -111,6 +112,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
                 : () => run(() async {
                     final d = Map<String, dynamic>.from(r['data'] as Map);
                     d.putIfAbsent('notes', () => '');
+                    d.putIfAbsent('company', () => '');
                     final f = await editFields(
                       c,
                       'Customer details',
@@ -135,7 +137,7 @@ class _CustomerDetailsState extends State<CustomerDetails> {
           for (final v in r['vehicles'] as List)
             ListTile(
               title: Text(
-                '${objectMap(v['data'])['year']} ${objectMap(v['data'])['make']} ${objectMap(v['data'])['model']}',
+                '${objectMap(v['data'])['year'] ?? ''} ${objectMap(v['data'])['make']} ${objectMap(v['data'])['model']}',
               ),
               subtitle: Text(objectMap(v['data'])['color'] as String),
             ),

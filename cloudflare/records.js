@@ -52,6 +52,10 @@ export function validateRecord(kind, d) {
   let value;
   if (kind === "customers") {
     value = {
+      company:
+        d.company == null || d.company === ""
+          ? ""
+          : text(d.company, "Company", 200),
       firstName: text(d.firstName, "First name", 100),
       lastName: text(d.lastName, "Last name", 100),
       email: text(d.email, "Email", 254),
@@ -66,16 +70,21 @@ export function validateRecord(kind, d) {
     requireThat(value.phone.replace(/\D/g, "").length >= 10, "Invalid phone");
   } else {
     value = {
-      year: d.year,
+      year: d.year ?? null,
       make: text(d.make, "Make", 100),
       model: text(d.model, "Model", 100),
-      color: text(d.color, "Color", 80),
-      bodyType: text(d.bodyType, "Body type", 80),
+      color:
+        d.color == null || d.color === "" ? "" : text(d.color, "Color", 80),
+      bodyType:
+        d.bodyType == null || d.bodyType === ""
+          ? ""
+          : text(d.bodyType, "Body type", 80),
     };
     requireThat(
-      Number.isInteger(d.year) &&
-        d.year >= 1900 &&
-        d.year <= new Date().getFullYear() + 2,
+      d.year == null ||
+        (Number.isInteger(d.year) &&
+          d.year >= 1900 &&
+          d.year <= new Date().getFullYear() + 2),
       "Invalid year",
     );
   }
@@ -84,6 +93,10 @@ export function validateRecord(kind, d) {
 }
 export async function createRecord(s, kind, body, owner) {
   const data = validateRecord(kind, body.data ?? {});
+  const vehicle =
+    kind === "customers" && body.vehicle != null
+      ? validateRecord("vehicles", body.vehicle)
+      : null;
   return s.atomic(async (b, c) => {
     const id = randomUUID();
     if (kind === "vehicles") {
@@ -114,6 +127,19 @@ export async function createRecord(s, kind, body, owner) {
           JSON.stringify(data),
         ),
       );
+    if (vehicle) {
+      const vehicleId = randomUUID();
+      c.push(
+        s.command(
+          "INSERT INTO vehicles VALUES(?,?,?,?)",
+          vehicleId,
+          s.tenant,
+          id,
+          JSON.stringify(vehicle),
+        ),
+      );
+      s.audit(c, owner, "vehicles.created", vehicleId);
+    }
     s.audit(c, owner, kind + ".created", id);
     return { id, version: hash(JSON.stringify(data)), data };
   });
