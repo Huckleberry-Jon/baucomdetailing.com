@@ -37,7 +37,15 @@ Future<Uint8List> businessPdf(
         pw.Text(
           '${data['customer']?['firstName'] ?? ''} ${data['customer']?['lastName'] ?? ''}',
         ),
+        if ((data['customer']?['company'] as String? ?? '').isNotEmpty)
+          pw.Text(data['customer']['company'] as String),
         pw.Text(data['customer']?['address'] as String? ?? ''),
+        pw.Text(
+          [
+            data['customer']?['phone'],
+            data['customer']?['email'],
+          ].whereType<String>().where((s) => s.isNotEmpty).join(' | '),
+        ),
         pw.SizedBox(height: 16),
         if (!receipt)
           pw.TableHelper.fromTextArray(
@@ -59,8 +67,10 @@ Future<Uint8List> businessPdf(
         ),
         pw.Text('Tax: \$${moneyInput(data['taxCents'] as int)}'),
         pw.Text('Total: \$${moneyInput(total)}'),
-        pw.Text('Payments received: \$${moneyInput(paid)}'),
-        pw.Text('Balance: \$${moneyInput(total - paid)}'),
+        if (row['kind'] == 'invoice' || receipt) ...[
+          pw.Text('Payments received: \$${moneyInput(paid)}'),
+          pw.Text('Balance: \$${moneyInput(total - paid)}'),
+        ],
         if (receipt) ...[
           pw.SizedBox(height: 12),
           for (final p in row['payments'] as List? ?? [])

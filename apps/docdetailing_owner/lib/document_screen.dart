@@ -1,3 +1,5 @@
+import 'invoice_composer.dart';
+import 'document_totals.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
@@ -50,7 +52,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
   }
 
   Future<void> load() => run(fetch);
-  Future<void> share({bool receipt = false}) async {
+  Future<void> share({bool receipt = false, bool? email}) async {
     await fetch();
     if (!mounted) return;
     final d = objectMap(row!['data']), images = <Uint8List>[];
@@ -64,6 +66,27 @@ class _DocumentScreenState extends State<DocumentScreen> {
     }
     final bytes = await businessPdf(row!, d, photos: images, receipt: receipt);
     if (!mounted) return;
+    if (email != null) {
+      final outcome = await InvoiceComposer().compose(
+        row!,
+        d,
+        bytes,
+        email: email,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            outcome == 'sent'
+                ? 'Sent from your phone. Delivery is not confirmed.'
+                : outcome == 'cancelled'
+                ? 'Message draft closed without sending.'
+                : 'Composer unavailable or unsuccessful. Use Share PDF and choose your messaging or email app.',
+          ),
+        ),
+      );
+      return;
+    }
     await Printing.sharePdf(
       bytes: bytes,
       filename:
@@ -99,7 +122,13 @@ class _DocumentScreenState extends State<DocumentScreen> {
   @override
   Widget build(BuildContext c) => Scaffold(
     appBar: AppBar(
-      title: const Text('Invoice or estimate'),
+      title: Text(
+        row == null
+            ? 'Invoice or estimate'
+            : row!['kind'] == 'estimate'
+            ? 'Estimate'
+            : 'Invoice',
+      ),
       actions: [
         IconButton(
           tooltip: 'Refresh',
@@ -232,6 +261,44 @@ class _DocumentScreenState extends State<DocumentScreen> {
                         ? 'This estimate is a quote, not a bill. Create and issue an invoice for the job before recording payment.'
                         : 'Record payments received externally. No card is charged. After an uncertain response, refresh this ledger before trying again.',
                   ),
+                  if (row!['status'] == 'issued') ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Send to customer',
+                      style: Theme.of(c).textTheme.titleMedium,
+                    ),
+                    const Text(
+                      'Review the recipient and message on your phone before sending. Standard carrier charges may apply.',
+                    ),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => run(() => share(email: false)),
+                          icon: const Icon(Icons.sms_outlined),
+                          label: Text(
+                            row!['kind'] == 'estimate'
+                                ? 'Text estimate'
+                                : 'Text invoice',
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => run(() => share(email: true)),
+                          icon: const Icon(Icons.email_outlined),
+                          label: Text(
+                            row!['kind'] == 'estimate'
+                                ? 'Email estimate'
+                                : 'Email invoice',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   Wrap(
                     spacing: 8,
                     children: [
@@ -345,7 +412,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
 
   Future<void> save() async {
     if (customer == null) throw const FormatException('Choose a customer.');
-    await widget.api.workspace(
+    final saved = await widget.api.workspace(
       '/api/owner/documents',
       method: 'POST',
       body: {
@@ -364,23 +431,46 @@ class _DocumentEditorState extends State<DocumentEditor> {
             : objectMap(widget.existing!['data'])['photoIds'] ?? [],
       },
     );
-    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+    if (widget.existing == null) {
+      await Navigator.pushReplacement<void, void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DocumentScreen(
+            api: widget.api,
+            id: (saved as Map)['id'] as String,
+          ),
+        ),
+      );
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext c) => Scaffold(
-    appBar: AppBar(title: const Text('Draft document')),
+    appBar: AppBar(
+      title: Text(
+        widget.existing == null ? 'Create invoice or estimate' : 'Edit draft',
+      ),
+    ),
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         if (busy) const LinearProgressIndicator(),
         if (error != null)
           Text(error!, style: TextStyle(color: Theme.of(c).colorScheme.error)),
-        DropdownButton<String>(
-          value: kind,
+        const Text('1. Choose document type and customer'),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: kind,
+          decoration: const InputDecoration(labelText: 'Document type'),
           items: [
             for (final k in ['invoice', 'estimate'])
-              DropdownMenuItem(value: k, child: Text(k)),
+              DropdownMenuItem(
+                value: k,
+                child: Text(k == 'invoice' ? 'Invoice' : 'Estimate'),
+              ),
           ],
           onChanged: busy ? null : (v) => setState(() => kind = v!),
         ),
@@ -394,6 +484,12 @@ class _DocumentEditorState extends State<DocumentEditor> {
             onPressed: busy ? null : () => run(pickCustomer),
             child: const Text('Choose customer'),
           ),
+        const SizedBox(height: 16),
+        Text(
+          '2. Services and charges',
+          style: Theme.of(c).textTheme.titleMedium,
+        ),
+        const Text('Tap a line to edit the description, quantity or price.'),
         for (var i = 0; i < lines.length; i++)
           ListTile(
             title: Text(lines[i]['description'] as String),
@@ -424,16 +520,87 @@ class _DocumentEditorState extends State<DocumentEditor> {
         TextField(
           controller: discount,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Discount'),
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(labelText: 'Discount (USD)'),
         ),
+        const SizedBox(height: 16),
         TextField(
           controller: tax,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(labelText: 'Tax rate percent'),
         ),
+        const SizedBox(height: 16),
         TextField(
           controller: notes,
-          decoration: const InputDecoration(labelText: 'Notes'),
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Notes shown to customer',
+          ),
+        ),
+        Builder(
+          builder: (_) {
+            try {
+              final rows = lines
+                  .map(
+                    (l) => {
+                      ...l,
+                      'totalCents':
+                          ((l['quantityMillis'] as int) *
+                                  (l['unitPriceCents'] as int) +
+                              500) ~/
+                          1000,
+                    },
+                  )
+                  .toList();
+              final subtotal = rows.fold<int>(
+                0,
+                (n, l) => n + (l['totalCents'] as int),
+              );
+              final reduction = parseMoneyCents(discount.text),
+                  rate = parseMoneyCents(tax.text);
+              final total = completionTotal(
+                {'subtotalCents': subtotal, 'lines': rows},
+                0,
+                reduction,
+                rate,
+              );
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        kind == 'invoice'
+                            ? 'Invoice summary'
+                            : 'Estimate summary',
+                        style: Theme.of(c).textTheme.titleMedium,
+                      ),
+                      Text('Subtotal: \$${moneyInput(subtotal)}'),
+                      Text('Discount: \$${moneyInput(reduction)}'),
+                      Text(
+                        'Tax: \$${moneyInput(total - subtotal + reduction)}',
+                      ),
+                      Text(
+                        'Total: \$${moneyInput(total)}',
+                        style: Theme.of(c).textTheme.titleLarge,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } catch (_) {
+              return const Text(
+                'Check the discount and tax values to preview the total.',
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Save draft, then review and issue it before sending to the customer.',
         ),
         FilledButton(
           onPressed: busy ? null : () => run(save),

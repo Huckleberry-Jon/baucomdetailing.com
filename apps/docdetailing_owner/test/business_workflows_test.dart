@@ -118,7 +118,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Approved detailing'), findsOneWidget);
       expect(find.text('Travel'), findsOneWidget);
-      await tester.ensureVisible(find.text('Save draft'));
+      await tester.scrollUntilVisible(
+        find.text('Save draft'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(find.text('Save draft'));
       await tester.pumpAndSettle();
       final body = api.writes.single['body'] as Map;

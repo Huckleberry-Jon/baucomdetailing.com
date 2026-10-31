@@ -2,11 +2,13 @@ import Flutter
 import UIKit
 import Security
 import UserNotifications
+import MessageUI
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var sessionChannel: FlutterMethodChannel?
   private let notifications = NativePushCoordinator()
+  private let documentComposer = DocumentComposer()
 
   override func application(
     _ application: UIApplication,
@@ -27,6 +29,9 @@ import UserNotifications
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocDetailingDocuments") {
+      documentComposer.attach(FlutterMethodChannel(name: "com.docincorporated.docdetailing/documents", binaryMessenger: registrar.messenger()))
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocDetailingNotifications") {
       notifications.attach(FlutterMethodChannel(name: "com.docincorporated.docdetailing/notifications", binaryMessenger: registrar.messenger()))
     }
@@ -175,3 +180,65 @@ private final class NativePushCoordinator: NSObject, UNUserNotificationCenterDel
   }
 }
 
+
+
+private final class DocumentComposer: NSObject, MFMailComposeViewControllerDelegate, MFMessageComposeViewControllerDelegate {
+  private var channel: FlutterMethodChannel?
+  private var pending: FlutterResult?
+  func attach(_ channel: FlutterMethodChannel) {
+    self.channel = channel
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else { result(FlutterError(code: "unavailable", message: "Message composer unavailable", details: nil)); return }
+      self.handle(call, result: result)
+    }
+  }
+  private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard ["composeEmail", "composeText"].contains(call.method) else { result(FlutterMethodNotImplemented); return }
+    guard pending == nil else { result(FlutterError(code: "busy", message: "Close the current message draft first", details: nil)); return }
+    guard let args = call.arguments as? [String: Any], let pdf = args["pdf"] as? FlutterStandardTypedData,
+          pdf.data.count > 0, pdf.data.count <= 20 * 1024 * 1024,
+          let recipient = args["recipient"] as? String, !recipient.isEmpty, recipient.count <= 254,
+          let body = args["body"] as? String, body.count <= 4000,
+          let filename = args["filename"] as? String, filename.hasSuffix(".pdf"), filename.count <= 150,
+          !filename.contains("/"), !filename.contains("\\") else {
+      result(FlutterError(code: "invalid_document", message: "Check the recipient and PDF attachment", details: nil)); return
+    }
+    guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first(where: { $0.activationState == .foregroundActive }),
+          var presenter = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+      result(FlutterError(code: "unavailable", message: "Message composer unavailable", details: nil)); return
+    }
+    while let next = presenter.presentedViewController { presenter = next }
+    if call.method == "composeEmail" {
+      guard MFMailComposeViewController.canSendMail() else { result("unavailable"); return }
+      let composer = MFMailComposeViewController()
+      composer.mailComposeDelegate = self
+      composer.setToRecipients([recipient])
+      composer.setSubject(String((args["subject"] as? String ?? "Invoice").prefix(250)))
+      composer.setMessageBody(body, isHTML: false)
+      composer.addAttachmentData(pdf.data, mimeType: "application/pdf", fileName: filename)
+      pending = result
+      presenter.present(composer, animated: true)
+    } else {
+      guard MFMessageComposeViewController.canSendText(), MFMessageComposeViewController.canSendAttachments() else { result("unavailable"); return }
+      let composer = MFMessageComposeViewController()
+      composer.messageComposeDelegate = self
+      composer.recipients = [recipient]
+      composer.body = body
+      guard composer.addAttachmentData(pdf.data, typeIdentifier: "com.adobe.pdf", filename: filename) else { result("unavailable"); return }
+      pending = result
+      presenter.present(composer, animated: true)
+    }
+  }
+  private func finish(_ controller: UIViewController, status: String) {
+    let callback = pending
+    pending = nil
+    controller.dismiss(animated: true) { callback?(status) }
+  }
+  func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+    let status = error != nil || result == .failed ? "failed" : result == .sent ? "sent" : "cancelled"
+    finish(controller, status: status)
+  }
+  func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
+    finish(controller, status: result == .sent ? "sent" : result == .failed ? "failed" : "cancelled")
+  }
+}
