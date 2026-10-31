@@ -1,3 +1,4 @@
+import { invoiceBranding } from "./inventory-receipts.js";
 import { randomUUID } from "node:crypto";
 import { hash, text, requireThat } from "../src/security.js";
 import { jobView, jobInvoiceLines } from "./operations.js";
@@ -160,7 +161,7 @@ export async function completeWithPayment(s, body, owner, key) {
       const settings = JSON.parse(b.settings);
       Object.assign(data, {
         jobId: job.id,
-        businessName: settings.name,
+        ...invoiceBranding(settings),
         reviewUrl: settings.googleReviewUrl ?? null,
         jobCostCents:
           (job.data.lines ?? []).reduce((n, l) => n + (l.costCents ?? 0), 0) +

@@ -1,3 +1,8 @@
+import {
+  materialRows,
+  importReceipt,
+  saveBusinessProfile,
+} from "./inventory-receipts.js";
 import { publicClosedDates } from "./domain.js";
 import { completionContext, completeWithPayment } from "./checkout.js";
 import { jobView, saveJob, stockMovement } from "./operations.js";
@@ -115,6 +120,8 @@ async function limitedBody(request) {
     "/api/bookings",
     "/api/owner/photos",
     "/api/owner/website-photos",
+    "/api/owner/business-profile",
+    "/api/owner/inventory-receipts",
   ].includes(new URL(request.url).pathname)
     ? 24 * 1024 * 1024
     : 32768;
@@ -537,13 +544,63 @@ export async function route(request, env, ctx) {
         ),
         201,
       );
-    if (path === "/api/owner/materials") {
+
+    if (path === "/api/owner/business-profile") {
+      if (method === "GET") {
+        const b = await s.first(
+          "SELECT settings,revision FROM businesses WHERE id=?",
+          s.tenant,
+        );
+        return json({ profile: JSON.parse(b.settings), version: b.revision });
+      }
+      if (method === "PUT")
+        return json(await saveBusinessProfile(s, body, user.id, env));
+    }
+    if (path === "/api/owner/business-asset" && method === "GET") {
+      const asset = await s.first(
+        "SELECT * FROM business_assets WHERE business_id=? AND id=?",
+        s.tenant,
+        id,
+      );
+      requireThat(asset, "Logo not found", 404);
+      const response = await mediaResponse(env, s.tenant, asset);
+      return json({
+        base64: Buffer.from(await response.arrayBuffer()).toString("base64"),
+      });
+    }
+    if (path === "/api/owner/inventory-receipts") {
+      if (method === "POST")
+        return json(
+          await importReceipt(
+            s,
+            body,
+            user.id,
+            request.headers.get("Idempotency-Key"),
+            env,
+          ),
+          201,
+        );
       if (method === "GET")
         return json({
           records: await s.all(
-            "SELECT m.*,coalesce(b.quantity_millis,0) available_quantity_millis,coalesce(b.version,0) stock_version FROM materials m LEFT JOIN inventory_balances b ON b.material_id=m.id AND b.business_id=m.business_id WHERE m.business_id=? ORDER BY m.rowid DESC LIMIT 300",
+            "SELECT id,vendor,reference,created_at,data FROM inventory_receipts WHERE business_id=? ORDER BY created_at DESC LIMIT 100",
             s.tenant,
           ),
+        });
+    }
+    if (path === "/api/owner/inventory-receipt-photo" && method === "GET") {
+      const photo = await s.first(
+        "SELECT * FROM inventory_receipts WHERE business_id=? AND id=?",
+        s.tenant,
+        id,
+      );
+      requireThat(photo, "Receipt not found", 404);
+      return mediaResponse(env, s.tenant, photo);
+    }
+    if (path === "/api/owner/materials") {
+      if (method === "GET")
+        return json({
+          records: await materialRows(s),
         });
       if (method === "POST")
         return json(await saveMaterial(s, body, user.id), 201);
@@ -662,6 +719,7 @@ export async function route(request, env, ctx) {
           "SELECT * FROM backup_runs WHERE business_id=? ORDER BY started_at DESC LIMIT 5",
           s.tenant,
         ),
+        lowStock: (await materialRows(s)).filter((r) => r.low_stock),
         settings: JSON.parse(business.settings),
         services: await s.catalog(),
         vapidPublicKey: env.VAPID_PUBLIC_KEY ?? null,

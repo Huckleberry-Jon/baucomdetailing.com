@@ -1,3 +1,4 @@
+import { invoiceBranding } from "./inventory-receipts.js";
 import { jobView, jobInvoiceLines } from "./operations.js";
 import { randomUUID } from "node:crypto";
 import { requireThat, text, hash } from "../src/security.js";
@@ -14,6 +15,10 @@ export function material(input) {
     costCents: integer(input.costCents, "unit cost"),
     markupBps: integer(input.markupBps, "markup", 100000),
     taxable: input.taxable,
+    lowStockMillis:
+      input.lowStockMillis == null
+        ? null
+        : integer(input.lowStockMillis, "low stock threshold", 1000000000),
   };
   requireThat(
     ["oz", "gallon", "bottle", "piece"].includes(d.unit) &&
@@ -113,6 +118,8 @@ export async function saveMaterial(s, body, owner) {
       "Create a separate product to change its stock unit",
       409,
     );
+    if (old && !Object.hasOwn(body.data ?? body, "lowStockMillis"))
+      value.lowStockMillis = JSON.parse(old.data).lowStockMillis ?? null;
     const id = old?.id ?? randomUUID();
     c.push(
       old
@@ -223,7 +230,7 @@ export async function saveDocument(s, body, owner) {
         (job.data.travelCostCents ?? 0);
     }
     data.customer = JSON.parse(customer.data);
-    data.businessName = JSON.parse(b.settings).name;
+    Object.assign(data, invoiceBranding(JSON.parse(b.settings)));
     const photos = body.photoIds ?? [];
     requireThat(
       Array.isArray(photos) && photos.length <= 24,

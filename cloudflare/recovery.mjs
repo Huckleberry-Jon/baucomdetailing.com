@@ -34,6 +34,8 @@ export const TABLES = [
   "review_moderation",
   "audit_events",
   "backup_runs",
+  "business_assets",
+  "inventory_receipts",
   "materials",
   "job_details",
   "inventory_balances",
@@ -93,7 +95,12 @@ export async function createCloudBackup({
     rows = await snapshot(db),
     files = [],
     keys = new Map();
-  for (const table of ["media", "website_photos"])
+  for (const table of [
+    "media",
+    "website_photos",
+    "business_assets",
+    "inventory_receipts",
+  ])
     for (const row of rows[table])
       for (const field of ["original_key", "preview_key"]) {
         const objectKey = row[field];
@@ -122,7 +129,7 @@ export async function createCloudBackup({
     files.push({ key: objectKey, name, sha, bytes: bytes.length });
   }
   const manifest = {
-    schemaRevision: 2,
+    schemaRevision: 3,
     format: "docdetailing-cloud-backup",
     version: 1,
     id,
@@ -205,8 +212,15 @@ export async function restoreCloudBackup({
       if (m.rows?.[table] === undefined) m.rows[table] = [];
     }
   }
+  if (m.schemaRevision === undefined || m.schemaRevision === 2) {
+    for (const table of ["business_assets", "inventory_receipts"]) {
+      if (m.rows?.[table] === undefined) m.rows[table] = [];
+    }
+  }
   requireThat(
-    (m.schemaRevision === undefined || m.schemaRevision === 2) &&
+    (m.schemaRevision === undefined ||
+      m.schemaRevision === 2 ||
+      m.schemaRevision === 3) &&
       m.id === id &&
       m.version === 1 &&
       TABLES.every((t) => Array.isArray(m.rows[t])),
@@ -264,7 +278,14 @@ export async function restoreCloudBackup({
         row.claim_token = null;
       }
       if (table === "tenant_domains") continue; // Never activate production hostnames in recovery.
-      if (["media", "website_photos"].includes(table)) {
+      if (
+        [
+          "media",
+          "website_photos",
+          "business_assets",
+          "inventory_receipts",
+        ].includes(table)
+      ) {
         row.original_key = mapKey(row.original_key);
         row.preview_key = mapKey(row.preview_key);
       }

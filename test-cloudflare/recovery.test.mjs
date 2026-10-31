@@ -25,6 +25,58 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       })
         .png()
         .toBuffer();
+
+    const brand = (
+      await call(source.mf, "/api/owner/business-profile", { cookie })
+    ).data;
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/business-profile", {
+          method: "PUT",
+          cookie,
+          body: {
+            version: brand.version,
+            profile: {
+              name: "Recovery detail",
+              contact: "Fixture",
+              invoiceAddress: "",
+              invoicePhone: "",
+              invoiceEmail: "",
+              invoiceFooter: "",
+            },
+            logo: { name: "logo.png", base64: bytes.toString("base64") },
+          },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/inventory-receipts", {
+          method: "POST",
+          cookie,
+          key: "recovery-receipt",
+          body: {
+            reviewed: true,
+            vendor: "Fixture vendor",
+            reference: "backup-1",
+            photo: { name: "receipt.png", base64: bytes.toString("base64") },
+            lines: [
+              {
+                product: "Receipt cleaner",
+                unit: "bottle",
+                quantityMillis: 1000,
+                costCents: 500,
+                markupBps: 0,
+                taxable: false,
+                lowStockMillis: 500,
+              },
+            ],
+          },
+        })
+      ).status,
+      201,
+    );
     const booking = await call(source.mf, "/api/bookings", {
       method: "POST",
       key: randomUUID(),
@@ -251,6 +303,8 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       "financial_events",
       "tenant_entitlements",
       "media",
+      "business_assets",
+      "inventory_receipts",
     ]) {
       if (table === "settings") {
         assert.equal(
