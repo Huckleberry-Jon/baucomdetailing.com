@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'owner_api.dart';
 import 'workspace.dart';
 import 'calendar_screen.dart';
@@ -336,15 +337,34 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                       'Use the shared staging code, not your owner password.',
                 ),
               ),
-              TextField(
-                controller: email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Owner email'),
-              ),
-              TextField(
-                controller: password,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
+              AutofillGroup(
+                onDisposeAction: AutofillContextAction.cancel,
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: email,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [
+                        AutofillHints.username,
+                        AutofillHints.email,
+                      ],
+                      autocorrect: false,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Owner email',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: password,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.password],
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: const InputDecoration(labelText: 'Password'),
+                    ),
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -357,6 +377,9 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                         previewCode.clear();
                       }
                       await widget.api.login(email.text.trim(), password.text);
+                      if (!widget.api.isDemo) {
+                        TextInput.finishAutofillContext(shouldSave: true);
+                      }
                       password.clear();
                       await refresh();
                     }),
