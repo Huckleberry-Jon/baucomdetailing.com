@@ -71,6 +71,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Sign out'));
     await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+    await tester.pumpAndSettle();
     expect(find.text('Open demo dashboard'), findsOneWidget);
     expect(find.text('Synthetic customer'), findsNothing);
     expect(find.textContaining('revocation could not'), findsOneWidget);

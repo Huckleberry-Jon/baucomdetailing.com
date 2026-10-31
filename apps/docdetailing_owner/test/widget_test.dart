@@ -18,6 +18,8 @@ void main() {
     expect(find.text('Synthetic customer'), findsOneWidget);
     await tester.tap(find.byTooltip('Sign out'));
     await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+    await tester.pumpAndSettle();
     expect(find.text('Open demo dashboard'), findsOneWidget);
   });
   test(

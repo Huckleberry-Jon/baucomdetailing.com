@@ -118,6 +118,33 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> confirmSignOut({bool all = false}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(all ? 'Sign out all devices?' : 'Sign out?'),
+        content: Text(
+          all
+              ? 'Are you sure you want to sign out on all devices? You and any other devices using this owner account will need to sign in again.'
+              : 'Are you sure you want to sign out?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(all ? 'Sign out all devices' : 'Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted && signedIn && !busy) {
+      await act(() => signOut(all: all));
+    }
+  }
+
   Future<void> signOut({bool all = false}) async {
     notifications?.locked();
     try {
@@ -206,7 +233,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
         if (signedIn && widget.api is SessionOwnerApi)
           IconButton(
             tooltip: 'Sign out all devices',
-            onPressed: busy ? null : () => act(() => signOut(all: true)),
+            onPressed: busy ? null : () => confirmSignOut(all: true),
             icon: const Icon(Icons.phonelink_erase),
           ),
         if (signedIn)
@@ -218,7 +245,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
         if (signedIn)
           IconButton(
             tooltip: 'Sign out',
-            onPressed: busy ? null : () => act(signOut),
+            onPressed: busy ? null : () => confirmSignOut(),
             icon: const Icon(Icons.logout),
           ),
       ],
