@@ -235,6 +235,56 @@ class _JobScreenState extends State<JobScreen> {
     await load();
   }
 
+  Future<void> changeStatus(String action) async {
+    if (action == 'complete') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Complete this job?'),
+          content: const Text(
+            'Save the current service charges and mark the work as completed. Payment is recorded separately on the invoice.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Keep working'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Complete job'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final saved = objectMap(job!['data']);
+      await widget.api.workspace(
+        '/api/owner/job',
+        method: 'PUT',
+        body: {
+          'id': widget.id,
+          'version': job!['version'],
+          'data': {...saved, 'lines': lines},
+        },
+      );
+      job =
+          await widget.api.workspace(
+                '/api/owner/job?id=${Uri.encodeQueryComponent(widget.id)}',
+              )
+              as Map;
+    }
+    await widget.api.workspace(
+      '/api/owner/transition',
+      method: 'POST',
+      body: {
+        'id': job!['booking_id'],
+        'version': job!['booking_version'],
+        'action': action,
+      },
+    );
+    await load();
+  }
+
   Future<void> invoice() async {
     final f = await editFields(context, 'Invoice completed job', {
       'Discount': '0',
@@ -295,6 +345,24 @@ class _JobScreenState extends State<JobScreen> {
           Text(error!, style: TextStyle(color: Theme.of(c).colorScheme.error)),
         if (job != null) ...[
           Text(statusLabel(job!['status'] as String)),
+          if (['confirmed', 'rescheduled'].contains(job!['status']))
+            FilledButton.icon(
+              onPressed: busy ? null : () => run(() => changeStatus('start')),
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start job'),
+            ),
+          if (job!['status'] == 'in_progress')
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xff146c43),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: busy
+                  ? null
+                  : () => run(() => changeStatus('complete')),
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Complete job'),
+            ),
           Text(
             '${objectMap(job!['customer'])['firstName']} ${objectMap(job!['customer'])['lastName']}',
           ),

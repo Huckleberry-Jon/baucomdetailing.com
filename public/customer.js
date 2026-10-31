@@ -57,5 +57,12 @@ async function request(action) {
 }
 $("#refresh").onclick = () => request();
 $("#accept").onclick = () => request("accept");
-$("#cancel").onclick = () => request("cancel");
+$("#cancel").onclick = () => {
+  if (
+    window.confirm(
+      "Are you sure you want to cancel this appointment? This cancels the booking; it does not close this page.",
+    )
+  )
+    return request("cancel");
+};
 request();

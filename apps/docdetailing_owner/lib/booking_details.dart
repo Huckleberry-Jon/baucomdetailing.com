@@ -242,7 +242,7 @@ class _BookingDetailsState extends State<BookingDetails> {
         builder: (c) => AlertDialog(
           title: const Text('Cancel this appointment?'),
           content: const Text(
-            'The cancellation is recorded in the shared booking history.',
+            'Are you sure you want to cancel this appointment? This cancels the booking, rather than closing the screen. To finish work, use Complete job.',
           ),
           actions: [
             TextButton(
@@ -250,6 +250,10 @@ class _BookingDetailsState extends State<BookingDetails> {
               child: const Text('Keep appointment'),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xffa12323),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () => Navigator.pop(c, true),
               child: const Text('Cancel appointment'),
             ),
@@ -257,6 +261,29 @@ class _BookingDetailsState extends State<BookingDetails> {
         ),
       );
       if (accepted != true) return;
+    }
+    if (!mounted) return;
+    if (action == 'complete') {
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Complete this job?'),
+          content: const Text(
+            'Mark the work as completed. This does not collect payment or cancel the appointment.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Keep working'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Complete job'),
+            ),
+          ],
+        ),
+      );
+      if (accepted != true || !mounted) return;
     }
     setState(() {
       busy = true;
@@ -399,6 +426,10 @@ class _BookingDetailsState extends State<BookingDetails> {
                     ),
                   if (status == 'in_progress')
                     FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xff146c43),
+                        foregroundColor: Colors.white,
+                      ),
                       onPressed: busy ? null : () => transition('complete'),
                       child: const Text('Complete job'),
                     ),

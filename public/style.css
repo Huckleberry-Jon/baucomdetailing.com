@@ -982,3 +982,12 @@ summary {
   color: #fff;
   font-size: 14px;
 }
+
+button.complete-job {
+  background: #146c43;
+  color: #fff;
+  border: 1px solid #146c43;
+}
+button.complete-job:hover {
+  background: #105735;
+}

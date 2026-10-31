@@ -116,6 +116,20 @@ async function refresh() {
     card.append(form);
     const actions = el("div", null, "toolbar");
     const send = async (action) => {
+      if (
+        action === "cancel" &&
+        !window.confirm(
+          "Are you sure you want to cancel this appointment? This cancels the booking; it does not close this page. Choose Complete job after finishing the work.",
+        )
+      )
+        return;
+      if (
+        action === "complete" &&
+        !window.confirm(
+          "Mark this job as completed? Complete the work before confirming. This does not collect payment.",
+        )
+      )
+        return;
       const input = {
         id: b.id,
         version: b.version,
@@ -147,7 +161,12 @@ async function refresh() {
         button("No-show", () => send("no_show")),
       );
     if (b.status === "in_progress")
-      actions.append(button("Complete", () => send("complete")));
+      actions.append(
+        Object.assign(
+          button("Complete job", () => send("complete")),
+          { className: "complete-job" },
+        ),
+      );
     actions.append(
       button("History", async () => {
         const history = await api("history?id=" + b.id);
