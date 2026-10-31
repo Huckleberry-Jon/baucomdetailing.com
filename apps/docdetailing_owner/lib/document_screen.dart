@@ -122,6 +122,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
                   total = d['totalCents'] as int;
               final status = row!['status'] == 'draft'
                   ? 'Draft'
+                  : row!['status'] == 'void'
+                  ? 'Void'
+                  : row!['kind'] == 'estimate'
+                  ? 'Estimate issued'
                   : paid >= total
                   ? 'Paid'
                   : paid > 0
@@ -151,7 +155,9 @@ class _DocumentScreenState extends State<DocumentScreen> {
                     'Discount: \$${moneyInput(d['discountCents'] as int? ?? 0)} · Tax: \$${moneyInput(d['taxCents'] as int)}',
                   ),
                   Text(
-                    'Total: \$${moneyInput(total)} · Paid: \$${moneyInput(paid)} · Balance: \$${moneyInput(total - paid)}',
+                    row!['kind'] == 'estimate'
+                        ? 'Estimate total: \$${moneyInput(total)}'
+                        : 'Total: \$${moneyInput(total)} · Paid: \$${moneyInput(paid)} · Balance: \$${moneyInput(total - paid)}',
                   ),
                   if (row!['status'] == 'draft')
                     Wrap(
@@ -221,8 +227,10 @@ class _DocumentScreenState extends State<DocumentScreen> {
                       onPressed: busy ? null : () => run(payment),
                       child: const Text('Record payment or deposit'),
                     ),
-                  const Text(
-                    'Record payments received externally. No card is charged. After an uncertain response, refresh this ledger before trying again.',
+                  Text(
+                    row!['kind'] == 'estimate'
+                        ? 'This estimate is a quote, not a bill. Create and issue an invoice for the job before recording payment.'
+                        : 'Record payments received externally. No card is charged. After an uncertain response, refresh this ledger before trying again.',
                   ),
                   Wrap(
                     spacing: 8,
