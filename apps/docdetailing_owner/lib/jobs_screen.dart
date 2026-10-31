@@ -1,3 +1,4 @@
+import 'completion_screen.dart';
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
 import 'business_time.dart';
@@ -237,41 +238,19 @@ class _JobScreenState extends State<JobScreen> {
 
   Future<void> changeStatus(String action) async {
     if (action == 'complete') {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: const Text('Complete this job?'),
-          content: const Text(
-            'Save the current service charges and mark the work as completed. Payment is recorded separately on the invoice.',
+      if (lines.isNotEmpty && job!['status'] != 'completed') await save();
+      if (!mounted) return;
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CompletionScreen(
+            api: widget.api,
+            bookingId: job!['booking_id'] as String,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Keep working'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Complete job'),
-            ),
-          ],
         ),
       );
-      if (confirmed != true || !mounted) return;
-      final saved = objectMap(job!['data']);
-      await widget.api.workspace(
-        '/api/owner/job',
-        method: 'PUT',
-        body: {
-          'id': widget.id,
-          'version': job!['version'],
-          'data': {...saved, 'lines': lines},
-        },
-      );
-      job =
-          await widget.api.workspace(
-                '/api/owner/job?id=${Uri.encodeQueryComponent(widget.id)}',
-              )
-              as Map;
+      await load();
+      return;
     }
     await widget.api.workspace(
       '/api/owner/transition',
@@ -466,6 +445,13 @@ class _JobScreenState extends State<JobScreen> {
               subtitle: Text(
                 '${quantityInput(-(m['quantity_millis'] as int))} ${objectMap(m['data'])['unit']} · cost \$${moneyInput(m['cost_cents'] as int)}',
               ),
+            ),
+          if (job!['status'] == 'completed')
+            OutlinedButton(
+              onPressed: busy
+                  ? null
+                  : () => run(() => changeStatus('complete')),
+              child: const Text('Completion payment & invoice'),
             ),
           if (job!['status'] == 'completed')
             FilledButton(

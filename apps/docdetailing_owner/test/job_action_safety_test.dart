@@ -1,3 +1,4 @@
+import 'package:docdetailing_owner/completion_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:docdetailing_owner/booking_details.dart';
@@ -15,6 +16,25 @@ class CompletionApi extends BusinessApi {
     Map<String, dynamic>? body,
     String? key,
   }) async {
+    if (path.contains('/job-completion')) {
+      return {
+        'job': {
+          'customer': {'firstName': 'Test', 'lastName': 'Customer'},
+          'status': 'in_progress',
+          'booking_version': 7,
+          'version': 4,
+        },
+        'quote': {
+          'subtotalCents': 10000,
+          'totalCents': 10000,
+          'lines': [
+            {'taxable': true, 'totalCents': 10000},
+          ],
+        },
+        'invoice': null,
+        'checkoutRecorded': false,
+      };
+    }
     final result = await super.workspace(
       path,
       method: method,
@@ -61,7 +81,7 @@ void main() {
     },
   );
   testWidgets(
-    'green complete job confirms, saves charges and completes without cancelling or charging',
+    'green Complete job opens payment confirmation without completing or recording money yet',
     (tester) async {
       final api = CompletionApi();
       await tester.pumpWidget(
@@ -70,25 +90,22 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final button = find.widgetWithText(FilledButton, 'Complete job');
-      await tester.tap(button);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(api.writes, isEmpty);
-      await tester.tap(find.text('Keep working'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Complete job'));
       await tester.pumpAndSettle();
-      expect(api.writes, isEmpty);
-      await tester.tap(button);
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.widgetWithText(FilledButton, 'Complete job').last);
+      expect(find.byType(CompletionScreen), findsOneWidget);
+      expect(find.text('Payment received (excluding tip)'), findsOneWidget);
+      expect(api.writes.length, 1);
+      expect(api.writes.single['path'], '/api/owner/job');
+      await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(api.writes.length, 2);
-      expect(api.writes.first['path'], '/api/owner/job');
-      expect(api.writes.last['body'], {
-        'id': 'booking-1',
-        'version': 7,
-        'action': 'complete',
-      });
-      expect(find.text('Create job invoice'), findsOneWidget);
+      expect(
+        api.writes.where(
+          (w) =>
+              w['path'] == '/api/owner/transition' ||
+              w['path'] == '/api/owner/job-completion',
+        ),
+        isEmpty,
+      );
     },
   );
 }

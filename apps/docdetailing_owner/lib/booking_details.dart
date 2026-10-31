@@ -1,3 +1,4 @@
+import 'completion_screen.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -264,26 +265,15 @@ class _BookingDetailsState extends State<BookingDetails> {
     }
     if (!mounted) return;
     if (action == 'complete') {
-      final accepted = await showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: const Text('Complete this job?'),
-          content: const Text(
-            'Mark the work as completed. This does not collect payment or cancel the appointment.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Keep working'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Complete job'),
-            ),
-          ],
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              CompletionScreen(api: widget.api, bookingId: widget.bookingId),
         ),
       );
-      if (accepted != true || !mounted) return;
+      await load();
+      return;
     }
     setState(() {
       busy = true;
@@ -423,6 +413,11 @@ class _BookingDetailsState extends State<BookingDetails> {
                     FilledButton(
                       onPressed: busy ? null : () => transition('start'),
                       child: const Text('Start job'),
+                    ),
+                  if (status == 'completed')
+                    OutlinedButton(
+                      onPressed: busy ? null : () => transition('complete'),
+                      child: const Text('Completion payment & invoice'),
                     ),
                   if (status == 'in_progress')
                     FilledButton(

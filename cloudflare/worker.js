@@ -1,3 +1,4 @@
+import { completionContext, completeWithPayment } from "./checkout.js";
 import { jobView, saveJob, stockMovement } from "./operations.js";
 import { saveNativeDevice, nativeInbox } from "./native-push.js";
 import { sessionCookie, sessionInfo, rotateSession } from "./sessions.js";
@@ -490,6 +491,21 @@ export async function route(request, env, ctx) {
     }
     if (path === "/api/owner/customer" && method === "GET")
       return json(await customerHistory(s, id));
+    if (path === "/api/owner/job-completion") {
+      if (method === "GET")
+        return json(
+          await completionContext(s, url.searchParams.get("booking")),
+        );
+      if (method === "POST")
+        return json(
+          await completeWithPayment(
+            s,
+            body,
+            user.id,
+            request.headers.get("Idempotency-Key"),
+          ),
+        );
+    }
     if (path === "/api/owner/jobs" && method === "GET")
       return json({
         records: await s.all(

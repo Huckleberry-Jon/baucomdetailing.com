@@ -418,7 +418,10 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                       value: quarter,
                       items: [
                         for (int q = 1; q <= 4; q++)
-                          DropdownMenuItem(value: q, child: Text('Q$q · UTC')),
+                          DropdownMenuItem(
+                            value: q,
+                            child: Text('Q$q · ${clock.zone}'),
+                          ),
                       ],
                       onChanged: (v) {
                         setState(() => quarter = v!);
