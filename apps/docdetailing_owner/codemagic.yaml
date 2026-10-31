@@ -79,7 +79,7 @@ workflows:
     name: Controlled DocDetailing build and approved upload
     inputs:
       approval:
-        description: Leave blank for archive only; upload-build-5 authorizes upload only
+        description: Leave blank for archive only; upload-build-6 authorizes upload only
         type: string
         default: ""
     integrations:
@@ -92,7 +92,7 @@ workflows:
         IOS_BUILD_APPROVED: "true"
         SHARED_BACKEND_ACCEPTED: "true"
         IOS_SIGNING_APPROVED: "true"
-        APP_BUILD_NUMBER: "5"
+        APP_BUILD_NUMBER: "6"
         APPROVED_BUILD_UPLOAD: ${{ inputs.approval }}
       ios_signing:
         certificates:
