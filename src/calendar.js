@@ -1,3 +1,4 @@
+import { schedule as checkSchedule } from "../cloudflare/domain.js";
 import { randomUUID } from "node:crypto";
 import { BUSINESS } from "./catalog.js";
 import { transaction } from "./db.js";
@@ -111,32 +112,30 @@ export function availability(service, day, packageId, addonIds = []) {
     return s;
   });
   const selected = [p, ...add];
-  if (
-    selected.some(
-      (s) => !Number.isInteger(s.durationMinutes) || s.durationMinutes <= 0,
-    )
-  )
-    return {
-      slots: [],
-      needsDuration: true,
-      message:
-        "Service durations are awaiting confirmation. You may submit a preferred time for owner review.",
-    };
-  const duration = selected.reduce((n, s) => n + s.durationMinutes, 0);
+  const needsDuration = selected.some(
+    (s) => !Number.isInteger(s.durationMinutes) || s.durationMinutes <= 0,
+  );
+  const duration = needsDuration
+    ? 1
+    : selected.reduce((n, s) => n + s.durationMinutes, 0);
   requireThat(
     duration <= 720,
     "Combined service duration exceeds one appointment",
   );
-  if (
-    !service.settings().scheduleConfirmed ||
-    !service.settings().serviceAreaConfirmed
-  )
+  const settings = service.settings();
+  if (!settings.scheduleConfirmed)
     return {
       slots: [],
       needsConfiguration: true,
-      message:
-        "Business availability is awaiting confirmation. You may request a preferred time.",
+      timezone: settings.timezone,
+      message: "Business hours must be confirmed before choosing a time.",
     };
+  const bookings = service.db
+      .prepare("SELECT * FROM bookings WHERE business_id=?")
+      .all(BUSINESS),
+    blocks = service.db
+      .prepare("SELECT * FROM schedule_blocks WHERE business_id=?")
+      .all(BUSINESS);
   const slots = [];
   for (
     let at = Date.parse(day + "T00:00:00Z");
@@ -145,7 +144,13 @@ export function availability(service, day, packageId, addonIds = []) {
   ) {
     if (dateKey(at) !== day || at <= Date.now()) continue;
     try {
-      service.schedule(at, duration, "");
+      checkSchedule(
+        { ...settings, serviceAreaConfirmed: true },
+        bookings,
+        blocks,
+        at,
+        duration,
+      );
       slots.push(new Date(at).toISOString());
     } catch (e) {
       if (e.status !== 409 && e.status !== 400) throw e;
@@ -153,9 +158,11 @@ export function availability(service, day, packageId, addonIds = []) {
   }
   return {
     slots,
-    durationMinutes: duration,
+    durationMinutes: needsDuration ? null : duration,
+    needsDuration,
     timezone: "America/Chicago",
-    message:
-      "Times are requests, not reservations. Availability is rechecked on confirmation.",
+    message: needsDuration
+      ? "Available start times; service duration needs owner review before confirmation."
+      : "Times are requests, not reservations. Availability is rechecked when you submit.",
   };
 }

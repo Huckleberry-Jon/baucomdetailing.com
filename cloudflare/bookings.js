@@ -2,7 +2,13 @@ import { randomUUID, createHmac, timingSafeEqual } from "node:crypto";
 import { hash, token, text, requireThat } from "../src/security.js";
 import { notice } from "../src/catalog.js";
 import { TenantRepository } from "./repository.js";
-import { schedule, validateSettings, reserved, dayKey } from "./domain.js";
+import {
+  schedule,
+  validateSettings,
+  reserved,
+  dayKey,
+  checkIntakeAvailability,
+} from "./domain.js";
 const preserveReservations = (settings, ctx) => {
   for (const booking of ctx.bookings) {
     if (reserved(booking) && booking.start_ms > Date.now()) {
@@ -187,6 +193,14 @@ export class CloudBookings extends TenantRepository {
       requireThat(
         Number.isFinite(start) && start > now && start < now + 366 * 86400000,
         "Request a date within the next year",
+      );
+      const ctx = await this.context();
+      checkIntakeAvailability(
+        JSON.parse(business.settings),
+        ctx.bookings,
+        ctx.blocks,
+        start,
+        [selected, ...addons],
       );
       const concerns = typeof input.concerns === "string" ? input.concerns : "";
       requireThat(concerns.length <= 3000, "Condition notes too long");
@@ -654,29 +668,23 @@ export class CloudBookings extends TenantRepository {
         return a;
       }),
     ];
-    if (
-      selected.some(
-        (s) => !Number.isInteger(s.durationMinutes) || s.durationMinutes <= 0,
-      )
-    )
-      return {
-        slots: [],
-        needsDuration: true,
-        message:
-          "Service durations are awaiting confirmation. You may submit a preferred time for owner review.",
-      };
-    const duration = selected.reduce((n, s) => n + s.durationMinutes, 0);
+    const needsDuration = selected.some(
+      (s) => !Number.isInteger(s.durationMinutes) || s.durationMinutes <= 0,
+    );
+    const duration = needsDuration
+      ? 1
+      : selected.reduce((n, s) => n + s.durationMinutes, 0);
     requireThat(
       duration <= 720,
       "Combined service duration exceeds one appointment",
     );
     const settings = await this.settings();
-    if (!settings.scheduleConfirmed || !settings.serviceAreaConfirmed)
+    if (!settings.scheduleConfirmed)
       return {
         slots: [],
         needsConfiguration: true,
-        message:
-          "Business availability is awaiting confirmation. You may request a preferred time.",
+        timezone: settings.timezone,
+        message: "Business hours must be confirmed before choosing a time.",
       };
     const ctx = await this.context(),
       slots = [];
@@ -687,7 +695,13 @@ export class CloudBookings extends TenantRepository {
     ) {
       if (at <= Date.now() || dayKey(at, settings.timezone) !== day) continue;
       try {
-        schedule(settings, ctx.bookings, ctx.blocks, at, duration);
+        schedule(
+          { ...settings, serviceAreaConfirmed: true },
+          ctx.bookings,
+          ctx.blocks,
+          at,
+          duration,
+        );
         slots.push(new Date(at).toISOString());
       } catch (e) {
         if (![400, 409].includes(e.status)) throw e;
@@ -695,10 +709,12 @@ export class CloudBookings extends TenantRepository {
     }
     return {
       slots,
-      durationMinutes: duration,
+      durationMinutes: needsDuration ? null : duration,
+      needsDuration,
       timezone: settings.timezone,
-      message:
-        "Times are requests, not reservations. Availability is rechecked on confirmation.",
+      message: needsDuration
+        ? "Available start times; service duration needs owner review before confirmation."
+        : "Times are requests, not reservations. Availability is rechecked when you submit.",
     };
   }
 }

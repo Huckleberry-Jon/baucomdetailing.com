@@ -408,17 +408,11 @@ test("customer confirmation uses configured channel, distinguishes provider acce
 test("closed dates, capacity and travel buffer constrain confirmations", () => {
   const { db, s } = fixture(),
     a = s.create(input(), "cap-a");
-  s.transition(a.id, "confirm", { version: 1, durationMinutes: 60 });
   const near = {
       ...input(),
       requestedAt: new Date(Date.parse(future()) + 75 * 60000).toISOString(),
     },
     b = s.create(near, "cap-b");
-  assert.throws(
-    () => s.transition(b.id, "confirm", { version: 1, durationMinutes: 60 }),
-    /buffer/,
-  );
-  s.updateSettings({ ...s.settings(), maxDaily: 1 });
   const far = s.create(
     {
       ...input(),
@@ -426,6 +420,13 @@ test("closed dates, capacity and travel buffer constrain confirmations", () => {
     },
     "cap-c",
   );
+  s.transition(a.id, "confirm", { version: 1, durationMinutes: 60 });
+  assert.throws(() => s.create(near, "blocked-intake"), /buffer/);
+  assert.throws(
+    () => s.transition(b.id, "confirm", { version: 1, durationMinutes: 60 }),
+    /buffer/,
+  );
+  s.updateSettings({ ...s.settings(), maxDaily: 1 });
   assert.throws(
     () => s.transition(far.id, "confirm", { version: 1, durationMinutes: 60 }),
     /capacity/,
@@ -434,7 +435,8 @@ test("closed dates, capacity and travel buffer constrain confirmations", () => {
 });
 test("confirmed slot stays reserved while rescheduling awaits acceptance", () => {
   const { db, s } = fixture(),
-    a = s.create(input(), "reserve-a");
+    a = s.create(input(), "reserve-a"),
+    b = s.create(input(), "reserve-b");
   s.transition(a.id, "confirm", { version: 1, durationMinutes: 60 });
   s.transition(a.id, "propose", {
     version: 2,
@@ -442,7 +444,7 @@ test("confirmed slot stays reserved while rescheduling awaits acceptance", () =>
     durationMinutes: 90,
     priceCents: 15000,
   });
-  const b = s.create(input(), "reserve-b");
+  assert.throws(() => s.create(input(), "reserved-intake"), /overlaps/);
   assert.throws(
     () => s.transition(b.id, "confirm", { version: 1, durationMinutes: 60 }),
     /overlaps/,

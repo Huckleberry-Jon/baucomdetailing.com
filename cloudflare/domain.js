@@ -200,3 +200,55 @@ export function validateSettings(s, bookings) {
     googleReviewUrl: googleReviewUrl(s.googleReviewUrl),
   };
 }
+
+export function publicClosedDates(settings, blocks) {
+  const closed = new Set(settings.closedDates ?? []);
+  const parts = (at) =>
+    Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: settings.timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      })
+        .formatToParts(at)
+        .map((p) => [p.type, p.value]),
+    );
+  for (const block of blocks) {
+    const first = dayKey(block.start_ms, settings.timezone),
+      last = dayKey(block.end_ms - 1, settings.timezone);
+    const a = parts(block.start_ms),
+      z = parts(block.end_ms);
+    for (let at = Date.parse(first); at <= Date.parse(last); at += 86400000) {
+      const day = new Date(at).toISOString().slice(0, 10);
+      if (
+        (day > first ||
+          Number(a.hour) * 60 + Number(a.minute) <= settings.openMinute) &&
+        (day < last ||
+          dayKey(block.end_ms, settings.timezone) > day ||
+          Number(z.hour) * 60 + Number(z.minute) >= settings.closeMinute)
+      )
+        closed.add(day);
+    }
+  }
+  return [...closed].sort();
+}
+export function checkIntakeAvailability(
+  settings,
+  bookings,
+  blocks,
+  start,
+  services,
+) {
+  if (!settings.scheduleConfirmed) return;
+  const known = services.every(
+    (s) => Number.isInteger(s.durationMinutes) && s.durationMinutes > 0,
+  );
+  schedule(
+    { ...settings, serviceAreaConfirmed: true },
+    bookings,
+    blocks,
+    start,
+    known ? services.reduce((n, s) => n + s.durationMinutes, 0) : 1,
+  );
+}

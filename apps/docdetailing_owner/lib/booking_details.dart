@@ -131,62 +131,114 @@ class _BookingDetailsState extends State<BookingDetails> {
 
   Future<Map<String, String>?> editFields(
     String title,
-    Map<String, String> initial,
-  ) async {
+    Map<String, String> initial, {
+    DateTime? appointment,
+  }) async {
     final controls = initial.map(
       (k, v) => MapEntry(k, TextEditingController(text: v)),
     );
     final formKey = GlobalKey<FormState>();
+    DateTime? selected = appointment;
+    String? timeError;
     final route = DialogRoute<Map<String, String>>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final e in controls.entries)
-                  TextFormField(
-                    controller: e.value,
-                    keyboardType: TextInputType.numberWithOptions(
-                      decimal: e.key != 'Duration minutes',
+      builder: (c) => StatefulBuilder(
+        builder: (c, setDialog) => AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (appointment != null) ...[
+                    Text('Appointment date and time (${widget.clock.zone})'),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.edit_calendar),
+                      label: Text(
+                        widget.clock.label(selected!.toIso8601String()),
+                      ),
+                      onPressed: () async {
+                        final picked = await pickBusinessInstant(
+                          c,
+                          widget.clock,
+                          widget.clock.day(selected!),
+                          label: 'Proposed appointment',
+                        );
+                        if (picked != null && c.mounted) {
+                          setDialog(() {
+                            selected = picked;
+                            timeError = null;
+                          });
+                        }
+                      },
                     ),
-                    decoration: InputDecoration(labelText: e.key),
-                    validator: (v) {
-                      if (e.key == 'Duration minutes') {
-                        final n = int.tryParse(v ?? '');
-                        return n != null && n > 0 && n <= 720
-                            ? null
-                            : 'Use 1 to 720 minutes';
-                      }
-                      try {
-                        parseMoneyCents(v ?? '');
-                        return null;
-                      } catch (_) {
-                        return 'Enter an amount with up to two decimal places';
-                      }
-                    },
-                  ),
-              ],
+                    const Text(
+                      'Tap the date and time above to choose another appointment.',
+                    ),
+                    if (timeError != null)
+                      Text(
+                        timeError!,
+                        style: TextStyle(color: Theme.of(c).colorScheme.error),
+                      ),
+                    const SizedBox(height: 16),
+                  ],
+                  for (final e in controls.entries)
+                    TextFormField(
+                      controller: e.value,
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: e.key != 'Duration minutes',
+                      ),
+                      decoration: InputDecoration(
+                        labelText: e.key,
+                        helperText: e.key == 'Duration minutes'
+                            ? 'Required: how long the service will take'
+                            : null,
+                      ),
+                      validator: (v) {
+                        if (e.key == 'Duration minutes') {
+                          final n = int.tryParse(v ?? '');
+                          return n != null && n > 0 && n <= 720
+                              ? null
+                              : 'Use 1 to 720 minutes';
+                        }
+                        try {
+                          parseMoneyCents(v ?? '');
+                          return null;
+                        } catch (_) {
+                          return 'Enter an amount with up to two decimal places';
+                        }
+                      },
+                    ),
+                ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (appointment != null && !selected!.isAfter(DateTime.now())) {
+                  setDialog(
+                    () => timeError = 'Choose a future appointment time.',
+                  );
+                  return;
+                }
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(c, {
+                    ...controls.map((k, v) => MapEntry(k, v.text)),
+                    if (appointment != null)
+                      'startAt': selected!.toIso8601String(),
+                  });
+                }
+              },
+              child: const Text('Continue'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(c, controls.map((k, v) => MapEntry(k, v.text)));
-              }
-            },
-            child: const Text('Continue'),
-          ),
-        ],
       ),
     );
     final result = await Navigator.of(context).push(route);
@@ -214,29 +266,26 @@ class _BookingDetailsState extends State<BookingDetails> {
       fields = await editFields(
         action == 'confirm' ? 'Confirm appointment' : 'Propose appointment',
         {
-          'Duration minutes':
-              '${b['end_ms'] != null ? ((b['end_ms'] as int) - (b['start_ms'] as int)) ~/ 60000 : calculated}',
+          'Duration minutes': b['end_ms'] != null
+              ? '${((b['end_ms'] as int) - (b['start_ms'] as int)) ~/ 60000}'
+              : calculated > 0
+              ? '$calculated'
+              : '',
           if (action == 'propose')
             'Proposed total (USD)': moneyInput(
               snapshot['estimatedMin'] as int? ?? 0,
             ),
         },
+        appointment: action == 'propose'
+            ? DateTime.fromMillisecondsSinceEpoch(
+                b['start_ms'] as int,
+                isUtc: true,
+              )
+            : null,
       );
       if (fields == null || !mounted) return;
     }
-    if (action == 'propose') {
-      instant = await pickBusinessInstant(
-        context,
-        widget.clock,
-        widget.clock.day(
-          DateTime.fromMillisecondsSinceEpoch(
-            b['start_ms'] as int,
-            isUtc: true,
-          ),
-        ),
-      );
-      if (instant == null || !mounted) return;
-    }
+    if (action == 'propose') instant = DateTime.parse(fields!['startAt']!);
     if (action == 'cancel') {
       final accepted = await showDialog<bool>(
         context: context,

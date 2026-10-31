@@ -15,6 +15,7 @@ let catalog,
   submissionKey = crypto.randomUUID();
 function estimate() {
   const p = catalog.services.find((s) => s.id === $("#package-select").value);
+  if ($("#availability-day").value) void loadAvailableTimes();
   $("#estimate").textContent =
     `Estimated package: ${money(p.min)}–${money(p.max)}. Selected add-ons require a separate quote.`;
 }
@@ -124,6 +125,7 @@ async function load() {
         : catalog.runtime?.environment === "staging"
           ? "PRIVATE STAGING · TEST BOOKINGS ONLY"
           : "LOCAL DEVELOPMENT · NOT OPEN FOR LIVE BOOKINGS";
+  populateAvailabilityDays();
   estimate();
   $("#package-select").onchange = estimate;
   if (location.hash)
@@ -141,7 +143,16 @@ $("#booking-form").addEventListener("submit", async (e) => {
     body.concerns = [...f.getAll("condition"), f.get("notes")]
       .filter(Boolean)
       .join("; ");
+    if (!body.requestedAt)
+      throw Error("Choose an available day and time first.");
     body.requestedAt = new Date(body.requestedAt).toISOString();
+    const latest = await fetchAvailableTimes($("#availability-day").value);
+    if (!latest.slots.includes(body.requestedAt)) {
+      await loadAvailableTimes();
+      throw Error(
+        "That time is no longer available. Choose another available day and time.",
+      );
+    }
     body.acceptNotice = f.get("acceptNotice") === "on";
     delete body.notes;
     delete body.condition;
@@ -185,7 +196,7 @@ $("#booking-form").addEventListener("submit", async (e) => {
     $("#booking-status").dataset.state = "error";
     $("#booking-status").textContent = "Request not sent: " + err.message;
   } finally {
-    button.disabled = false;
+    button.disabled = !document.querySelector("[name=requestedAt]").value;
   }
 });
 document.addEventListener("DOMContentLoaded", () => {
@@ -195,47 +206,117 @@ document.addEventListener("DOMContentLoaded", () => {
       "Booking form could not load: " + e.message;
   });
 });
-document.querySelector("#check-availability").onclick = async () => {
-  const status = document.querySelector("#availability-status"),
-    root = document.querySelector("#availability-times");
-  root.replaceChildren();
+
+let availabilityRevision = 0;
+function populateAvailabilityDays(keep = $("#availability-day").value) {
+  const root = $("#availability-day"),
+    settings = catalog.settings;
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: settings.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  root.replaceChildren(new Option("Choose an available day", ""));
+  for (let i = 0; i < 366; i++) {
+    const at = new Date(Date.parse(today + "T12:00:00Z") + i * 86400000),
+      day = at.toISOString().slice(0, 10);
+    const weekday = new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC",
+      weekday: "short",
+    }).format(at);
+    const closed =
+      !settings.scheduleConfirmed ||
+      !settings.workingDays.includes(weekday) ||
+      settings.closedDates.includes(day);
+    const label = new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC",
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(at);
+    const option = new Option(label + (closed ? " - unavailable" : ""), day);
+    option.disabled = closed;
+    root.append(option);
+  }
+  if ([...root.options].some((o) => o.value === keep && !o.disabled))
+    root.value = keep;
+}
+async function fetchAvailableTimes(day) {
+  if (!day) throw Error("Choose an available day first.");
+  const q = new URLSearchParams({ day, packageId: $("#package-select").value });
+  for (const input of document.querySelectorAll("[name=addonIds]:checked"))
+    q.append("addonId", input.value);
+  const response = await fetch("/api/availability?" + q, { cache: "no-store" }),
+    data = await response.json();
+  if (!response.ok) throw Error(data.error);
+  return data;
+}
+async function loadAvailableTimes() {
+  const revision = ++availabilityRevision,
+    status = $("#availability-status"),
+    times = document.querySelector("[name=requestedAt]");
+  const selectedDay = $("#availability-day").value;
+  times.disabled = true;
+  document.querySelector("#booking-form button[type=submit]").disabled = true;
+  times.replaceChildren(new Option("Checking availability...", ""));
   status.dataset.state = "pending";
   try {
-    const q = new URLSearchParams({
-      day: document.querySelector("#availability-day").value,
-      packageId: document.querySelector("#package-select").value,
-    });
-    for (const input of document.querySelectorAll("[name=addonIds]:checked"))
-      q.append("addonId", input.value);
-    const r = await fetch("/api/availability?" + q),
-      data = await r.json();
-    if (!r.ok) throw Error(data.error);
+    const response = await fetch("/api/catalog", { cache: "no-store" }),
+      fresh = await response.json();
+    if (!response.ok) throw Error(fresh.error);
+    if (revision !== availabilityRevision) return;
+    catalog.settings = fresh.settings;
+    populateAvailabilityDays(selectedDay);
+    if (!$("#availability-day").value)
+      throw Error("This day is unavailable. Choose an open day.");
+    const data = await fetchAvailableTimes(selectedDay);
+    if (revision !== availabilityRevision) return;
+    times.replaceChildren(
+      new Option(
+        data.slots.length ? "Choose an available time" : "No available times",
+        "",
+      ),
+    );
+    for (const slot of data.slots) {
+      const label = new Intl.DateTimeFormat("en-US", {
+        timeZone: data.timezone ?? catalog.settings.timezone,
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }).format(new Date(slot));
+      times.append(new Option(label, slot));
+    }
+    times.disabled = data.slots.length === 0;
     status.dataset.state = "success";
     status.textContent =
-      data.message + (data.slots.length ? "" : " No available times shown.");
-    for (const slot of data.slots) {
-      const b = el(
-        "button",
-        new Date(slot).toLocaleTimeString("en-US", {
-          timeZone: "America/Chicago",
-          hour: "numeric",
-          minute: "2-digit",
-        }) + " Central",
+      data.message + (data.slots.length ? "" : " Choose another day.");
+    if (!data.slots.length) {
+      const option = [...$("#availability-day").options].find(
+        (o) => o.value === selectedDay,
       );
-      b.type = "button";
-      b.onclick = () => {
-        const d = new Date(slot),
-          value = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-            .toISOString()
-            .slice(0, 16);
-        document.querySelector("[name=requestedAt]").value = value;
-        status.textContent =
-          "Preferred time selected. Submit the booking form to request it.";
-      };
-      root.append(b);
+      if (option) option.disabled = true;
     }
-  } catch (e) {
+  } catch (error) {
+    if (revision !== availabilityRevision) return;
+    times.replaceChildren(new Option("Choose another available day", ""));
     status.dataset.state = "error";
-    status.textContent = "Availability could not be checked: " + e.message;
+    status.textContent = error.message;
   }
+}
+$("#check-availability").onclick = loadAvailableTimes;
+$("#availability-day").onchange = loadAvailableTimes;
+$("#booking-form").addEventListener("change", (event) => {
+  if (event.target.name === "addonIds" && $("#availability-day").value)
+    void loadAvailableTimes();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && catalog && $("#availability-day").value)
+    void loadAvailableTimes();
+});
+
+document.querySelector("[name=requestedAt]").onchange = () => {
+  document.querySelector("#booking-form button[type=submit]").disabled =
+    !document.querySelector("[name=requestedAt]").value;
 };

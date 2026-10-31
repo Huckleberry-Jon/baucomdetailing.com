@@ -33,7 +33,7 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
         body: { id: b.id, version: b.version, action, ...extra },
         ...(customer ? { secret: b.accessToken } : { cookie }),
       });
-    let a, b, confirmed;
+    let a, b, confirmed, adjacent, capacity, old;
     await t.test(
       "catalog retains exact prices and scoped business settings",
       async () => {
@@ -137,6 +137,9 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
       "two simultaneous D1 confirmations have exactly one winner",
       async () => {
         b = await create();
+        adjacent = await create({ requestedAt: future(90) });
+        capacity = await create({ requestedAt: future(180) });
+        old = await create();
         const results = await Promise.all([
           transition(a, "confirm", { durationMinutes: 90 }),
           transition(b, "confirm", { durationMinutes: 90 }),
@@ -169,28 +172,29 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
           ).status,
           409,
         );
-        const adjacent = await create({ requestedAt: future(90) });
+
         assert.equal(
           (await transition(adjacent, "confirm", { durationMinutes: 30 }))
             .status,
           409,
         );
-        const night = await create({
-          requestedAt: new Date(
-            new Date(future()).setUTCHours(5),
-          ).toISOString(),
+        const night = await call(mf, "/api/bookings", {
+          method: "POST",
+          key: randomUUID(),
+          body: input({
+            requestedAt: new Date(
+              new Date(future()).setUTCHours(5),
+            ).toISOString(),
+          }),
         });
-        assert.equal(
-          (await transition(night, "confirm", { durationMinutes: 30 })).status,
-          409,
-        );
+        assert.equal(night.status, 409);
         const result = await call(mf, "/api/owner/settings", {
           method: "PUT",
           cookie,
           body: { ...cfg, maxDaily: 1 },
         });
         assert.equal(result.status, 200);
-        const capacity = await create({ requestedAt: future(180) });
+
         assert.equal(
           (await transition(capacity, "confirm", { durationMinutes: 30 }))
             .status,
@@ -218,7 +222,7 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
         });
         assert.equal(proposal.status, 200);
         confirmed = { ...confirmed, ...proposal.data };
-        const old = await create();
+
         assert.equal(
           (await transition(old, "confirm", { durationMinutes: 30 })).status,
           409,
@@ -233,6 +237,7 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
     await t.test(
       "calendar contains requests/confirmed/proposed and blocked time prevents confirmation",
       async () => {
+        const blocked = await create({ requestedAt: future(390) });
         const block = await call(mf, "/api/owner/block", {
           method: "POST",
           cookie,
@@ -243,7 +248,7 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
           },
         });
         assert.equal(block.status, 201);
-        const blocked = await create({ requestedAt: future(420) });
+
         assert.equal(
           (await transition(blocked, "confirm", { durationMinutes: 30 }))
             .status,
@@ -343,7 +348,7 @@ test("actual workerd/D1: complete booking, scheduling and conflict lifecycle", a
           ).data.status,
           "completed",
         );
-        const r2 = await create({ requestedAt: future(600) });
+        const r2 = await create({ requestedAt: future(1440) });
         assert.equal(
           (await transition(r2, "cancel", {}, true)).data.status,
           "cancelled",

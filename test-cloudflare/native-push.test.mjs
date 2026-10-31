@@ -380,6 +380,12 @@ test("customer request for another time preserves reservation and durable notifi
       body: input(),
       key: "request-another-time",
     });
+    const rival = await call(f.mf, "/api/bookings", {
+      method: "POST",
+      body: input(),
+      key: "request-conflict",
+    });
+    assert.equal(rival.status, 201);
     const id = created.data.id,
       secret = created.data.accessToken;
     assert.equal(
@@ -425,11 +431,6 @@ test("customer request for another time preserves reservation and durable notifi
       body: request,
     });
     assert.equal(duplicate.status, 409);
-    const rival = await call(f.mf, "/api/bookings", {
-      method: "POST",
-      body: input(),
-      key: "request-conflict",
-    });
     assert.equal(
       (
         await call(f.mf, "/api/owner/transition", {

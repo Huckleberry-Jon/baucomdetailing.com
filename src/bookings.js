@@ -1,3 +1,4 @@
+import { checkIntakeAvailability } from "../cloudflare/domain.js";
 import { socialLinks } from "./social-links.js";
 import { googleReviewUrl } from "./reviews.js";
 import { storePhotos } from "./media.js";
@@ -134,6 +135,17 @@ export class BookingService {
           start > Date.now() &&
           start < Date.now() + 366 * 86400000,
         "Request a date within the next year",
+      );
+      checkIntakeAvailability(
+        this.settings(),
+        this.db
+          .prepare("SELECT * FROM bookings WHERE business_id=?")
+          .all(BUSINESS),
+        this.db
+          .prepare("SELECT * FROM schedule_blocks WHERE business_id=?")
+          .all(BUSINESS),
+        start,
+        [selected, ...add],
       );
       const concerns = typeof input.concerns === "string" ? input.concerns : "";
       requireThat(concerns.length <= 3000, "Condition notes too long");

@@ -1,3 +1,4 @@
+import { publicClosedDates } from "../cloudflare/domain.js";
 import {
   websiteSlots,
   saveWebsitePhoto,
@@ -235,7 +236,17 @@ export function createApplication(db, config = {}) {
       }
       if (path === "/api/catalog" && req.method === "GET")
         return respond(res, 200, {
-          settings: service.settings(),
+          settings: {
+            ...service.settings(),
+            closedDates: publicClosedDates(
+              service.settings(),
+              db
+                .prepare(
+                  "SELECT start_ms,end_ms FROM schedule_blocks WHERE business_id=?",
+                )
+                .all(BUSINESS),
+            ),
+          },
           services: service.catalog().filter((s) => s.enabled),
           notice,
           runtime: {

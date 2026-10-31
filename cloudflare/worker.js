@@ -1,3 +1,4 @@
+import { publicClosedDates } from "./domain.js";
 import { completionContext, completeWithPayment } from "./checkout.js";
 import { jobView, saveJob, stockMovement } from "./operations.js";
 import { saveNativeDevice, nativeInbox } from "./native-push.js";
@@ -283,9 +284,17 @@ export async function route(request, env, ctx) {
   }
   if (path === "/api/webhooks/email" && method === "POST")
     return json(await receipt(s, raw, request.headers, env));
-  if (path === "/api/catalog" && method === "GET")
+  if (path === "/api/catalog" && method === "GET") {
+    const settings = await s.settings();
+    const blocks = await s.all(
+      "SELECT start_ms,end_ms FROM schedule_blocks WHERE business_id=?",
+      s.tenant,
+    );
     return json({
-      settings: publicSettings(await s.settings()),
+      settings: publicSettings({
+        ...settings,
+        closedDates: publicClosedDates(settings, blocks),
+      }),
       services: (await s.catalog()).filter((p) => p.enabled),
       notice,
       runtime: {
@@ -293,6 +302,7 @@ export async function route(request, env, ctx) {
         siteOpen: env.SITE_OPEN === "true",
       },
     });
+  }
   if (path === "/api/availability" && method === "GET")
     return json(
       await s.availability(
