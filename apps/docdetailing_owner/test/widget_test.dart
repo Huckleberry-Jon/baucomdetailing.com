@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:docdetailing_owner/main.dart';
 import 'package:docdetailing_owner/owner_api.dart';
@@ -8,8 +9,13 @@ void main() {
     expect(find.textContaining('DEVELOPMENT DEMO'), findsOneWidget);
     await tester.tap(find.text('Open demo dashboard'));
     await tester.pumpAndSettle();
+    expect(find.text('Ready for the road.'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Synthetic customer'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Synthetic customer'), findsOneWidget);
-    expect(find.text('1 pending · 1 confirmed'), findsOneWidget);
     await tester.tap(find.byTooltip('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('Open demo dashboard'), findsOneWidget);

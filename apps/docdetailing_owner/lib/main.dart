@@ -8,6 +8,7 @@ import 'session_store.dart';
 import 'booking_details.dart';
 import 'business_time.dart';
 import 'jobs_screen.dart';
+import 'home_dashboard.dart';
 
 void main() {
   const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
@@ -24,7 +25,21 @@ class OwnerApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'DocDetailing — development',
     theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff244f41)),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: const Color(0xffd4ad60),
+            brightness: Brightness.dark,
+          ).copyWith(
+            primary: const Color(0xffe4bf73),
+            onPrimary: const Color(0xff211907),
+            surface: const Color(0xff191711),
+            onSurface: const Color(0xfff5eddc),
+          ),
+      scaffoldBackgroundColor: const Color(0xff100f0c),
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        border: OutlineInputBorder(),
+      ),
       useMaterial3: true,
     ),
     home: OwnerHome(api: api),
@@ -42,7 +57,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
   final email = TextEditingController(),
       password = TextEditingController(),
       previewCode = TextEditingController();
-  bool signedIn = false, busy = false;
+  bool signedIn = false, busy = false, showHistory = false;
   String? error;
   List<Booking> rows = [];
   NativeNotifications? notifications;
@@ -270,7 +285,9 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                 controller: previewCode,
                 obscureText: true,
                 decoration: const InputDecoration(
-                  labelText: 'Private preview code (if required)',
+                  labelText: 'Private preview code',
+                  helperText:
+                      'Use the shared staging code, not your owner password.',
                 ),
               ),
               TextField(
@@ -302,12 +319,56 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
               ),
             ),
           ] else ...[
+            HomeDashboard(
+              bookings: rows,
+              onCalendar: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OwnerCalendar(api: widget.api),
+                ),
+              ),
+              onCustomers: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      WorkspaceScreen(api: widget.api, section: 'Customers'),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text('Bookings', style: Theme.of(context).textTheme.headlineMedium),
             Text(
               '${rows.where((b) => b.status == 'pending').length} pending · ${rows.where((b) => b.status == 'confirmed').length} confirmed',
             ),
             const SizedBox(height: 12),
-            for (final b in rows)
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Show completed and cancelled bookings'),
+              value: showHistory,
+              onChanged: (value) => setState(() => showHistory = value),
+            ),
+            if (rows
+                .where(
+                  (b) =>
+                      showHistory ||
+                      ![
+                        'cancelled',
+                        'completed',
+                        'declined',
+                      ].contains(b.status),
+                )
+                .isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'No active bookings. New website requests will appear here.',
+                ),
+              ),
+            for (final b in rows.where(
+              (b) =>
+                  showHistory ||
+                  !['cancelled', 'completed', 'declined'].contains(b.status),
+            ))
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -331,7 +392,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                                     builder: (context) => AlertDialog(
                                       title: const Text('Confirm appointment'),
                                       content: const Text(
-                                        'Confirm this appointment with a 90-minute duration? The backend rechecks availability.',
+                                        'Confirm this appointment with a 90-minute duration? Availability is checked again. The customer and vehicle details are already saved in Customers.',
                                       ),
                                       actions: [
                                         TextButton(
@@ -366,7 +427,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
               ),
             const SizedBox(height: 20),
             const Text(
-              'Open the menu for business records, calendar, materials and finances. Photo permissions, APNs and signed iPhone acceptance remain release gates.',
+              'Customer contact details and vehicles are saved with each website request. Use Customers to view their records and booking history.',
             ),
           ],
         ],

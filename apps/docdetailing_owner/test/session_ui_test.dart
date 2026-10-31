@@ -38,6 +38,12 @@ void main() {
     (tester) async {
       await tester.pumpWidget(OwnerApp(api: SessionFixture()));
       await tester.pumpAndSettle();
+      expect(find.text('Ready for the road.'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Synthetic customer'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Synthetic customer'), findsOneWidget);
       expect(find.text('Open demo dashboard'), findsNothing);
     },

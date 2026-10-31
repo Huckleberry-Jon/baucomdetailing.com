@@ -1,0 +1,60 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:docdetailing_owner/home_dashboard.dart';
+import 'package:docdetailing_owner/owner_api.dart';
+
+void main() {
+  testWidgets(
+    'dashboard counts active work and opens calendar and records on a narrow screen',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var calendar = 0, customers = 0;
+      final future = DateTime.now().add(const Duration(days: 2));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: HomeDashboard(
+                bookings: [
+                  Booking(
+                    id: '1',
+                    status: 'pending',
+                    version: 1,
+                    customer: 'Pending',
+                    start: future,
+                  ),
+                  Booking(
+                    id: '2',
+                    status: 'rescheduled',
+                    version: 1,
+                    customer: 'Confirmed',
+                    start: future,
+                  ),
+                  Booking(
+                    id: '3',
+                    status: 'cancelled',
+                    version: 1,
+                    customer: 'Cancelled',
+                    start: future,
+                  ),
+                ],
+                onCalendar: () => calendar++,
+                onCustomers: () => customers++,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.text('1'), findsNWidgets(2));
+      expect(find.textContaining('(device time)'), findsOneWidget);
+      await tester.tap(find.text('Open calendar'));
+      await tester.tap(find.text('Customer records'));
+      expect(calendar, 1);
+      expect(customers, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+}
