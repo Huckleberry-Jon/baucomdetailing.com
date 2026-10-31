@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { verifyExportedIPA } from "./verify-ios-ipa.mjs";
 import { lookupAppleApp } from "./apple-upload-preflight.mjs";
 const approval = process.env.APPROVED_BUILD_UPLOAD;
-if (!approval) { console.log("Archive only: Apple upload disabled."); process.exit(0); }
+if (!approval || approval === "archive-only") { console.log("Archive only: Apple upload disabled."); process.exit(0); }
 let stage = "approval validation";
 try {
   assert.equal(process.env.CM_BRANCH,"main");
