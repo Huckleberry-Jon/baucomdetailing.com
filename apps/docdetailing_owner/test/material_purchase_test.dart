@@ -35,7 +35,7 @@ void main() {
     },
   );
   testWidgets(
-    'new gallon purchase defaults to 128 ounces and editable standard 30% markup',
+    'new gallon purchase defaults to 128 ounces with no consumable markup',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -64,11 +64,14 @@ void main() {
       expect(
         tester
             .widget<TextField>(
-              find.widgetWithText(TextField, 'Markup percent (standard 30%)'),
+              find.widgetWithText(
+                TextField,
+                'Optional separate-charge markup (%)',
+              ),
             )
             .controller!
             .text,
-        '30.00',
+        '0.00',
       );
       await tester.enterText(
         find.widgetWithText(TextField, 'Product name'),
@@ -96,7 +99,7 @@ void main() {
       expect(body['purchaseQuantityMillis'], 1000);
       expect(body['product']['purchaseCostCents'], 3299);
       expect(body['product']['purchaseSizeMillis'], 128000);
-      expect(body['product']['markupBps'], 3000);
+      expect(body['product']['markupBps'], 0);
       expect(body['product']['unit'], 'oz');
     },
   );

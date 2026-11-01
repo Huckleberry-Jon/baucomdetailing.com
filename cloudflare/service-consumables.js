@@ -116,6 +116,10 @@ export async function plannedConsumables(s, job, movements) {
       stockVersion: row.stock_version,
       recorded: !!record,
       actualQuantityMillis: record ? -record.quantity_millis : null,
+      movementId: record?.id ?? null,
+      includeOnInvoice: record
+        ? JSON.parse(record.data).includeOnInvoice === true
+        : false,
     });
   }
   return result;
@@ -131,4 +135,69 @@ export function publicBookingSnapshot(snapshot) {
     package: publicService(snapshot.package),
     addons: (snapshot.addons ?? []).map(publicService),
   };
+}
+
+// Invoice disclosure is a whitelisted snapshot, never a charge or internal costing data.
+export function invoiceConsumables(job) {
+  return job.materials
+    .filter(
+      (m) =>
+        m.quantity_millis < 0 && JSON.parse(m.data).includeOnInvoice === true,
+    )
+    .map((m) => {
+      const d = JSON.parse(m.data);
+      return {
+        product: d.product,
+        unit: d.unit,
+        quantityMillis: -m.quantity_millis,
+      };
+    });
+}
+export async function setConsumableVisibility(s, body, owner) {
+  requireThat(
+    typeof body.includeOnInvoice === "boolean" &&
+      typeof body.expectedVisibility === "boolean",
+    "Choose invoice visibility",
+  );
+  return s.atomic(async (b, c) => {
+    const row = await s.first(
+      "SELECT * FROM inventory_movements WHERE business_id=? AND id=? AND job_id IS NOT NULL AND quantity_millis<0",
+      s.tenant,
+      body.id,
+    );
+    requireThat(row, "Consumable use not found", 404);
+    const job = await s.first(
+      "SELECT b.status,j.booking_id FROM jobs j JOIN bookings b ON b.id=j.booking_id AND b.business_id=j.business_id WHERE j.business_id=? AND j.id=?",
+      s.tenant,
+      row.job_id,
+    );
+    requireThat(
+      job && ["confirmed", "rescheduled", "in_progress"].includes(job.status),
+      "Invoice choices are frozen when the job is completed",
+      409,
+    );
+    const issued = await s.first(
+      "SELECT id FROM financial_documents WHERE business_id=? AND booking_id=? AND kind='invoice' AND status='issued'",
+      s.tenant,
+      job.booking_id,
+    );
+    requireThat(!issued, "Issued invoice details cannot change", 409);
+    const data = JSON.parse(row.data);
+    requireThat(
+      (data.includeOnInvoice === true) === body.expectedVisibility,
+      "Invoice choice changed; refresh",
+      409,
+    );
+    data.includeOnInvoice = body.includeOnInvoice;
+    c.push(
+      s.command(
+        "UPDATE inventory_movements SET data=? WHERE business_id=? AND id=?",
+        JSON.stringify(data),
+        s.tenant,
+        row.id,
+      ),
+    );
+    s.audit(c, owner, "consumable.invoice_visibility", row.id);
+    return { ok: true };
+  });
 }

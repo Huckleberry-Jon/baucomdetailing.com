@@ -1,3 +1,4 @@
+import { invoiceConsumables } from "./service-consumables.js";
 import { purchaseBasis, usageCost } from "./material-costing.js";
 import { invoiceBranding } from "./inventory-receipts.js";
 import { jobView, jobInvoiceLines } from "./operations.js";
@@ -14,7 +15,7 @@ export function material(input) {
     unit: input.unit,
     quantityMillis: integer(input.quantityMillis, "quantity", 1000000),
     costCents: integer(input.costCents, "unit cost"),
-    markupBps: integer(input.markupBps ?? 3000, "markup", 100000),
+    markupBps: integer(input.markupBps ?? 0, "markup", 100000),
     taxable: input.taxable,
     lowStockMillis:
       input.lowStockMillis == null
@@ -249,10 +250,12 @@ export async function saveDocument(s, body, owner) {
       if (prior.jobId) {
         data.jobId = prior.jobId;
         data.jobCostCents = prior.jobCostCents;
+        data.consumables = prior.consumables ?? [];
       }
     }
     if (job) {
       data.jobId = job.id;
+      data.consumables = invoiceConsumables(job);
       data.jobCostCents =
         job.data.lines.reduce((n, l) => n + l.costCents, 0) +
         job.materials.reduce((n, m) => n + m.cost_cents, 0) +

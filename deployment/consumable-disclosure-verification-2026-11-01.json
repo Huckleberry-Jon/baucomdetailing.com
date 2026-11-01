@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-01",
+  "behavior": {
+    "includedConsumables": "Actual inventory cost only; no additional customer charge",
+    "defaultNewProductMarkupBps": 0,
+    "invoiceDisclosure": "Private by default; per-record owner opt-in before invoice issue/completion",
+    "customerFields": [
+      "product",
+      "unit",
+      "quantityMillis"
+    ],
+    "costsAndProfit": "Private",
+    "issuedInvoices": "Unchanged; disclosure is frozen",
+    "existingExplicitMarkup": "Preserved for compatibility; included supplies do not use it"
+  },
+  "tests": {
+    "node": 64,
+    "cloudflare": 60,
+    "flutter": 80,
+    "flutterAnalysis": "No issues",
+    "pdfSamples": "Selected and private generated, text-checked and selected invoice visually inspected; both totals $100.00"
+  },
+  "nativeRelease": {
+    "installedBuildUnchanged": 12,
+    "newTestFlightBuildRequired": true,
+    "uploadedThisChange": false
+  },
+  "files": [
+    "cloudflare/service-consumables.js",
+    "cloudflare/operations.js",
+    "cloudflare/finance.js",
+    "cloudflare/checkout.js",
+    "cloudflare/worker.js",
+    "apps/docdetailing_owner/lib/business_pdf.dart",
+    "apps/docdetailing_owner/lib/job_consumables.dart",
+    "apps/docdetailing_owner/lib/material_purchase_screen.dart",
+    "apps/docdetailing_owner/lib/receipt_import_screen.dart",
+    "apps/docdetailing_owner/lib/workspace.dart",
+    "apps/docdetailing_owner/test/material_purchase_test.dart",
+    "apps/docdetailing_owner/test/service_supplies_test.dart",
+    "test-cloudflare/material-purchase.test.mjs",
+    "test-cloudflare/service-consumables.test.mjs"
+  ]
+}

@@ -23,7 +23,7 @@ class _MaterialPurchaseState extends State<MaterialPurchaseScreen> {
       cost = TextEditingController(),
       count = TextEditingController(text: '1'),
       contents = TextEditingController(text: '1'),
-      markup = TextEditingController(text: '30');
+      markup = TextEditingController(text: '0');
   String purchaseUnit = 'gallon', unit = 'oz', error = '';
   bool busy = false;
   Map<String, dynamic>? pending;
@@ -51,11 +51,7 @@ class _MaterialPurchaseState extends State<MaterialPurchaseScreen> {
       original['purchaseSizeMillis'] as int? ??
           (purchaseUnit == 'gallon' && unit == 'oz' ? 128000 : 1000),
     );
-    markup.text = moneyInput(
-      original['purchaseCostCents'] == null && original['markupBps'] == 0
-          ? 3000
-          : original['markupBps'] as int? ?? 3000,
-    );
+    markup.text = moneyInput(original['markupBps'] as int? ?? 0);
   }
 
   @override
@@ -129,7 +125,7 @@ class _MaterialPurchaseState extends State<MaterialPurchaseScreen> {
             title: Text(
               kind == 'convert'
                   ? 'Convert stock units?'
-                  : 'Save purchase and markup?',
+                  : 'Save purchase cost and units?',
             ),
             content: Text(
               '${preview()}\n\n${kind == 'convert' ? 'Current stock is interpreted as containers of the declared purchase size. This does not add a new purchase.' : 'Purchase quantities are converted to the usage unit. Purchase records do not create a financial expense automatically.'}',
@@ -181,7 +177,7 @@ class _MaterialPurchaseState extends State<MaterialPurchaseScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: Text(
-        widget.configure ? 'Purchase units & markup' : 'Add stock purchase',
+        widget.configure ? 'Purchase units & cost' : 'Add stock purchase',
       ),
     ),
     body: SafeArea(
@@ -195,7 +191,7 @@ class _MaterialPurchaseState extends State<MaterialPurchaseScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           const Text(
-            'US liquid measure: 1 gallon = 128 fluid ounces. Markup is added to cost; 30% markup is not a 30% profit margin.',
+            '1 US gallon = 128 fl oz. Supplies used on a job are included in the service price at actual cost. Optional markup applies only to separately billed products.',
           ),
           TextField(
             controller: name,
@@ -286,7 +282,7 @@ class _MaterialPurchaseState extends State<MaterialPurchaseScreen> {
             enabled: !busy && pending == null,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
-              labelText: 'Markup percent (standard 30%)',
+              labelText: 'Optional separate-charge markup (%)',
             ),
             onChanged: (_) => setState(() {}),
           ),

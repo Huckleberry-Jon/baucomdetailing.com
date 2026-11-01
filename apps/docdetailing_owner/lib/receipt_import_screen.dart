@@ -86,7 +86,7 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
             'quantityMillis': item.quantityMillis,
             'costCents': item.costCents,
             'unit': 'piece',
-            'markupBps': 3000,
+            'markupBps': 0,
             'taxable': false,
             'lowStockMillis': null,
           });
@@ -113,7 +113,7 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
       'Usage units per container (gallon to oz is 128)': quantityInput(
         d['purchaseSizeMillis'] as int? ?? 1000,
       ),
-      'Markup percent': moneyInput(d['markupBps'] as int? ?? 3000),
+      'Markup percent': moneyInput(d['markupBps'] as int? ?? 0),
     });
     if (f == null) return;
     try {

@@ -1,5 +1,6 @@
-import {readBackupSnapshot} from './backup-source.js';
-import { recordVerifiedBackup, checkBackupHealth } from './backup-health.js';
+import { setConsumableVisibility } from "./service-consumables.js";
+import { readBackupSnapshot } from "./backup-source.js";
+import { recordVerifiedBackup, checkBackupHealth } from "./backup-health.js";
 import {
   saveServiceConsumables,
   validateConsumables,
@@ -257,7 +258,13 @@ export async function route(request, env, ctx) {
     validGateSession(cookie.dev_access, env.PREVIEW_SIGNING_KEY);
   if (
     !gateOpen &&
-    !["/dev-access", "/dev-access.js", "/api/webhooks/email", "/api/recovery/verified", "/api/recovery/snapshot"].includes(path)
+    ![
+      "/dev-access",
+      "/dev-access.js",
+      "/api/webhooks/email",
+      "/api/recovery/verified",
+      "/api/recovery/snapshot",
+    ].includes(path)
   ) {
     if (method === "GET" && !path.startsWith("/api/"))
       return serveAsset(env, request, "/dev-access");
@@ -299,8 +306,12 @@ export async function route(request, env, ctx) {
   }
   if (path === "/api/webhooks/email" && method === "POST")
     return json(await receipt(s, raw, request.headers, env));
-  if (path === "/api/recovery/snapshot" && method === "GET") return json(await readBackupSnapshot(s, bearer, env), 200, {"Cache-Control":"no-store"});
-  if (path === "/api/recovery/verified" && method === "POST") return json(await recordVerifiedBackup(s, body, bearer, env));
+  if (path === "/api/recovery/snapshot" && method === "GET")
+    return json(await readBackupSnapshot(s, bearer, env), 200, {
+      "Cache-Control": "no-store",
+    });
+  if (path === "/api/recovery/verified" && method === "POST")
+    return json(await recordVerifiedBackup(s, body, bearer, env));
   if (path === "/api/catalog" && method === "GET") {
     const settings = await s.settings();
     const blocks = await s.all(
@@ -544,6 +555,8 @@ export async function route(request, env, ctx) {
       if (method === "GET") return json(await jobView(s, id));
       if (method === "PUT") return json(await saveJob(s, body, user.id));
     }
+    if (path === "/api/owner/consumable-visibility" && method === "PUT")
+      return json(await setConsumableVisibility(s, body, user.id));
     if (path === "/api/owner/inventory" && method === "POST")
       return json(
         await stockMovement(
@@ -704,7 +717,12 @@ export async function route(request, env, ctx) {
       });
     }
     if (path === "/api/owner/appointments" && method === "POST") {
-      const booking = await s.create(body, request.headers.get("Idempotency-Key"), [], true);
+      const booking = await s.create(
+        body,
+        request.headers.get("Idempotency-Key"),
+        [],
+        true,
+      );
       ctx.waitUntil(drain(s, origin, env).catch((e) => logError(s, e)));
       return json(booking, booking.duplicate ? 200 : 201);
     }
@@ -1161,7 +1179,8 @@ export default {
     for (const d of domains) {
       const s = new CloudBookings(env.DB, d.business_id);
       ctx.waitUntil(drain(s, d.origin, env).catch((e) => logError(s, e)));
-      if (new Date(event.scheduledTime).getUTCMinutes() === 0) ctx.waitUntil(checkBackupHealth(s, env).catch((e) => logError(s, e)));
+      if (new Date(event.scheduledTime).getUTCMinutes() === 0)
+        ctx.waitUntil(checkBackupHealth(s, env).catch((e) => logError(s, e)));
     }
   },
 };

@@ -141,7 +141,7 @@ class _WorkspaceState extends State<WorkspaceScreen> {
       'Quantity': quantityInput(product['quantityMillis'] as int? ?? 1000),
       'Unit (oz/gallon/bottle/piece)': product['unit'] as String? ?? 'oz',
       'Unit cost': moneyInput(product['costCents'] as int? ?? 0),
-      'Markup percent': moneyInput(product['markupBps'] as int? ?? 3000),
+      'Markup percent': moneyInput(product['markupBps'] as int? ?? 0),
       'Taxable (yes/no)': product['taxable'] == true ? 'yes' : 'no',
       'Low stock alert quantity (blank disables)':
           product['lowStockMillis'] == null

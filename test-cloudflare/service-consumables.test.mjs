@@ -274,6 +274,7 @@ test("actual consumables deduct once, affect profit, and do not increase invoice
     const doc = await f.db
       .prepare("SELECT data FROM financial_documents")
       .first();
+    assert.deepEqual(JSON.parse(doc.data).consumables, []);
     assert.equal(JSON.parse(doc.data).totalCents, 10000);
     assert.equal(JSON.parse(doc.data).jobCostCents, 50);
     const report = (
@@ -377,6 +378,190 @@ test("zero actual use and insufficient stock are safe; separate billing requires
     ).data.quote;
     assert.equal(quote.subtotalCents, 10268);
     assert.equal(quote.lines[1].totalCents, 268);
+  } finally {
+    await f.mf.dispose();
+  }
+});
+
+test("invoice chemical disclosure is opt-in, scoped, amount-free and frozen without changing profit or stock", async () => {
+  const f = await fixture();
+  try {
+    const p = (await f.view()).plannedConsumables[0];
+    const u = await f.post(
+      "/api/owner/inventory",
+      {
+        kind: "usage",
+        planned: true,
+        jobId: f.job.id,
+        materialId: f.rag,
+        version: p.stockVersion,
+        quantityMillis: 2000,
+        reason: "Actual use",
+      },
+      "disclosure-use",
+    );
+    assert.equal(u.status, 201);
+    let j = await f.view();
+    assert.equal(j.plannedConsumables[0].includeOnInvoice, false);
+    const update = (body, cookie = f.cookie) =>
+      call(f.mf, "/api/owner/consumable-visibility", {
+        method: "PUT",
+        cookie,
+        body,
+      });
+    const body = {
+      id: u.data.id,
+      expectedVisibility: false,
+      includeOnInvoice: true,
+    };
+    assert.equal((await update(body, "")).status, 401);
+    await seed(f.db, "other", "localhost:4335");
+    const other = await login(f.mf, "http://localhost:4335");
+    assert.equal(
+      (
+        await call(f.mf, "/api/owner/consumable-visibility", {
+          host: "http://localhost:4335",
+          cookie: other,
+          method: "PUT",
+          body,
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (await update({ ...body, includeOnInvoice: "yes" })).status,
+      400,
+    );
+    assert.equal((await update(body)).status, 200);
+    assert.equal((await update(body)).status, 409);
+    j = await f.view();
+    assert.equal(j.plannedConsumables[0].includeOnInvoice, true);
+    assert.equal(j.plannedConsumables[0].availableQuantityMillis, 8000);
+    await f.post("/api/owner/transition", {
+      id: f.booking.id,
+      version: 2,
+      action: "start",
+    });
+    const result = await f.post(
+      "/api/owner/job-completion",
+      {
+        bookingId: f.booking.id,
+        bookingVersion: 3,
+        jobVersion: 1,
+        invoiceVersion: null,
+        unpaid: true,
+        amountCents: 0,
+        tipCents: 0,
+        method: null,
+        occurredAt: new Date().toISOString(),
+        discountCents: 0,
+        taxBps: 0,
+      },
+      "disclosure-checkout",
+    );
+    assert.equal(result.status, 200, JSON.stringify(result.data));
+    const doc = JSON.parse(
+      (
+        await f.db
+          .prepare("SELECT data FROM financial_documents WHERE business_id=?")
+          .bind("baucom")
+          .first()
+      ).data,
+    );
+    assert.deepEqual(doc.consumables, [
+      { product: "Rags", unit: "piece", quantityMillis: 2000 },
+    ]);
+    assert.equal(doc.totalCents, 10000);
+    assert.equal(doc.jobCostCents, 50);
+    assert.equal(
+      (
+        await update({
+          id: u.data.id,
+          expectedVisibility: true,
+          includeOnInvoice: false,
+        })
+      ).status,
+      409,
+    );
+    assert.deepEqual(
+      JSON.parse(
+        (
+          await f.db
+            .prepare("SELECT data FROM financial_documents WHERE business_id=?")
+            .bind("baucom")
+            .first()
+        ).data,
+      ).consumables,
+      doc.consumables,
+    );
+  } finally {
+    await f.mf.dispose();
+  }
+});
+
+test("an invoice issued before completion also freezes consumable disclosure", async () => {
+  const f = await fixture();
+  try {
+    const p = (await f.view()).plannedConsumables[0];
+    const u = await f.post(
+      "/api/owner/inventory",
+      {
+        kind: "usage",
+        planned: true,
+        jobId: f.job.id,
+        materialId: f.rag,
+        version: p.stockVersion,
+        quantityMillis: 1000,
+        reason: "Actual use",
+      },
+      "preissued-use",
+    );
+    assert.equal(u.status, 201);
+    const d = await f.post(
+      "/api/owner/documents",
+      {
+        kind: "invoice",
+        customerId: f.job.customer_id,
+        bookingId: f.booking.id,
+        lines: [
+          {
+            description: "Service",
+            unit: "service",
+            quantityMillis: 1000,
+            unitPriceCents: 10000,
+            unitCostCents: 0,
+            taxable: false,
+          },
+        ],
+        taxBps: 0,
+      },
+      "preissued-draft",
+    );
+    assert.equal(d.status, 201, JSON.stringify(d.data));
+    assert.equal(
+      (
+        await f.post(
+          "/api/owner/documents/issue",
+          { id: d.data.id, version: d.data.version },
+          "preissued-issue",
+        )
+      ).status,
+      200,
+    );
+    const changed = await call(f.mf, "/api/owner/consumable-visibility", {
+      method: "PUT",
+      cookie: f.cookie,
+      body: {
+        id: u.data.id,
+        expectedVisibility: false,
+        includeOnInvoice: true,
+      },
+    });
+    assert.equal(changed.status, 409);
+    assert.equal(
+      (await f.view()).plannedConsumables[0].includeOnInvoice,
+      false,
+    );
   } finally {
     await f.mf.dispose();
   }

@@ -1,3 +1,4 @@
+import { invoiceConsumables } from "./service-consumables.js";
 import { invoiceBranding } from "./inventory-receipts.js";
 import { randomUUID } from "node:crypto";
 import { hash, text, requireThat } from "../src/security.js";
@@ -166,6 +167,7 @@ export async function completeWithPayment(s, body, owner, key) {
       const settings = JSON.parse(b.settings);
       Object.assign(data, {
         jobId: job.id,
+        consumables: invoiceConsumables(job),
         ...invoiceBranding(settings),
         reviewUrl: settings.googleReviewUrl ?? null,
         jobCostCents:
@@ -205,6 +207,7 @@ export async function completeWithPayment(s, body, owner, key) {
       );
       s.audit(c, owner, "document.issued", invoice.id);
     } else if (invoice.status === "draft") {
+      data = { ...data, consumables: invoiceConsumables(job) };
       invoice = {
         ...invoice,
         status: "issued",
@@ -216,8 +219,9 @@ export async function completeWithPayment(s, body, owner, key) {
       };
       c.push(
         s.command(
-          "UPDATE financial_documents SET status='issued',number=?,version=version+1 WHERE business_id=? AND id=?",
+          "UPDATE financial_documents SET status='issued',number=?,data=?,version=version+1 WHERE business_id=? AND id=?",
           invoice.number,
+          JSON.stringify(data),
           s.tenant,
           invoice.id,
         ),

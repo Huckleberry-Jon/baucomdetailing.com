@@ -1,3 +1,4 @@
+import 'business_forms.dart' show quantityInput;
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -93,6 +94,17 @@ Future<Uint8List> businessPdf(
           for (final p in row['payments'] as List? ?? [])
             pw.Text(
               '${DateTime.fromMillisecondsSinceEpoch(p['occurred_at'] as int, isUtc: true).toIso8601String()}  \$${moneyInput(p['amount_cents'] as int)}  Tip \$${moneyInput(p['tip_cents'] as int)}  Ref ${p['id']}',
+            ),
+        ],
+        if ((data['consumables'] as List? ?? []).isNotEmpty) ...[
+          pw.SizedBox(height: 12),
+          pw.Text(
+            'Products used',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+          for (final item in data['consumables'] as List)
+            pw.Text(
+              '${item['product']} — ${quantityInput(item['quantityMillis'] as int)} ${item['unit'] == 'oz' ? 'fl oz' : item['unit']}',
             ),
         ],
         pw.SizedBox(height: 12),

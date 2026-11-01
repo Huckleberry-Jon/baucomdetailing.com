@@ -29,15 +29,10 @@ class _JobConsumablesState extends State<JobConsumables> {
       'Actual quantity in ${plan['unit']} (0 if not used)': quantityInput(
         plan['quantityMillis'] as int,
       ),
-      'Separate customer charge (yes/no)': 'no',
     });
     if (f == null || !mounted) return;
     try {
-      final amount = quantityMillis(f.values.first),
-          choice = f['Separate customer charge (yes/no)']!.trim().toLowerCase();
-      if (!['yes', 'no'].contains(choice)) {
-        throw const FormatException('Choose yes or no for separate billing.');
-      }
+      final amount = quantityMillis(f.values.first);
       setState(() {
         busy = true;
         error = null;
@@ -53,7 +48,7 @@ class _JobConsumablesState extends State<JobConsumables> {
           'materialId': plan['materialId'],
           'version': plan['stockVersion'],
           'quantityMillis': amount,
-          'billSeparately': choice == 'yes',
+          'billSeparately': false,
           'reason': amount == 0
               ? 'Assigned consumable not used'
               : 'Confirmed service consumable use',
@@ -72,6 +67,34 @@ class _JobConsumablesState extends State<JobConsumables> {
     }
   }
 
+  Future<void> visibility(Map plan, bool value) async {
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      await widget.api.workspace(
+        '/api/owner/consumable-visibility',
+        method: 'PUT',
+        body: {
+          'id': plan['movementId'],
+          'expectedVisibility': plan['includeOnInvoice'] == true,
+          'includeOnInvoice': value,
+        },
+      );
+      await widget.onChanged();
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () =>
+              error = 'Could not save invoice choice. Refresh before retrying.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +105,7 @@ class _JobConsumablesState extends State<JobConsumables> {
         style: Theme.of(context).textTheme.titleMedium,
       ),
       const Text(
-        'Review actual usage. Costs are included in the service price unless a separate charge is explicitly selected. Recording use deducts stock once.',
+        'Record actual usage at cost, included in the service price. Usage stays private unless you turn on Include on invoice. Recording use deducts stock once.',
       ),
       if (error != null)
         Text(
@@ -91,19 +114,35 @@ class _JobConsumablesState extends State<JobConsumables> {
         ),
       for (final p in widget.plans)
         Card(
-          child: ListTile(
-            title: Text(
-              '${p['product']} · ${quantityInput(p['quantityMillis'] as int)} ${p['unit']} planned',
-            ),
-            subtitle: Text(
-              '${(p['services'] as List).join(', ')}\nEstimated cost: \$${moneyInput(p['estimatedCostCents'] as int)}\n${p['recorded'] == true ? 'Actual use recorded' : 'Available: ${quantityInput(p['availableQuantityMillis'] as int)} ${p['unit']}'}',
-            ),
-            trailing: p['recorded'] == true
-                ? const Icon(Icons.check_circle)
-                : null,
-            onTap: busy || !widget.open || p['recorded'] == true
-                ? null
-                : () => record(p),
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(
+                  '${p['product']} · ${quantityInput(p['quantityMillis'] as int)} ${p['unit']} planned',
+                ),
+                subtitle: Text(
+                  '${(p['services'] as List).join(', ')}\nEstimated cost: \$${moneyInput(p['estimatedCostCents'] as int)}\n${p['recorded'] == true ? 'Actual: ${quantityInput(p['actualQuantityMillis'] as int)} ${p['unit']}' : 'Available: ${quantityInput(p['availableQuantityMillis'] as int)} ${p['unit']}'}',
+                ),
+                trailing: p['recorded'] == true
+                    ? const Icon(Icons.check_circle)
+                    : null,
+                onTap: busy || !widget.open || p['recorded'] == true
+                    ? null
+                    : () => record(p),
+              ),
+              if (p['recorded'] == true &&
+                  (p['actualQuantityMillis'] as int) > 0)
+                SwitchListTile(
+                  title: const Text('Include on invoice'),
+                  subtitle: const Text(
+                    'Product and quantity only. No extra charge.',
+                  ),
+                  value: p['includeOnInvoice'] == true,
+                  onChanged: busy || !widget.open
+                      ? null
+                      : (value) => visibility(p, value),
+                ),
+            ],
           ),
         ),
     ],

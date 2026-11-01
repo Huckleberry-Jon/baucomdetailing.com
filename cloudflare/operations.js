@@ -151,6 +151,11 @@ export async function stockMovement(s, body, owner, key) {
           typeof body.billSeparately === "boolean",
         "Invalid consumable billing choice",
       );
+      requireThat(
+        body.includeOnInvoice === undefined ||
+          typeof body.includeOnInvoice === "boolean",
+        "Invalid invoice visibility",
+      );
       delta = -qty(body.quantityMillis, "usage", 1000000);
       requireThat(delta < 0 || body.planned === true, "Usage must be positive");
       cost = usageCost(material, -delta);
@@ -191,6 +196,7 @@ export async function stockMovement(s, body, owner, key) {
             : {}),
           unitPriceCents: material.unitPriceCents,
           taxable: material.taxable,
+          includeOnInvoice: body.includeOnInvoice === true,
           billSeparately: body.billSeparately ?? false,
           planned: body.planned === true,
           reason,

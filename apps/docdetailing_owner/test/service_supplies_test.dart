@@ -184,18 +184,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Rags ·'));
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<TextField>(
-              find.widgetWithText(
-                TextField,
-                'Separate customer charge (yes/no)',
-              ),
-            )
-            .controller!
-            .text,
-        'no',
-      );
+      expect(find.text('Separate customer charge (yes/no)'), findsNothing);
       await tester.enterText(
         find.widgetWithText(
           TextField,
@@ -239,6 +228,55 @@ void main() {
             .onPressed,
         isNull,
       );
+    },
+  );
+  testWidgets(
+    'recorded consumables have an editable invoice-only visibility switch',
+    (tester) async {
+      final api = SuppliesApi();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JobConsumables(
+              api: api,
+              jobId: 'job1',
+              plans: [
+                {
+                  'materialId': 'rag',
+                  'movementId': 'movement1',
+                  'product': 'Rags',
+                  'unit': 'piece',
+                  'quantityMillis': 2000,
+                  'actualQuantityMillis': 1500,
+                  'estimatedCostCents': 50,
+                  'availableQuantityMillis': 8500,
+                  'stockVersion': 2,
+                  'recorded': true,
+                  'includeOnInvoice': false,
+                  'services': ['Detail'],
+                },
+              ],
+              open: true,
+              onChanged: () async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Actual: 1.500 piece'), findsOneWidget);
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        false,
+      );
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(api.writes.single['path'], '/api/owner/consumable-visibility');
+      expect(api.writes.single['body'], {
+        'id': 'movement1',
+        'expectedVisibility': false,
+        'includeOnInvoice': true,
+      });
+      expect(tester.takeException(), isNull);
     },
   );
 }

@@ -10,9 +10,12 @@ const product = {
   costCents: 0,
   purchaseUnit: "gallon",
   purchaseCostCents: 3299,
+  markupBps: 3000,
   taxable: false,
 };
-test("purchase basis preserves gallon cost and applies standard 30% markup once at the line total", () => {
+test("purchase basis preserves gallon cost and applies explicit optional 30% markup once at the line total", () => {
+  const { markupBps, ...includedProduct } = product;
+  assert.equal(material(includedProduct).markupBps, 0);
   const p = material(product);
   assert.equal(p.purchaseSizeMillis, 128000);
   assert.equal(p.markupBps, 3000);
