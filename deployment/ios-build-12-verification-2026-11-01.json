@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "build": 12,
+  "sourceCommit": "687cef86dffd0bc942a848f7289e3cb74604144a",
+  "codemagicBuildId": "6ae7a2faefa74786046fe005",
+  "codemagicIndex": 27,
+  "codemagicStatus": "finished",
+  "duration": "7m8s",
+  "flutterAnalysis": "passed",
+  "flutterTests": 79,
+  "nodeTests": 61,
+  "cloudflareTests": 56,
+  "archiveSigningAndEntitlements": "passed",
+  "appleUpload": "succeeded",
+  "deliveryUuid": "510948dd-58e1-4876-9001-6cf5a3167d25",
+  "uploadedBytes": 22752365,
+  "appleStatus": "Testing",
+  "groups": [
+    "Internal Testers",
+    "tester"
+  ],
+  "invitations": 2,
+  "exportCompliance": "saved",
+  "warning": "ITMS-90068: iOS 13 deployment target must be raised to 15 or later before April 2027 uploads",
+  "publicRelease": false,
+  "signingAssetsChanged": false
+}
