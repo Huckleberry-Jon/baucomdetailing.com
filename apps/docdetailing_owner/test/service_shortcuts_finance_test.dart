@@ -74,6 +74,9 @@ void main() {
     );
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
+    expect(find.text('Dust Off'), findsNothing);
+    await tester.tap(find.text('Services'));
+    await tester.pumpAndSettle();
     expect(find.text('Dust Off'), findsOneWidget);
     await tester.tap(find.text('Dust Off'));
     await tester.pumpAndSettle();

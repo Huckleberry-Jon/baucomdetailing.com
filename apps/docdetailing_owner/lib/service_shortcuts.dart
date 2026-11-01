@@ -33,35 +33,40 @@ class _ServiceShortcutsState extends State<ServiceShortcuts> {
           rows = data is Map ? (data['services'] as List? ?? []) : [];
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ExpansionTile(
+          title: const Text('Services'),
+          leading: const Icon(Icons.cleaning_services),
           children: [
-            const Text('Services & supplies'),
-            const SizedBox(height: 8),
             if (snapshot.connectionState == ConnectionState.waiting)
               const LinearProgressIndicator(),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final row in rows.where((s) => s['enabled'] != false))
-                  OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ServiceSuppliesScreen(
-                            api: widget.api,
-                            serviceId: row['id'] as String,
-                          ),
+
+            for (final row in rows)
+              ListTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ServiceSuppliesScreen(
+                        api: widget.api,
+                        serviceId: row['id'] as String,
+                      ),
+                    ),
+                  ).then((_) {
+                    if (mounted) {
+                      setState(
+                        () => services = widget.api.workspace(
+                          '/api/owner/dashboard',
                         ),
                       );
-                    },
-                    child: Text(row['name'] as String),
-                  ),
-              ],
-            ),
+                    }
+                  });
+                },
+                title: Text(row['name'] as String),
+                subtitle: row['enabled'] == false
+                    ? const Text('Hidden from website')
+                    : null,
+              ),
           ],
         ),
       );

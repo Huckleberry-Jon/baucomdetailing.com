@@ -74,6 +74,48 @@ class PendingSuppliesApi extends CheckoutApi {
 }
 
 void main() {
+  testWidgets(
+    'service editor preserves recipes and identity while saving details',
+    (tester) async {
+      final api = SuppliesApi();
+      api.service.addAll({
+        'kind': 'package',
+        'enabled': true,
+        'min': 7900,
+        'max': 11900,
+        'durationMinutes': 90,
+        'items': ['Vacuum'],
+        'consumables': [
+          {
+            'materialId': 'rag',
+            'quantityMillis': 2000,
+            'billSeparately': false,
+          },
+        ],
+      });
+      await tester.pumpWidget(
+        MaterialApp(home: ServiceSuppliesScreen(api: api)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit service details'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Service name'),
+        'Dust Off Plus',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(api.writes.single['path'], '/api/owner/service');
+      final body = api.writes.single['body'] as Map;
+      expect(body['id'], 'detail');
+      expect(body['name'], 'Dust Off Plus');
+      expect(body['min'], 7900);
+      expect(body['durationMinutes'], 90);
+      expect((body['consumables'] as List).single['quantityMillis'], 2000);
+      expect(find.text('Dust Off Plus'), findsOneWidget);
+    },
+  );
+
   testWidgets('owner assigns rag quantity to a service as an included cost', (
     tester,
   ) async {

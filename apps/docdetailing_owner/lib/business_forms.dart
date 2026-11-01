@@ -18,8 +18,9 @@ String quantityInput(int n) =>
 Future<Map<String, String>?> editFields(
   BuildContext context,
   String title,
-  Map<String, String> fields,
-) async {
+  Map<String, String> fields, {
+  Set<String> multilineFields = const {},
+}) async {
   final controls = fields.map(
     (k, v) => MapEntry(k, TextEditingController(text: v)),
   );
@@ -36,6 +37,7 @@ Future<Map<String, String>?> editFields(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: TextField(
                   controller: e.value,
+                  maxLines: multilineFields.contains(e.key) ? 4 : 1,
                   decoration: InputDecoration(labelText: e.key),
                 ),
               ),

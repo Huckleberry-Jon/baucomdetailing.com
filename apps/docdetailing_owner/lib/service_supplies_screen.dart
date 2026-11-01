@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
 import 'business_forms.dart';
+import 'money.dart';
 
 class ServiceSuppliesScreen extends StatefulWidget {
   const ServiceSuppliesScreen({super.key, required this.api, this.serviceId});
@@ -104,6 +105,91 @@ class _ServiceSuppliesState extends State<ServiceSuppliesScreen> {
     }
   }
 
+  Future<void> editService(Map service) async {
+    final fields = await editFields(
+      context,
+      'Edit service',
+      {
+        'Service name': service['name'] as String,
+        'Minimum price (USD)': service['min'] == null
+            ? ''
+            : moneyInput(service['min'] as int),
+        'Maximum price (USD)': service['max'] == null
+            ? ''
+            : moneyInput(service['max'] as int),
+        'Duration minutes (blank for quote)':
+            service['durationMinutes']?.toString() ?? '',
+        'Included items (one per line)': (service['items'] as List? ?? []).join(
+          '\n',
+        ),
+        'Visible on website (yes/no)': service['enabled'] == false
+            ? 'no'
+            : 'yes',
+      },
+      multilineFields: const {'Included items (one per line)'},
+    );
+    if (fields == null || !mounted) return;
+    try {
+      final name = fields['Service name']!.trim();
+      final minText = fields['Minimum price (USD)']!.trim();
+      final maxText = fields['Maximum price (USD)']!.trim();
+      final min = minText.isEmpty ? null : parseMoneyCents(minText);
+      final max = maxText.isEmpty ? null : parseMoneyCents(maxText);
+      final durationText = fields['Duration minutes (blank for quote)']!.trim();
+      final duration = durationText.isEmpty ? null : int.tryParse(durationText);
+      final visible = fields['Visible on website (yes/no)']!
+          .trim()
+          .toLowerCase();
+      if (name.isEmpty ||
+          name.length >= 120 ||
+          !['yes', 'no'].contains(visible) ||
+          (durationText.isNotEmpty &&
+              (duration == null || duration <= 0 || duration > 720)) ||
+          (min != null && max != null && max < min) ||
+          (service['kind'] == 'package' && (min == null || max == null))) {
+        throw const FormatException(
+          'Check the name, price range, duration (1–720 minutes), and yes/no visibility.',
+        );
+      }
+      final updated = <String, dynamic>{
+        ...Map<String, dynamic>.from(service),
+        'name': name,
+        'min': min,
+        'max': max,
+        'durationMinutes': duration,
+        'enabled': visible == 'yes',
+        'items': fields['Included items (one per line)']!
+            .split('\n')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList(),
+      };
+      setState(() {
+        busy = true;
+        error = null;
+      });
+      await widget.api.workspace(
+        '/api/owner/service',
+        method: 'PUT',
+        body: updated,
+      );
+      if (!mounted) return;
+      setState(() {
+        service.addAll(updated);
+        service['version'] = (updated['version'] as int) + 1;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Service saved. New requests use these details.'),
+        ),
+      );
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   Future<void> save(Map service) async {
     setState(() {
       busy = true;
@@ -138,7 +224,7 @@ class _ServiceSuppliesState extends State<ServiceSuppliesScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Service consumables'),
+      title: const Text('Services & consumables'),
       actions: [
         IconButton(
           onPressed: busy ? null : load,
@@ -170,6 +256,11 @@ class _ServiceSuppliesState extends State<ServiceSuppliesScreen> {
                     Text(
                       service['name'] as String,
                       style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextButton.icon(
+                      onPressed: busy ? null : () => editService(service),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit service details'),
                     ),
                     for (
                       var i = 0;
