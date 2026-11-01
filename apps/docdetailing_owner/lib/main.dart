@@ -13,6 +13,7 @@ import 'booking_details.dart';
 import 'business_time.dart';
 import 'jobs_screen.dart';
 import 'home_dashboard.dart';
+import 'booking_list_screen.dart';
 import 'website_link.dart';
 
 void main() {
@@ -62,7 +63,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
   final email = TextEditingController(),
       password = TextEditingController(),
       previewCode = TextEditingController();
-  bool signedIn = false, busy = false, showHistory = false;
+  bool signedIn = false, busy = false;
   String? error;
   List<Booking> rows = [];
   NativeNotifications? notifications;
@@ -214,6 +215,21 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
     );
     if (mounted && signedIn) await refresh();
   });
+
+  Future<void> openBookingList({required bool history}) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BookingListScreen(
+          history: history,
+          initialBookings: rows,
+          load: widget.api.bookings,
+          onOpen: openBooking,
+        ),
+      ),
+    );
+    if (mounted && signedIn) await act(refresh);
+  }
 
   @override
   void dispose() {
@@ -450,6 +466,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
             ),
             HomeDashboard(
               bookings: rows,
+              onAwaitingReview: () => openBookingList(history: false),
               onWebsite: widget.api is HttpOwnerApi && !busy
                   ? () => act(
                       () =>
@@ -476,21 +493,21 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
               '${rows.where((b) => b.status == 'pending').length} pending · ${rows.where((b) => b.status == 'confirmed').length} confirmed',
             ),
             const SizedBox(height: 12),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Show completed and cancelled bookings'),
-              value: showHistory,
-              onChanged: (value) => setState(() => showHistory = value),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: busy ? null : () => openBookingList(history: true),
+                icon: const Icon(Icons.history),
+                label: const Text('History'),
+              ),
             ),
             if (rows
                 .where(
-                  (b) =>
-                      showHistory ||
-                      ![
-                        'cancelled',
-                        'completed',
-                        'declined',
-                      ].contains(b.status),
+                  (b) => ![
+                    'cancelled',
+                    'completed',
+                    'declined',
+                  ].contains(b.status),
                 )
                 .isEmpty)
               const Padding(
@@ -500,9 +517,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                 ),
               ),
             for (final b in rows.where(
-              (b) =>
-                  showHistory ||
-                  !['cancelled', 'completed', 'declined'].contains(b.status),
+              (b) => !['cancelled', 'completed', 'declined'].contains(b.status),
             ))
               Card(
                 clipBehavior: Clip.antiAlias,

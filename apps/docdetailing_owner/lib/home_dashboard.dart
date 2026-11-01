@@ -6,11 +6,12 @@ class HomeDashboard extends StatelessWidget {
     super.key,
     required this.bookings,
     required this.onCalendar,
+    required this.onAwaitingReview,
     required this.onCustomers,
     this.onWebsite,
   });
   final List<Booking> bookings;
-  final VoidCallback onCalendar, onCustomers;
+  final VoidCallback onCalendar, onCustomers, onAwaitingReview;
   final VoidCallback? onWebsite;
 
   @override
@@ -65,8 +66,15 @@ class HomeDashboard extends StatelessWidget {
               Icons.inbox_outlined,
               '$pending',
               'Awaiting review',
+              onAwaitingReview,
             ),
-            _summary(context, Icons.event_available, '$confirmed', 'Scheduled'),
+            _summary(
+              context,
+              Icons.event_available,
+              '$confirmed',
+              'Calendar',
+              onCalendar,
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -113,21 +121,27 @@ class HomeDashboard extends StatelessWidget {
     IconData icon,
     String value,
     String label,
+    VoidCallback onTap,
   ) => Semantics(
     label: '$value $label',
+    button: true,
     child: SizedBox(
       width: 150,
       child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 10),
-              Text(value, style: Theme.of(context).textTheme.headlineMedium),
-              Text(label),
-            ],
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(height: 10),
+                Text(value, style: Theme.of(context).textTheme.headlineMedium),
+                Text(label),
+              ],
+            ),
           ),
         ),
       ),

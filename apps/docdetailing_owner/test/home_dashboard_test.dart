@@ -11,7 +11,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      var calendar = 0, customers = 0, website = 0;
+      var calendar = 0, customers = 0, website = 0, awaiting = 0;
       final future = DateTime.now().add(const Duration(days: 2));
       await tester.pumpWidget(
         MaterialApp(
@@ -42,6 +42,7 @@ void main() {
                   ),
                 ],
                 onCalendar: () => calendar++,
+                onAwaitingReview: () => awaiting++,
                 onCustomers: () => customers++,
                 onWebsite: () => website++,
               ),
@@ -51,13 +52,19 @@ void main() {
       );
       expect(find.text('1'), findsNWidgets(2));
       expect(find.textContaining('(device time)'), findsOneWidget);
+      await tester.ensureVisible(find.text('Awaiting review'));
+      await tester.tap(find.text('Awaiting review'));
+      expect(awaiting, 1);
+      await tester.tap(find.text('Calendar'));
+      expect(calendar, 1);
+      await tester.ensureVisible(find.text('Edit website & photos'));
       await tester.tap(find.text('Edit website & photos'));
       expect(website, 1);
       await tester.ensureVisible(find.text('Open calendar'));
       await tester.tap(find.text('Open calendar'));
       await tester.ensureVisible(find.text('Customer records'));
       await tester.tap(find.text('Customer records'));
-      expect(calendar, 1);
+      expect(calendar, 2);
       expect(customers, 1);
       expect(tester.takeException(), isNull);
     },
