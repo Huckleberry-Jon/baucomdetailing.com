@@ -31,6 +31,8 @@ jobs:
           RECOVERY_BUCKET: ${{ vars.DOCDETAILING_B2_BUCKET }}
           RECOVERY_ACCESS_KEY_ID: ${{ secrets.DOCDETAILING_B2_APPEND_KEY }}
           RECOVERY_SECRET_ACCESS_KEY: ${{ secrets.DOCDETAILING_B2_APPEND_SECRET }}
+          RECOVERY_READ_ACCESS_KEY_ID: ${{ secrets.DOCDETAILING_B2_READ_KEY }}
+          RECOVERY_READ_SECRET_ACCESS_KEY: ${{ secrets.DOCDETAILING_B2_READ_SECRET }}
           SOURCE_NAMESPACE: production
 # Pin actions to reviewed commit SHAs before activation. Add daily schedule only after approval.
 # Runner failure must page the approved operator. Configure an independent backup-age check too.

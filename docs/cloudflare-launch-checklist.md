@@ -6,7 +6,7 @@ This supersedes the old Render launch report and DNS instructions. Work is confi
 
 - Private preview: https://docdetailing-site-staging.huckleberryservices.workers.dev/
 - Staging Worker: docdetailing-site-staging; D1: docdetailing-staging; R2: docdetailing-staging-private.
-- Site gate is on. Email, browser push and native APNs are disabled. Worker secret inventory contains only preview authentication secrets.
+- Site gate is on. Email, browser push and native APNs are disabled. Worker secrets contain preview authentication and the approved DocDetailing APNs key/Key ID/Team ID. Email and independent-backup credentials are still missing.
 - Owner authentication, financial reconciliation, website availability dropdowns and closed-Monday behavior passed hosted read-only verification October 31. No new synthetic bookings were created by these checks.
 - Business service area is Amarillo, Texas. Approved initial hours are Saturday/Sunday 08:00–20:00 America/Chicago, editable by Joseph. Production must copy the reviewed live business settings rather than overwrite them with source defaults.
 - Source contains durable booking/outbox transactions, delivery attempts/retries, email webhook verification/suppression, APNs registration/renewal and permission handling, private media, and recovery support.
@@ -23,6 +23,8 @@ This supersedes the old Render launch report and DNS instructions. Work is confi
 
 ## iPhone push setup
 
+October 31 update: approved production, topic-specific key M9896AHWYN was created for com.docincorporated.docdetailing under Team UDDPKPR3CJ. Its one-time .p8 download is in protected ignored local storage. P-256/JWT signing was verified and the key installed only on DocDetailing staging. All outbound flags remain disabled. Off-machine key escrow and physical delivery acceptance are still pending.
+
 1. Inspect Apple Team UDDPKPR3CJ key inventory. Reuse an existing authorized compatible APNs key only if its private file is available, otherwise prepare a dedicated DocDetailing APNs key without revoking or changing other Doc family assets.
 2. Save the one-time .p8 download in protected private storage and escrow it separately. Set APNS_PRIVATE_KEY and APNS_KEY_ID; use topic com.docincorporated.docdetailing and production environment for TestFlight.
 3. Begin with test-only mode and explicit TEST_NATIVE_OWNER_IDS. Require permission and a current registered device token.
@@ -30,8 +32,10 @@ This supersedes the old Render launch report and DNS instructions. Work is confi
 
 ## Independent backup setup
 
-1. Create a dedicated private B2 bucket/account, with separately scoped credentials. Approve any billing before activation. No independent provider account currently exists per owner confirmation.
-2. Use deployment/cloud-backup.env.example: read-only source R2 credentials, scoped D1 export credential, bucket-scoped recovery read/write credentials without deletion, and a separately escrowed BACKUP_PASSPHRASE. Do not share other projects' credentials.
+October 31 update: bucket creation is verified. Backup-writer and recovery-reader keys are prepared but not yet created; their persistent access requires explicit approval. The runner supports separate keys and refuses incomplete read-back credentials. A real off-provider upload and restoration drill remains pending.
+
+1. Create a dedicated private B2 bucket/account, with separately scoped credentials. Approve any billing before activation. The owner created and signed into the Backblaze account. A dedicated private staging recovery bucket is now created, with encryption enabled and Keep all versions; no backup data has been uploaded.
+2. Use deployment/cloud-backup.env.example: read-only source R2 credentials, scoped D1 export credential, separate bucket-scoped recovery upload and read-back credentials; verify that the uploader cannot permanently delete object versions, and a separately escrowed BACKUP_PASSPHRASE. Do not share other projects' credentials.
 3. Run node scripts/cloud-backup.mjs create in the approved hosted runner. It exports a consistent D1 snapshot, encrypts data/media, reads ciphertext back from the destination, restores a fresh in-memory SQLite database and media set, checks integrity/relationships and recovery safety, then writes and reads back verified.json. Any restoration failure fails the run.
 4. Keep the example workflow inactive until account/credentials are approved. Pin actions to reviewed commit SHAs; schedule daily; enable runner failure notifications and an independent backup-age check. No automatic backup deletion is configured. Establish retention and monitor capacity before unattended launch.
 5. Perform a real external create and restore-local drill. Retain non-secret backup ID, source commit, restore timestamp, count/checksum results and verified.json. Local mocks do not prove external recovery.

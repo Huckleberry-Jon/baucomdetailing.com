@@ -80,7 +80,7 @@ export function fileMedia(root) {
     },
   };
 }
-function s3Storage(client, bucket) {
+export function s3Storage(client, bucket, reader = client) {
   return {
     put: async (key, bytes) =>
       client.send(
@@ -94,10 +94,19 @@ function s3Storage(client, bucket) {
     get: async (key) =>
       Buffer.from(
         await (
-          await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+          await reader.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
         ).Body.transformToByteArray(),
       ),
   };
+}
+export function recoveryReaderCredentials(env) {
+  const id = env.RECOVERY_READ_ACCESS_KEY_ID,
+    secret = env.RECOVERY_READ_SECRET_ACCESS_KEY;
+  requireThat(
+    Boolean(id) === Boolean(secret),
+    "Both recovery read-back credentials are required",
+  );
+  return id ? { accessKeyId: id, secretAccessKey: secret } : null;
 }
 async function exportSnapshot(env) {
   requireThat(
@@ -275,6 +284,7 @@ async function main() {
       env.RECOVERY_SECRET_ACCESS_KEY,
     "Separate recovery bucket credentials required",
   );
+  const readerCredentials = recoveryReaderCredentials(env);
   const destinationClient = new S3Client({
     endpoint: env.RECOVERY_ENDPOINT,
     region: env.RECOVERY_REGION,
@@ -283,7 +293,18 @@ async function main() {
       secretAccessKey: env.RECOVERY_SECRET_ACCESS_KEY,
     },
   });
-  const archive = s3Storage(destinationClient, env.RECOVERY_BUCKET);
+  const readerClient = readerCredentials
+    ? new S3Client({
+        endpoint: env.RECOVERY_ENDPOINT,
+        region: env.RECOVERY_REGION,
+        credentials: readerCredentials,
+      })
+    : destinationClient;
+  const archive = s3Storage(
+    destinationClient,
+    env.RECOVERY_BUCKET,
+    readerClient,
+  );
   let sqlite, sourceClient;
   try {
     if (mode === "create") {
@@ -387,6 +408,7 @@ async function main() {
   } finally {
     sqlite?.close();
     sourceClient?.destroy();
+    if (readerClient !== destinationClient) readerClient.destroy();
     destinationClient.destroy();
   }
 }
