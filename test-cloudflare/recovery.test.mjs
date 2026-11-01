@@ -249,6 +249,25 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       )
       .bind(Date.now())
       .run();
+    const supplyService = (
+      await call(source.mf, "/api/owner/dashboard", { cookie })
+    ).data.services.find((s) => s.id === "dustoff");
+    assert.equal(
+      (
+        await call(source.mf, "/api/owner/service-consumables", {
+          method: "PUT",
+          cookie,
+          body: {
+            serviceId: "dustoff",
+            version: supplyService.version,
+            consumables: [
+              { materialId: material.data.id, quantityMillis: 500 },
+            ],
+          },
+        })
+      ).status,
+      200,
+    );
     const dir = await mkdtemp(
         join(tmpdir(), "docdetailing-encrypted-recovery-"),
       ),
@@ -295,6 +314,7 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       "history",
       "notifications",
       "jobs",
+      "services",
       "materials",
       "job_details",
       "inventory_balances",

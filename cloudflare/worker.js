@@ -1,3 +1,8 @@
+import {
+  saveServiceConsumables,
+  validateConsumables,
+  publicService,
+} from "./service-consumables.js";
 import { materialPurchase } from "./material-purchase.js";
 import {
   materialRows,
@@ -303,7 +308,7 @@ export async function route(request, env, ctx) {
         ...settings,
         closedDates: publicClosedDates(settings, blocks),
       }),
-      services: (await s.catalog()).filter((p) => p.enabled),
+      services: (await s.catalog()).filter((p) => p.enabled).map(publicService),
       notice,
       runtime: {
         environment: env.CLOUDFLARE_ENV,
@@ -608,6 +613,8 @@ export async function route(request, env, ctx) {
         ),
         201,
       );
+    if (path === "/api/owner/service-consumables" && method === "PUT")
+      return json(await saveServiceConsumables(s, body, user.id));
     if (path === "/api/owner/materials") {
       if (method === "GET")
         return json({
@@ -822,6 +829,10 @@ export async function route(request, env, ctx) {
             );
           const { version, ...data } = body;
           data.kind = old.kind;
+          data.consumables = await validateConsumables(
+            s,
+            body.consumables ?? old.consumables ?? [],
+          );
           commands.push(
             s.command(
               "UPDATE services SET data=?,version=version+1 WHERE id=? AND business_id=? AND version=?",

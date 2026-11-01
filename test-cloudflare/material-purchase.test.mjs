@@ -101,6 +101,7 @@ test("actual D1 purchase, usage and invoice keep ounce precision and cannot dupl
       "/api/owner/inventory",
       {
         kind: "usage",
+        billSeparately: true,
         materialId: r.id,
         version: r.stock_version,
         jobId: job.id,

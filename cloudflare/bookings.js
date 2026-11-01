@@ -1,3 +1,5 @@
+import { jobView } from "./operations.js";
+import { publicBookingSnapshot } from "./service-consumables.js";
 import { randomUUID, createHmac, timingSafeEqual } from "node:crypto";
 import { hash, token, text, requireThat } from "../src/security.js";
 import { notice } from "../src/catalog.js";
@@ -56,7 +58,7 @@ export class CloudBookings extends TenantRepository {
       id: b.id,
       status: b.status,
       requestedAt: new Date(b.start_ms).toISOString(),
-      snapshot: JSON.parse(b.snapshot),
+      snapshot: publicBookingSnapshot(JSON.parse(b.snapshot)),
       proposal: b.proposal ? JSON.parse(b.proposal) : null,
       version: b.version,
       rescheduleRequest: JSON.parse(b.data).rescheduleRequest ?? null,
@@ -268,7 +270,7 @@ export class CloudBookings extends TenantRepository {
         id,
         status: "pending",
         requestedAt: new Date(start).toISOString(),
-        snapshot,
+        snapshot: publicBookingSnapshot(snapshot),
         proposal: null,
         version: 1,
         accessToken: secret,
@@ -421,6 +423,20 @@ export class CloudBookings extends TenantRepository {
         );
         status = "in_progress";
       } else if (action === "complete") {
+        const jobRow = await this.first(
+          "SELECT id FROM jobs WHERE business_id=? AND booking_id=?",
+          this.tenant,
+          id,
+        );
+        if (jobRow) {
+          const job = await jobView(this, jobRow.id);
+          requireThat(
+            job.plannedConsumables.every((p) => p.recorded),
+            "Review assigned consumables before completing this job",
+            409,
+          );
+        }
+
         requireThat(
           actor === "owner" && status === "in_progress",
           "Cannot complete this booking",

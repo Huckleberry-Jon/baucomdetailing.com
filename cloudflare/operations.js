@@ -1,3 +1,4 @@
+import { plannedConsumables } from "./service-consumables.js";
 import { usageCost } from "./material-costing.js";
 import { randomUUID } from "node:crypto";
 import { requireThat, text, hash } from "../src/security.js";
@@ -23,6 +24,7 @@ export async function jobView(s, id) {
     version: job.version ?? 0,
     data: JSON.parse(job.data ?? "{}"),
     materials,
+    plannedConsumables: await plannedConsumables(s, job, materials),
   };
 }
 export async function saveJob(s, body, owner) {
@@ -42,6 +44,28 @@ export async function saveJob(s, body, owner) {
         100,
       "Use at most 100 invoice charge/material lines",
     );
+    for (const [index, line] of priced.lines.entries()) {
+      const serviceId = d.lines[index].serviceId;
+      if (!serviceId) continue;
+      const existing = job.data.lines?.find(
+        (l) => l.serviceId === serviceId,
+      )?.serviceSnapshot;
+      const row = existing
+        ? null
+        : await s.first(
+            "SELECT data FROM services WHERE business_id=? AND id=?",
+            s.tenant,
+            serviceId,
+          );
+      requireThat(existing || row, "Service not found", 404);
+      const source = existing ?? JSON.parse(row.data);
+      line.serviceId = serviceId;
+      line.serviceSnapshot = {
+        id: serviceId,
+        name: source.name,
+        consumables: source.consumables ?? [],
+      };
+    }
     const data = {
       lines: priced.lines,
       notes: typeof d.notes === "string" ? d.notes.slice(0, 3000) : "",
@@ -62,6 +86,10 @@ export async function saveJob(s, body, owner) {
   });
 }
 export async function stockMovement(s, body, owner, key) {
+  if (body.planned === true) {
+    requireThat(body.kind === "usage", "Invalid planned usage");
+    key = "planned:" + body.jobId + ":" + body.materialId;
+  }
   text(key, "Idempotency key", 150);
   const digest = hash(JSON.stringify(body));
   return s.atomic(async (b, c) => {
@@ -112,8 +140,19 @@ export async function stockMovement(s, body, owner, key) {
           100,
         "Job invoice line limit reached",
       );
+      if (body.planned === true)
+        requireThat(
+          job.plannedConsumables.some((p) => p.materialId === body.materialId),
+          "Material is not assigned to this job",
+          409,
+        );
+      requireThat(
+        body.billSeparately === undefined ||
+          typeof body.billSeparately === "boolean",
+        "Invalid consumable billing choice",
+      );
       delta = -qty(body.quantityMillis, "usage", 1000000);
-      requireThat(delta < 0, "Usage must be positive");
+      requireThat(delta < 0 || body.planned === true, "Usage must be positive");
       cost = usageCost(material, -delta);
     } else {
       requireThat(body.kind === "correction", "Invalid stock movement");
@@ -152,6 +191,8 @@ export async function stockMovement(s, body, owner, key) {
             : {}),
           unitPriceCents: material.unitPriceCents,
           taxable: material.taxable,
+          billSeparately: body.billSeparately ?? false,
+          planned: body.planned === true,
           reason,
         }),
         key,
@@ -178,7 +219,10 @@ export function jobInvoiceLines(job) {
   return [
     ...d.lines,
     ...job.materials
-      .filter((m) => m.quantity_millis < 0)
+      .filter(
+        (m) =>
+          m.quantity_millis < 0 && JSON.parse(m.data).billSeparately !== false,
+      )
       .map((m) => {
         const d = JSON.parse(m.data);
         return {

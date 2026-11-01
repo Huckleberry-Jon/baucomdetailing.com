@@ -74,6 +74,7 @@ test("actual D1 job, stock, invoice, payment and profitability workflow is trans
       materialId: material.data.id,
       jobId: job.id,
       kind: "usage",
+      billSeparately: true,
       version: 1,
       quantityMillis: 1000,
       reason: "Confirmed use on job",

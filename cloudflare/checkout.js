@@ -69,6 +69,11 @@ export async function completeWithPayment(s, body, owner, key) {
     const ctx = await completionContext(s, body.bookingId),
       { job } = ctx;
     requireThat(
+      job.plannedConsumables.every((p) => p.recorded),
+      "Review assigned consumables before completing this job",
+      409,
+    );
+    requireThat(
       !ctx.checkoutRecorded,
       "Checkout already recorded; open the invoice to record another payment",
       409,

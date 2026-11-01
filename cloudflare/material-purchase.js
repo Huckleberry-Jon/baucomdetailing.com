@@ -68,6 +68,33 @@ export async function materialPurchase(s, body, owner, key) {
         "This product has job usage. Create a separate ounce-based product to preserve its history.",
         409,
       );
+      requireThat(
+        !(await s.first(
+          "SELECT id FROM services WHERE business_id=? AND EXISTS(SELECT 1 FROM json_each(json_extract(data,'$.consumables')) WHERE json_extract(value,'$.materialId')=?) LIMIT 1",
+          s.tenant,
+          old.id,
+        )),
+        "This product is assigned to services. Create a separate product in the new unit and update assignments.",
+        409,
+      );
+      requireThat(
+        !(await s.first(
+          "SELECT b.id FROM bookings b,json_tree(b.snapshot) p WHERE b.business_id=? AND p.key='materialId' AND p.value=? LIMIT 1",
+          s.tenant,
+          old.id,
+        )),
+        "A booking has a saved consumable plan for this unit. Create a separate product to preserve the plan.",
+        409,
+      );
+      requireThat(
+        !(await s.first(
+          "SELECT d.job_id FROM job_details d,json_tree(d.data) p WHERE d.business_id=? AND p.key='materialId' AND p.value=? LIMIT 1",
+          s.tenant,
+          old.id,
+        )),
+        "A job has a saved consumable plan for this unit. Create a separate product to preserve it.",
+        409,
+      );
       next = available === 0 ? 0 : receivedStock(value, available);
       delta = next - available;
       cost = 0;
