@@ -3,7 +3,7 @@
   "domain": "baucomdetailing.com",
   "accountId": "5b9efeaaa733a2c5e6d8bd13259bd50a",
   "cloudflarePlan": "Free",
-  "zoneState": "Pending nameserver delegation; onboarding completed through nameserver directions",
+  "zoneState": "Active; approved Cloudflare nameservers confirmed in Porkbun and public DNS",
   "assignedNameservers": [
     "amanda.ns.cloudflare.com",
     "christian.ns.cloudflare.com"
@@ -14,7 +14,7 @@
     "maceio.ns.porkbun.com",
     "salvador.ns.porkbun.com"
   ],
-  "registrarChanged": false,
+  "registrarChanged": true,
   "productionResources": {
     "worker": "docdetailing-site-production",
     "database": "docdetailing-production",
@@ -24,8 +24,11 @@
     "approvedDate": "2026-11-01",
     "databaseId": "27bad655-e13c-41e5-9f1d-01f2802d4ade",
     "migrationsApplied": 7,
-    "workerVersion": "2edfb570-3810-41e8-8b92-fb59f98f7fdc",
-    "publicRoutes": [],
+    "workerVersion": "622922c3-8f21-423b-9b29-bbfd792a5dc4",
+    "publicRoutes": [
+      "baucomdetailing.com",
+      "www.baucomdetailing.com"
+    ],
     "workersDev": false,
     "crons": [],
     "siteOpen": false,
@@ -40,16 +43,16 @@
     "rootSPFPreserved": true,
     "acmeValidationPreserved": true,
     "resendDNSOnly": true,
-    "parkingRecordsRemainUntilProductionReady": true
+    "parkingRecordsRemainUntilProductionReady": false,
+    "parkingRecordsReplacedWithWorker": true
   },
   "blockers": [
     "Coordinate current TestFlight backend origin so website bookings appear in the app",
-    "Finish booking confirmation email acceptance and unattended backup readiness before public bookings",
-    "Validate production HTTPS, authentication, private media, canonical host and rollback before nameserver cutover"
+    "Finish booking confirmation email acceptance and unattended backup readiness before public bookings"
   ],
   "customerEmailMode": "test-only for two approved testers; no change",
-  "publicWebsiteConnected": false,
-  "next": "Install isolated production access secrets, bind and verify production HTTPS, reconcile staging changes at a controlled handover, then build the production iPhone client and complete end-to-end acceptance.",
+  "publicWebsiteConnected": true,
+  "next": "Keep production gated; reconcile staging activity since snapshot, complete production-connected iOS archive/TestFlight handover, and complete booking/email and backup readiness before opening public bookings.",
   "transfer": {
     "snapshotOnly": true,
     "bookings": 5,
@@ -74,5 +77,40 @@
     "flutterTestsPassed": 76,
     "iosSourcePreflight": "passed",
     "productionStaticPreflight": "passed"
-  }
+  },
+  "zoneId": "406b2fa19d20df33ca5b6ba9e31683a3",
+  "publicBookingsOpen": false,
+  "routingVerification": {
+    "rootHTTPS": 200,
+    "rootAccessGate": true,
+    "wwwHTTPS": 308,
+    "wwwLocation": "https://baucomdetailing.com/",
+    "ownerHostedChecks": 10,
+    "josephHostedChecks": 10,
+    "anonymousPrivateApiDenials": 3,
+    "forwardingMXPreserved": true,
+    "resendCnamesPreserved": true
+  },
+  "replacedParkingRecords": [
+    {
+      "type": "A",
+      "name": "baucomdetailing.com",
+      "content": "207.207.210.23"
+    },
+    {
+      "type": "A",
+      "name": "baucomdetailing.com",
+      "content": "207.207.210.36"
+    },
+    {
+      "type": "A",
+      "name": "baucomdetailing.com",
+      "content": "207.207.210.50"
+    },
+    {
+      "type": "CNAME",
+      "name": "www.baucomdetailing.com",
+      "content": "uixie.porkbun.com"
+    }
+  ]
 }
