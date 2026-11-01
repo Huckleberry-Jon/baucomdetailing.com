@@ -1,3 +1,4 @@
+import 'material_costing.dart';
 import 'dart:convert';
 import 'invoice_composer.dart';
 import 'document_totals.dart';
@@ -190,7 +191,7 @@ class _DocumentScreenState extends State<DocumentScreen> {
                     ListTile(
                       title: Text(line['description'] as String),
                       subtitle: Text(
-                        '${quantityInput(line['quantityMillis'] as int)} × \$${moneyInput(line['unitPriceCents'] as int)}',
+                        '${quantityInput(line['quantityMillis'] as int)} × \$${invoiceUnitPrice(line)}',
                       ),
                       trailing: Text(
                         '\$${moneyInput(line['totalCents'] as int)}',
@@ -510,7 +511,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
           ListTile(
             title: Text(lines[i]['description'] as String),
             subtitle: Text(
-              '${quantityInput(lines[i]['quantityMillis'] as int)} × \$${moneyInput(lines[i]['unitPriceCents'] as int)}',
+              '${quantityInput(lines[i]['quantityMillis'] as int)} × \$${invoiceUnitPrice(lines[i])}',
             ),
             onTap: busy
                 ? null
@@ -559,16 +560,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
           builder: (_) {
             try {
               final rows = lines
-                  .map(
-                    (l) => {
-                      ...l,
-                      'totalCents':
-                          ((l['quantityMillis'] as int) *
-                                  (l['unitPriceCents'] as int) +
-                              500) ~/
-                          1000,
-                    },
-                  )
+                  .map((l) => {...l, 'totalCents': invoiceLineTotal(l)})
                   .toList();
               final subtotal = rows.fold<int>(
                 0,

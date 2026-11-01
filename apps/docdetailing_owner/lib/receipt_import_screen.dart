@@ -86,7 +86,7 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
             'quantityMillis': item.quantityMillis,
             'costCents': item.costCents,
             'unit': 'piece',
-            'markupBps': 0,
+            'markupBps': 3000,
             'taxable': false,
             'lowStockMillis': null,
           });
@@ -105,7 +105,15 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
       'Product': d['product'] as String? ?? '',
       'Quantity received': quantityInput(d['quantityMillis'] as int? ?? 1000),
       'Unit (oz/gallon/bottle/piece)': d['unit'] as String? ?? 'piece',
-      'Cost per unit': moneyInput(d['costCents'] as int? ?? 0),
+      'Cost per unit': moneyInput(
+        d['purchaseCostCents'] as int? ?? d['costCents'] as int? ?? 0,
+      ),
+      'Purchase unit (gallon/oz/bottle/piece)':
+          d['purchaseUnit'] as String? ?? d['unit'] as String? ?? 'piece',
+      'Usage units per container (gallon to oz is 128)': quantityInput(
+        d['purchaseSizeMillis'] as int? ?? 1000,
+      ),
+      'Markup percent': moneyInput(d['markupBps'] as int? ?? 3000),
     });
     if (f == null) return;
     try {
@@ -115,7 +123,16 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
         'quantityMillis': quantityMillis(f['Quantity received']!),
         'unit': f['Unit (oz/gallon/bottle/piece)']!.trim(),
         'costCents': parseMoneyCents(f['Cost per unit']!),
-        'markupBps': d['markupBps'] ?? 0,
+        'markupBps': parseMoneyCents(f['Markup percent']!),
+        'purchaseUnit': f['Purchase unit (gallon/oz/bottle/piece)']!.trim(),
+        'purchaseSizeMillis':
+            f['Purchase unit (gallon/oz/bottle/piece)']!.trim() == 'gallon' &&
+                f['Unit (oz/gallon/bottle/piece)']!.trim() == 'oz'
+            ? 128000
+            : quantityMillis(
+                f['Usage units per container (gallon to oz is 128)']!,
+              ),
+        'purchaseCostCents': parseMoneyCents(f['Cost per unit']!),
         'taxable': d['taxable'] ?? false,
       };
       if (value['product'] == '' ||
@@ -277,9 +294,7 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${lines[i]['product']} · ${quantityInput(lines[i]['quantityMillis'])} ${lines[i]['unit']} · \$${moneyInput(lines[i]['costCents'])}/unit',
-                    ),
+                    Text(receiptLineLabel(lines[i])),
                     DropdownButtonFormField<String>(
                       initialValue: lines[i]['materialId'] as String? ?? '',
                       isExpanded: true,
@@ -392,4 +407,12 @@ class _ReceiptImportState extends State<ReceiptImportScreen> {
       ),
     ),
   );
+}
+
+String receiptLineLabel(Map l) {
+  final purchase = l['purchaseCostCents'] != null,
+      count = l['quantityMillis'] as int,
+      size = l['purchaseSizeMillis'] as int? ?? 1000;
+  final sourceUnit = purchase ? l['purchaseUnit'] : l['unit'];
+  return '${l['product']} · ${quantityInput(count)} $sourceUnit${purchase ? ' → ${quantityInput(count * size ~/ 1000)} ${l['unit']}' : ''} · USD ${moneyInput((l['purchaseCostCents'] ?? l['costCents']) as int)}/$sourceUnit';
 }

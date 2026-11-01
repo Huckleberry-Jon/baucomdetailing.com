@@ -72,7 +72,7 @@ Future<Uint8List> businessPdf(
                 [
                   l['description'],
                   '${(l['quantityMillis'] as int) / 1000} ${l['unit']}',
-                  '\$${moneyInput(l['unitPriceCents'] as int)}',
+                  '\$${l['costBasisCents'] != null ? ((l['costBasisCents'] as num) * 1000 / (l['costBasisQuantityMillis'] as num) * (1 + (l['markupBps'] as num) / 10000) / 100).toStringAsFixed(4) : moneyInput(l['unitPriceCents'] as int)}',
                   '\$${moneyInput(l['totalCents'] as int)}',
                 ],
             ],

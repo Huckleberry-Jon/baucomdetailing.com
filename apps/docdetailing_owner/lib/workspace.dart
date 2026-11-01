@@ -1,3 +1,5 @@
+import 'material_costing.dart';
+import 'material_purchase_screen.dart';
 import 'receipt_import_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -133,13 +135,27 @@ class _WorkspaceState extends State<WorkspaceScreen> {
 
   int cents(String? s) => parseMoneyCents(s ?? '0');
   Future<void> addMaterial([Map? row]) async {
+    if (row != null && payload(row)['purchaseCostCents'] != null) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MaterialPurchaseScreen(
+            api: widget.api,
+            row: row,
+            configure: true,
+          ),
+        ),
+      );
+      await load();
+      return;
+    }
     final product = row == null ? <String, dynamic>{} : payload(row);
     final f = await form(row == null ? 'Add material' : 'Edit material', {
       'Product': product['product'] as String? ?? '',
       'Quantity': quantityInput(product['quantityMillis'] as int? ?? 1000),
       'Unit (oz/gallon/bottle/piece)': product['unit'] as String? ?? 'oz',
       'Unit cost': moneyInput(product['costCents'] as int? ?? 0),
-      'Markup percent': moneyInput(product['markupBps'] as int? ?? 0),
+      'Markup percent': moneyInput(product['markupBps'] as int? ?? 3000),
       'Taxable (yes/no)': product['taxable'] == true ? 'yes' : 'no',
       'Low stock alert quantity (blank disables)':
           product['lowStockMillis'] == null
@@ -387,6 +403,21 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                 ),
               ),
             if (section == 'Materials') ...[
+              FilledButton(
+                onPressed: busy
+                    ? null
+                    : () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                MaterialPurchaseScreen(api: widget.api),
+                          ),
+                        );
+                        await load();
+                      },
+                child: const Text('Add stock purchase (gallon / oz)'),
+              ),
               OutlinedButton.icon(
                 onPressed: busy
                     ? null
@@ -544,6 +575,10 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                       title = d['product'] as String;
                       description =
                           '${row['low_stock'] == true ? 'LOW STOCK · ' : ''}Available ${quantityInput(row['available_quantity_millis'] as int? ?? 0)} ${d['unit']}\nDefault use ${(d['quantityMillis'] as num) / 1000} ${d['unit']} · ${dollars(d['sellingCents'])}\nCost ${dollars(d['costCents'])}/unit · markup ${(d['markupBps'] as num) / 100}% · taxable ${d['taxable']}';
+                      if (d['purchaseCostCents'] != null) {
+                        description +=
+                            '\nPurchase ${dollars(d['purchaseCostCents'])}/${d['purchaseUnit']} = ${quantityInput(d['purchaseSizeMillis'] as int)} ${d['unit']}\nExact cost USD ${((d['costBasisCents'] as num) * 1000 / (d['costBasisQuantityMillis'] as num) / 100).toStringAsFixed(6)}/${d['unit']} · Bill USD ${invoiceUnitPrice(d)}/${d['unit']}';
+                      }
                       break;
                     case 'Estimates & invoices':
                     case 'Payment Center':
@@ -596,6 +631,43 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                               child: const Text('Vehicles & service history'),
                             ),
                           if (section == 'Materials') ...[
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              MaterialPurchaseScreen(
+                                                api: widget.api,
+                                                row: row,
+                                                configure: true,
+                                              ),
+                                        ),
+                                      );
+                                      await load();
+                                    },
+                              child: const Text('Purchase units & markup'),
+                            ),
+                            TextButton(
+                              onPressed: busy
+                                  ? null
+                                  : () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              MaterialPurchaseScreen(
+                                                api: widget.api,
+                                                row: row,
+                                              ),
+                                        ),
+                                      );
+                                      await load();
+                                    },
+                              child: const Text('Add stock purchase'),
+                            ),
                             TextButton(
                               onPressed: busy
                                   ? null
