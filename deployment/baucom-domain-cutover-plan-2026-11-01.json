@@ -31,7 +31,7 @@
     "siteOpen": false,
     "communicationsMode": "disabled",
     "bucketPublicAccess": false,
-    "businessDataTransferred": false
+    "businessDataTransferred": true
   },
   "dnsImport": {
     "scanRecords": 10,
@@ -43,12 +43,36 @@
     "parkingRecordsRemainUntilProductionReady": true
   },
   "blockers": [
-    "Prepare reviewed business/media data transfer without synthetic test data",
     "Coordinate current TestFlight backend origin so website bookings appear in the app",
     "Finish booking confirmation email acceptance and unattended backup readiness before public bookings",
     "Validate production HTTPS, authentication, private media, canonical host and rollback before nameserver cutover"
   ],
   "customerEmailMode": "test-only for two approved testers; no change",
   "publicWebsiteConnected": false,
-  "next": "Prepare a verified business-data/media transfer and production owner access, coordinate the iOS API_ORIGIN transition, then verify production before exact nameserver cutover."
+  "next": "Install isolated production access secrets, bind and verify production HTTPS, reconcile staging changes at a controlled handover, then build the production iPhone client and complete end-to-end acceptance.",
+  "transfer": {
+    "snapshotOnly": true,
+    "bookings": 5,
+    "customers": 5,
+    "owners": 2,
+    "tablesVerified": 27,
+    "mediaObjects": 44,
+    "mediaHashReadback": true,
+    "foreignKeys": "ok",
+    "remoteQuickCheck": "ok",
+    "localFullIntegrity": "ok",
+    "sessionsCopied": 0,
+    "devicesCopied": 0,
+    "reviewAccountExcluded": true,
+    "deliveryHeld": true,
+    "finalCutoverResyncRequired": true
+  },
+  "nativeProductionConfig": "apps/docdetailing_owner/config/production.json",
+  "nativeArchiveBuildStatus": "Not started; current workflow still uses staging until production HTTPS acceptance",
+  "verification": {
+    "flutterAnalysis": "No issues found",
+    "flutterTestsPassed": 76,
+    "iosSourcePreflight": "passed",
+    "productionStaticPreflight": "passed"
+  }
 }
