@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-01",
+  "approved": true,
+  "bookings": 7,
+  "customers": 7,
+  "vehicles": 7,
+  "jobs": 5,
+  "invoices": 3,
+  "financialEvents": 3,
+  "mediaObjectsVerified": 46,
+  "tablesVerified": 27,
+  "pendingRequestVisible": true,
+  "productionCancellationPreserved": true,
+  "sessionsAndDevicesPreserved": true,
+  "deliveryHeld": true,
+  "emailEnabled": false,
+  "sourceDataPreserved": true,
+  "productionURL": "https://baucomdetailing.com",
+  "stagingRetired": false
+}
