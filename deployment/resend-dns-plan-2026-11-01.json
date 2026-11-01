@@ -1,0 +1,40 @@
+{
+  "preparedDate": "2026-11-01",
+  "domain": "notify.baucomdetailing.com",
+  "provider": "Resend",
+  "region": "us-east-1",
+  "applied": false,
+  "records": [
+    {
+      "type": "TXT",
+      "host": "resend._domainkey.notify",
+      "value": "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCr9jrS4+2r41BrYAydxLVSYsyxKSg1PqTelQFKkNefGNdt0ThxPDAK6PcdwTSbIgxytkX0vnq8sQAy0L+qS59MBYKuEnCMjGzf9RBJ90xKIUG26zINEayit28xcp8u3IAypcftoGjdz3tE7Cix/6qHY1h1YFnZPmIBj5bCn6cMlQIDAQAB",
+      "ttl": 600
+    },
+    {
+      "type": "CNAME",
+      "host": "rsend.notify",
+      "value": "rsend.forge.rmta.net",
+      "ttl": 600,
+      "proxied": false
+    },
+    {
+      "type": "CNAME",
+      "host": "send.notify",
+      "value": "send.forge.rmta.net",
+      "ttl": 600,
+      "proxied": false
+    }
+  ],
+  "excluded": "Optional root _dmarc suggestion is not included; preserve existing parent mail policy and forwarding.",
+  "preserve": [
+    "root/www A and CNAME",
+    "nameservers",
+    "root MX and SPF",
+    "all existing DKIM/DMARC/verification records",
+    "Netlify"
+  ],
+  "next": "Authenticated Porkbun zone review and approval of these exact additive sender-only records; then confirm provider verification.",
+  "resendDomainId": "96a252fe-8c9f-4b58-9772-ebea22663c97",
+  "verificationStatus": "not_started"
+}

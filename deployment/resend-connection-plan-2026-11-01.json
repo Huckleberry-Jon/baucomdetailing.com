@@ -1,0 +1,34 @@
+{
+  "preparedDate": "2026-11-01",
+  "state": "awaiting-specific-credential-creation-confirmation",
+  "apiKey": {
+    "name": "DocDetailing staging send only",
+    "permission": "sending_access",
+    "domainScope": "all_domains_until_sender_verified",
+    "fullAccess": false
+  },
+  "webhook": {
+    "endpoint": "https://docdetailing-site-staging.huckleberryservices.workers.dev/api/webhooks/email",
+    "events": [
+      "email.sent",
+      "email.delivered",
+      "email.bounced",
+      "email.complained",
+      "email.failed"
+    ],
+    "signatureVerification": "Svix; store RESEND_WEBHOOK_SECRET only in private staging secrets"
+  },
+  "diagnostic": {
+    "from": "onboarding@resend.dev",
+    "to": [
+      "huckleberryservices@yahoo.com"
+    ],
+    "subject": "DocDetailing email connection test",
+    "maximumMessages": 1,
+    "customerDataIncluded": false
+  },
+  "workerMode": "disabled",
+  "drainExistingOutbox": false,
+  "liveCustomerEmailEnabled": false,
+  "dnsChangesApplied": false
+}
