@@ -39,7 +39,7 @@
     "inboxReceiptConfirmed": true,
     "actualMessages": 1
   },
-  "workerMode": "disabled",
+  "workerMode": "test-only",
   "drainExistingOutbox": false,
   "liveCustomerEmailEnabled": false,
   "dnsChangesApplied": true,
@@ -49,7 +49,7 @@
     "verifiedDate": "2026-11-01"
   },
   "senderAcceptanceTest": {
-    "state": "delivered_pending_inbox_confirmation",
+    "state": "received_spam_placement_requires_booking_acceptance",
     "from": "Baucom's Mobile Detailing <bookings@notify.baucomdetailing.com>",
     "to": [
       "huckleberryservices@yahoo.com"
@@ -66,6 +66,27 @@
       "email.sent": 1,
       "email.delivered": 1
     },
-    "inboxReceiptConfirmed": false
+    "inboxReceiptConfirmed": true,
+    "inboxPlacement": "Initially spam; user confirmed marked Not spam"
+  },
+  "testOnlyActivation": {
+    "date": "2026-11-01",
+    "authorized": true,
+    "recipients": [
+      "huckleberryservices@yahoo.com",
+      "josephhuffman01@gmail.com"
+    ],
+    "ownerEmail": "josephhuffman01@gmail.com",
+    "from": "Baucom's Mobile Detailing <bookings@notify.baucomdetailing.com>",
+    "historicalDeliveriesHeld": 23,
+    "previousUnenqueuedNotificationsSuppressed": true,
+    "emailEnabled": true,
+    "pushEnabled": false,
+    "nativePushEnabled": false,
+    "siteOpen": false,
+    "workerVersion": "f51b648f-2387-48c4-ab3a-6c35a45d7a83",
+    "regressionTestsPassed": 21,
+    "hostedReadOnlyChecksPassed": 10,
+    "manualBookingAcceptance": "pending"
   }
 }
