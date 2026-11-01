@@ -4,10 +4,11 @@
   "apiKey": {
     "name": "DocDetailing staging send only",
     "permission": "sending_access",
-    "domainScope": "all_domains_pending_scope_restriction",
+    "domainScope": "notify.baucomdetailing.com",
     "fullAccess": false,
     "created": true,
-    "installedOn": "docdetailing-site-staging"
+    "installedOn": "docdetailing-site-staging",
+    "scopeVerifiedDate": "2026-11-01"
   },
   "webhook": {
     "endpoint": "https://docdetailing-site-staging.huckleberryservices.workers.dev/api/webhooks/email",
@@ -46,5 +47,17 @@
     "name": "notify.baucomdetailing.com",
     "status": "verified",
     "verifiedDate": "2026-11-01"
+  },
+  "senderAcceptanceTest": {
+    "state": "prepared_pending_send_approval",
+    "from": "Baucom's Mobile Detailing <bookings@notify.baucomdetailing.com>",
+    "to": [
+      "huckleberryservices@yahoo.com"
+    ],
+    "subject": "Baucom sender verification test",
+    "text": "This is a controlled sender verification test for Baucom's Mobile Detailing. No appointment was created, no payment is requested, and live customer booking alerts remain disabled. Please confirm that this message reached your inbox.",
+    "maximumMessages": 1,
+    "customerDataIncluded": false,
+    "drainExistingOutbox": false
   }
 }

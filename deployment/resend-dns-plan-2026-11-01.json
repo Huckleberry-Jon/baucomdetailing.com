@@ -34,7 +34,7 @@
     "all existing DKIM/DMARC/verification records",
     "Netlify"
   ],
-  "next": "Restrict the existing sending key to the verified sender domain, configure the approved From address and run a separately authorized allowlisted acceptance test; keep live delivery disabled and do not drain historical messages.",
+  "next": "Approve and send the single prepared sender acceptance email to the project owner; verify signed delivery receipts and inbox receipt before customer activation.",
   "resendDomainId": "96a252fe-8c9f-4b58-9772-ebea22663c97",
   "verificationStatus": "verified",
   "authenticatedReview": {

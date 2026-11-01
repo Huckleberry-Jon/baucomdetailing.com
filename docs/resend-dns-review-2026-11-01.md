@@ -16,4 +16,4 @@ The user approved this exact sender-only change set. All three records were save
 
 All twelve exact-value checks passed across the four Porkbun authoritative nameservers (three records per nameserver). Evidence is retained privately in data/dns-change-review/authoritative-verification.json. Resend now reports Verified for the domain and all three records; its domain timeline shows DNS verified at 9:04 AM and domain verified at 9:06 AM on November 1.
 
-Customer delivery and push remain disabled. No further email was sent. Next: narrow the existing sending key to the verified domain, configure an approved sender address, then run a separately authorized acceptance test limited to named testers. Do not drain historical blocked deliveries.
+Customer delivery and push remain disabled. No further email was sent. The existing sending key is now restricted to the verified domain. Next: approve the prepared single-email sender acceptance test, then verify its delivery before configuring and activating booking alerts. Do not drain historical blocked deliveries.
