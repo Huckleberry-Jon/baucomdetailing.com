@@ -1,3 +1,4 @@
+import { purchaseBasis, usageCost } from "./material-costing.js";
 import { invoiceBranding } from "./inventory-receipts.js";
 import { jobView, jobInvoiceLines } from "./operations.js";
 import { randomUUID } from "node:crypto";
@@ -13,7 +14,7 @@ export function material(input) {
     unit: input.unit,
     quantityMillis: integer(input.quantityMillis, "quantity", 1000000),
     costCents: integer(input.costCents, "unit cost"),
-    markupBps: integer(input.markupBps, "markup", 100000),
+    markupBps: integer(input.markupBps ?? 3000, "markup", 100000),
     taxable: input.taxable,
     lowStockMillis:
       input.lowStockMillis == null
@@ -26,14 +27,12 @@ export function material(input) {
       d.quantityMillis > 0,
     "Invalid material unit, tax or quantity",
   );
-  d.unitPriceCents = round(
-    BigInt(d.costCents) * BigInt(10000 + d.markupBps),
-    10000,
-  );
-  d.sellingCents = round(
-    BigInt(d.unitPriceCents) * BigInt(d.quantityMillis),
-    1000,
-  );
+  if (input.purchaseCostCents !== undefined) {
+    Object.assign(d, purchaseBasis(input));
+    d.costCents = usageCost(d, 1000);
+  }
+  d.unitPriceCents = usageCost(d, 1000, true);
+  d.sellingCents = usageCost(d, d.quantityMillis, true);
   return d;
 }
 export function priceDocument(body) {
@@ -68,6 +67,16 @@ export function priceDocument(body) {
       BigInt(line.quantityMillis) * BigInt(line.unitCostCents),
       1000,
     );
+    if (l.costBasisCents !== undefined) {
+      const basis = {
+        costBasisCents: l.costBasisCents,
+        costBasisQuantityMillis: l.costBasisQuantityMillis,
+        markupBps: integer(l.markupBps, "markup", 100000),
+      };
+      line.costCents = usageCost(basis, line.quantityMillis);
+      line.totalCents = usageCost(basis, line.quantityMillis, true);
+      Object.assign(line, basis);
+    }
     return line;
   });
   const taxBps = integer(body.taxBps, "tax rate", 10000),
@@ -120,6 +129,27 @@ export async function saveMaterial(s, body, owner) {
     );
     if (old && !Object.hasOwn(body.data ?? body, "lowStockMillis"))
       value.lowStockMillis = JSON.parse(old.data).lowStockMillis ?? null;
+    if (
+      old &&
+      JSON.parse(old.data).purchaseCostCents !== undefined &&
+      (body.data ?? body).purchaseCostCents === undefined
+    ) {
+      const previous = JSON.parse(old.data);
+      requireThat(
+        value.costCents === previous.costCents,
+        "Use purchase units and markup to change container cost",
+        409,
+      );
+      Object.assign(
+        value,
+        material({
+          ...value,
+          purchaseCostCents: previous.purchaseCostCents,
+          purchaseUnit: previous.purchaseUnit,
+          purchaseSizeMillis: previous.purchaseSizeMillis,
+        }),
+      );
+    }
     const id = old?.id ?? randomUUID();
     c.push(
       old

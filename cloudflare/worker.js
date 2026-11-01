@@ -1,3 +1,4 @@
+import { materialPurchase } from "./material-purchase.js";
 import {
   materialRows,
   importReceipt,
@@ -597,6 +598,16 @@ export async function route(request, env, ctx) {
       requireThat(photo, "Receipt not found", 404);
       return mediaResponse(env, s.tenant, photo);
     }
+    if (path === "/api/owner/material-purchase" && method === "POST")
+      return json(
+        await materialPurchase(
+          s,
+          body,
+          user.id,
+          request.headers.get("Idempotency-Key"),
+        ),
+        201,
+      );
     if (path === "/api/owner/materials") {
       if (method === "GET")
         return json({

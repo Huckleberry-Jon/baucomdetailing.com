@@ -1,3 +1,4 @@
+import { receivedStock, usageCost } from "./material-costing.js";
 import { randomUUID } from "node:crypto";
 import { hash, requireThat, text } from "../src/security.js";
 import { material } from "./finance.js";
@@ -66,7 +67,11 @@ export async function importReceipt(s, body, owner, key, env) {
           : "";
     for (const [index, line] of body.lines.entries()) {
       const value = material(line),
-        delta = value.quantityMillis;
+        delta =
+          line.purchaseCostCents !== undefined
+            ? receivedStock(value, line.quantityMillis)
+            : value.quantityMillis;
+      if (line.purchaseCostCents !== undefined) value.quantityMillis = 1000;
       let product = null,
         balance = null;
       if (line.materialId) {
@@ -100,7 +105,24 @@ export async function importReceipt(s, body, owner, key, env) {
           "Stock changed; reload receipt",
           409,
         );
-        // Receipt cost is retained in this movement. Existing product markup/cost settings remain owner controlled.
+        if (line.purchaseCostCents !== undefined) {
+          const current = JSON.parse(product.data),
+            updated = material({
+              ...current,
+              purchaseUnit: value.purchaseUnit,
+              purchaseSizeMillis: value.purchaseSizeMillis,
+              purchaseCostCents: value.purchaseCostCents,
+            });
+          c.push(
+            s.command(
+              "UPDATE materials SET data=?,version=version+1 WHERE business_id=? AND id=?",
+              JSON.stringify(updated),
+              s.tenant,
+              product.id,
+            ),
+          );
+        }
+        // Existing markup is preserved; the reviewed purchase updates future usage cost.
       }
       const productId = product?.id ?? randomUUID(),
         available = (balance?.quantity_millis ?? 0) + delta;
@@ -125,9 +147,7 @@ export async function importReceipt(s, body, owner, key, env) {
           available,
         ),
       );
-      const cost = Number(
-        (BigInt(delta) * BigInt(value.costCents) + 500n) / 1000n,
-      );
+      const cost = usageCost(value, delta);
       requireThat(cost <= 1000000000, "Receipt line cost is too large");
       c.push(
         s.command(

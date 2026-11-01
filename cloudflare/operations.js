@@ -1,3 +1,4 @@
+import { usageCost } from "./material-costing.js";
 import { randomUUID } from "node:crypto";
 import { requireThat, text, hash } from "../src/security.js";
 import { priceDocument } from "./finance.js";
@@ -113,9 +114,7 @@ export async function stockMovement(s, body, owner, key) {
       );
       delta = -qty(body.quantityMillis, "usage", 1000000);
       requireThat(delta < 0, "Usage must be positive");
-      cost = Number(
-        (BigInt(-delta) * BigInt(material.costCents) + 500n) / 1000n,
-      );
+      cost = usageCost(material, -delta);
     } else {
       requireThat(body.kind === "correction", "Invalid stock movement");
       delta = qty(body.availableQuantityMillis) - available;
@@ -144,6 +143,13 @@ export async function stockMovement(s, body, owner, key) {
           product: material.product,
           unit: material.unit,
           unitCostCents: material.costCents,
+          ...(material.costBasisCents !== undefined
+            ? {
+                costBasisCents: material.costBasisCents,
+                costBasisQuantityMillis: material.costBasisQuantityMillis,
+                markupBps: material.markupBps,
+              }
+            : {}),
           unitPriceCents: material.unitPriceCents,
           taxable: material.taxable,
           reason,
@@ -181,6 +187,13 @@ export function jobInvoiceLines(job) {
           quantityMillis: -m.quantity_millis,
           unitPriceCents: d.unitPriceCents,
           unitCostCents: d.unitCostCents,
+          ...(d.costBasisCents !== undefined
+            ? {
+                costBasisCents: d.costBasisCents,
+                costBasisQuantityMillis: d.costBasisQuantityMillis,
+                markupBps: d.markupBps,
+              }
+            : {}),
           taxable: d.taxable,
         };
       }),
