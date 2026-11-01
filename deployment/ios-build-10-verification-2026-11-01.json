@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-01",
+  "version": "1.0.0",
+  "build": 10,
+  "sourceCommit": "6ad6bf3de8912a5270a744e8f85b94d983b2f291",
+  "codemagicBuildId": "6ae77642efa74786046fd2eb",
+  "url": "https://codemagic.io/app/6ae2ac00cda6068e457c2738/build/6ae77642efa74786046fd2eb",
+  "status": "finished",
+  "backendOrigin": "https://baucomdetailing.com",
+  "flutterAnalysis": "No issues found",
+  "flutterTestsPassed": 76,
+  "nodeTestsPassed": 61,
+  "cloudflareTestsPassed": 54,
+  "plistTestsPassed": 2,
+  "archiveSigningVerified": true,
+  "exportedIpaVerified": true,
+  "bundle": "com.docincorporated.docdetailing",
+  "team": "UDDPKPR3CJ",
+  "profileUUID": "389636fe-c1d0-46f9-a477-dcb2f464d855",
+  "certificateSerial": "1B61F11135B7C21867D018B13CB5636D",
+  "pushEntitlement": "production",
+  "ipaSHA256": "c42a6f379170ff8f0f32f3c5a08cbebd525e801f2b4362b02d1af5757fe52f5f",
+  "ipaBytes": 22713869,
+  "artifacts": [
+    "Runner.xcarchive.zip",
+    "docdetailing_owner.ipa",
+    "baucomdetailing.com_24_artifacts.zip"
+  ],
+  "appleUploadEnabled": false,
+  "appleUploaded": false,
+  "publicBookingsOpen": false,
+  "remaining": [
+    "Explicit approval to upload this verified build to TestFlight",
+    "Final staging activity reconciliation before production use",
+    "Production gate and communications acceptance; public launch remains closed"
+  ]
+}
