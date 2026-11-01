@@ -135,20 +135,6 @@ class _WorkspaceState extends State<WorkspaceScreen> {
 
   int cents(String? s) => parseMoneyCents(s ?? '0');
   Future<void> addMaterial([Map? row]) async {
-    if (row != null && payload(row)['purchaseCostCents'] != null) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => MaterialPurchaseScreen(
-            api: widget.api,
-            row: row,
-            configure: true,
-          ),
-        ),
-      );
-      await load();
-      return;
-    }
     final product = row == null ? <String, dynamic>{} : payload(row);
     final f = await form(row == null ? 'Add material' : 'Edit material', {
       'Product': product['product'] as String? ?? '',
