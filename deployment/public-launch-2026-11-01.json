@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-01",
+  "origin": "https://baucomdetailing.com",
+  "hosting": "Cloudflare Workers/D1/private R2",
+  "workerVersion": "db780ce4-4b3b-4396-bc26-bb150a997e10",
+  "siteOpen": true,
+  "emailMode": "live",
+  "customerBookingEmailsEnabled": true,
+  "pushEnabled": false,
+  "nativePushEnabled": false,
+  "ownerAuthenticationRequired": true,
+  "historicalDeliveryCounts": [
+    {
+      "status": "delivered_to_mail_server",
+      "count": 1
+    },
+    {
+      "status": "recovery_hold",
+      "count": 32
+    }
+  ],
+  "hostedChecks": {
+    "public": 28,
+    "projectOwner": 9,
+    "joseph": 9,
+    "publishedPhotos": 16,
+    "syntheticBookingsCreated": false
+  },
+  "backup": {
+    "id": "b0995f71-221b-4d5a-9b64-62c575883c38",
+    "source": "production",
+    "restoreVerified": true,
+    "bookings": 7,
+    "mediaObjects": 48,
+    "verifiedAt": "2026-11-01T20:58:10.324Z",
+    "encrypted": true,
+    "offProvider": true,
+    "unattendedSchedule": false,
+    "keyEscrow": "Still requires independent off-PC custody",
+    "remaining": "Configure least-privilege unattended writer, hosted schedule, failure monitoring and independent key/receipt escrow"
+  },
+  "sourceRegression": {
+    "node": 61,
+    "cloudflare": 56,
+    "flutter": 79,
+    "analysis": "clean"
+  },
+  "dnsChangesThisLaunch": false,
+  "existingNetlifyModified": false,
+  "otherProjectsModified": false
+}
