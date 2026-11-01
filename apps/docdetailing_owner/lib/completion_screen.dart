@@ -1,3 +1,4 @@
+import 'jobs_screen.dart';
 import 'document_totals.dart';
 export 'document_totals.dart';
 import 'package:flutter/material.dart';
@@ -182,6 +183,9 @@ class _CompletionScreenState extends State<CompletionScreen> {
   @override
   Widget build(BuildContext context) {
     final invoice = details?['invoice'] as Map?, job = details?['job'] as Map?;
+    final pendingSupplies = (job?['plannedConsumables'] as List? ?? []).any(
+      (p) => p['recorded'] != true,
+    );
     final locked = busy || pending != null;
     Widget field(String label, TextEditingController controller) => Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -258,6 +262,30 @@ class _CompletionScreenState extends State<CompletionScreen> {
                 child: const Text('Open invoice'),
               ),
           ] else if (details != null) ...[
+            if (pendingSupplies)
+              Card(
+                child: ListTile(
+                  title: const Text('Review consumables before completing'),
+                  subtitle: const Text(
+                    'Confirm actual usage or mark supplies not used so stock and job costs are correct.',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: busy
+                      ? null
+                      : () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => JobScreen(
+                                api: widget.api,
+                                id: job!['id'] as String,
+                              ),
+                            ),
+                          );
+                          await load();
+                        },
+                ),
+              ),
             Text(
               '${objectMap(job!['customer'])['firstName']} ${objectMap(job['customer'])['lastName']}',
               style: Theme.of(context).textTheme.titleLarge,
@@ -320,7 +348,7 @@ class _CompletionScreenState extends State<CompletionScreen> {
                 backgroundColor: const Color(0xff146c43),
                 foregroundColor: Colors.white,
               ),
-              onPressed: busy ? null : submit,
+              onPressed: busy || pendingSupplies ? null : submit,
               icon: const Icon(Icons.check_circle_outline),
               label: Text(
                 pending != null

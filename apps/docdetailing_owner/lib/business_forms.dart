@@ -107,5 +107,8 @@ Future<Map<String, dynamic>?> editCharge(
     'unitPriceCents': parseMoneyCents(f['Unit price']!),
     'unitCostCents': parseMoneyCents(f['Estimated unit cost']!),
     'taxable': f['Taxable (yes/no)'] == 'yes',
+    if (line?['serviceId'] != null) 'serviceId': line!['serviceId'],
+    if (line?['serviceSnapshot'] != null)
+      'serviceSnapshot': line!['serviceSnapshot'],
   };
 }

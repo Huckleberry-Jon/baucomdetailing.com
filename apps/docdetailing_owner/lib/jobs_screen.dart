@@ -1,3 +1,4 @@
+import 'job_consumables.dart';
 import 'completion_screen.dart';
 import 'package:flutter/material.dart';
 import 'owner_api.dart';
@@ -198,7 +199,9 @@ class _JobScreenState extends State<JobScreen> {
         'taxable': false,
       },
     );
-    if (charge != null && mounted) setState(() => lines.add(charge));
+    if (charge != null && mounted) {
+      setState(() => lines.add({...charge, 'serviceId': service['id']}));
+    }
   }
 
   Future<void> useMaterial() async {
@@ -218,6 +221,7 @@ class _JobScreenState extends State<JobScreen> {
     final f = await editFields(context, 'Confirm material used', {
       'Quantity in ${d['unit']}': '1',
       'Note': 'Used on job',
+      'Separate customer charge (yes/no)': 'no',
     });
     if (f == null) return;
     await widget.api.workspace(
@@ -231,6 +235,12 @@ class _JobScreenState extends State<JobScreen> {
         'version': row['stock_version'],
         'quantityMillis': quantityMillis(f.values.first),
         'reason': f['Note'],
+        'billSeparately':
+            f['Separate customer charge (yes/no)']!.trim().toLowerCase() ==
+            'yes',
+        'planned': (job!['plannedConsumables'] as List? ?? []).any(
+          (p) => p['materialId'] == row['id'] && p['recorded'] != true,
+        ),
       },
     );
     await load();
@@ -438,12 +448,24 @@ class _JobScreenState extends State<JobScreen> {
             child: const Text('Appointment details & status'),
           ),
           const Divider(),
+          if ((job!['plannedConsumables'] as List? ?? []).isNotEmpty)
+            JobConsumables(
+              api: widget.api,
+              jobId: widget.id,
+              plans: job!['plannedConsumables'] as List,
+              open: [
+                'confirmed',
+                'rescheduled',
+                'in_progress',
+              ].contains(job!['status']),
+              onChanged: load,
+            ),
           const Text('Recorded materials'),
           for (final m in job!['materials'] as List)
             ListTile(
               title: Text(objectMap(m['data'])['product'] as String),
               subtitle: Text(
-                '${quantityInput(-(m['quantity_millis'] as int))} ${objectMap(m['data'])['unit']} · cost \$${moneyInput(m['cost_cents'] as int)}',
+                '${quantityInput(-(m['quantity_millis'] as int))} ${objectMap(m['data'])['unit']} · ${objectMap(m['data'])['billSeparately'] == false ? 'Included in service price' : 'Separate charge'} · cost \$${moneyInput(m['cost_cents'] as int)}',
               ),
             ),
           if (job!['status'] == 'completed')

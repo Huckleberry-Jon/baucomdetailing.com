@@ -1,3 +1,4 @@
+import 'service_supplies_screen.dart';
 import 'business_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -281,6 +282,7 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                     'Customers',
                     'Vehicles',
                     'Materials',
+                    'Service consumables',
                     'Business settings',
                     'Estimates & invoices',
                     'Payment Center',
@@ -294,7 +296,10 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
                         Navigator.push(
                           context,
                           MaterialPageRoute<void>(
-                            builder: (context) => section == 'Business settings'
+                            builder: (context) =>
+                                section == 'Service consumables'
+                                ? ServiceSuppliesScreen(api: widget.api)
+                                : section == 'Business settings'
                                 ? BusinessSettingsScreen(api: widget.api)
                                 : section == 'Calendar'
                                 ? OwnerCalendar(api: widget.api)
