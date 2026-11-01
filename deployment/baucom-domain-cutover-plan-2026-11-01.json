@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-01",
+  "domain": "baucomdetailing.com",
+  "accountId": "5b9efeaaa733a2c5e6d8bd13259bd50a",
+  "cloudflarePlan": "Free",
+  "zoneState": "Pending nameserver delegation; onboarding completed through nameserver directions",
+  "assignedNameservers": [
+    "amanda.ns.cloudflare.com",
+    "christian.ns.cloudflare.com"
+  ],
+  "existingNameservers": [
+    "curitiba.ns.porkbun.com",
+    "fortaleza.ns.porkbun.com",
+    "maceio.ns.porkbun.com",
+    "salvador.ns.porkbun.com"
+  ],
+  "registrarChanged": false,
+  "productionResources": {
+    "worker": "docdetailing-site-production",
+    "database": "docdetailing-production",
+    "privateBucket": "docdetailing-production-private",
+    "created": false,
+    "approvalRequired": true
+  },
+  "dnsImport": {
+    "scanRecords": 10,
+    "missingSenderRecordsAdded": 3,
+    "mailForwardingPreserved": true,
+    "rootSPFPreserved": true,
+    "acmeValidationPreserved": true,
+    "resendDNSOnly": true,
+    "parkingRecordsRemainUntilProductionReady": true
+  },
+  "blockers": [
+    "Explicit production resource provisioning approval required by automatic approval review",
+    "Prepare reviewed business/media data transfer without synthetic test data",
+    "Coordinate current TestFlight backend origin so website bookings appear in the app",
+    "Finish booking confirmation email acceptance and unattended backup readiness before public bookings",
+    "Validate production HTTPS, authentication, private media, canonical host and rollback before nameserver cutover"
+  ],
+  "customerEmailMode": "test-only for two approved testers; no change",
+  "publicWebsiteConnected": false
+}
