@@ -11,7 +11,13 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      var calendar = 0, customers = 0, website = 0, awaiting = 0;
+      var calendar = 0,
+          customers = 0,
+          website = 0,
+          awaiting = 0,
+          payments = 0,
+          invoices = 0,
+          schedule = 0;
       final future = DateTime.now().add(const Duration(days: 2));
       await tester.pumpWidget(
         MaterialApp(
@@ -41,6 +47,9 @@ void main() {
                     start: future,
                   ),
                 ],
+                onPayments: () => payments++,
+                onInvoices: () => invoices++,
+                onSchedule: () => schedule++,
                 onCalendar: () => calendar++,
                 onAwaitingReview: () => awaiting++,
                 onCustomers: () => customers++,
@@ -66,6 +75,23 @@ void main() {
       await tester.tap(find.text('Customer records'));
       expect(calendar, 2);
       expect(customers, 1);
+      for (final label in ['Payments', 'Invoices', 'Schedule appointment']) {
+        await tester.ensureVisible(find.text(label));
+        await tester.tap(find.text(label));
+      }
+      expect(payments, 1);
+      expect(invoices, 1);
+      expect(schedule, 1);
+      final sizes = ['Awaiting review', 'Calendar', 'Payments', 'Invoices']
+          .map(
+            (label) => tester.getSize(
+              find
+                  .ancestor(of: find.text(label), matching: find.byType(Card))
+                  .first,
+            ),
+          )
+          .toList();
+      expect(sizes.every((size) => size == sizes.first), isTrue);
       expect(tester.takeException(), isNull);
     },
   );

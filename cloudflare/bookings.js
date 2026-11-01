@@ -124,11 +124,11 @@ export class CloudBookings extends TenantRepository {
     ]);
     return { bookings, blocks };
   }
-  async create(input, key, photos = []) {
+  async create(input, key, photos = [], owner = false) {
     text(key, "Idempotency key", 100);
     requireThat(!input.website, "Request rejected");
-    requireThat(input.acceptNotice === true, "Accept the pricing notice");
-    const digest = hash(JSON.stringify(input));
+    requireThat(owner || input.acceptNotice === true, "Accept the pricing notice");
+    const digest = hash(JSON.stringify(owner ? { input, owner } : input));
     return this.atomic(async (business, commands) => {
       const existing = await this.first(
         "SELECT * FROM bookings WHERE business_id=? AND idempotency_key=?",
@@ -166,11 +166,11 @@ export class CloudBookings extends TenantRepository {
         firstName: text(input.firstName, "First name", 100),
         lastName: text(input.lastName, "Last name", 100),
         phone: text(input.phone, "Phone", 40),
-        email: text(input.email, "Email", 254),
+        email: owner && !input.email ? "" : text(input.email, "Email", 254),
         address: text(input.address, "Service address", 500),
       };
       requireThat(
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email),
+        (owner && !customer.email) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email),
         "Enter a valid email",
       );
       requireThat(
@@ -204,6 +204,7 @@ export class CloudBookings extends TenantRepository {
         start,
         [selected, ...addons],
       );
+      const reservation = owner ? schedule(JSON.parse(business.settings), ctx.bookings, ctx.blocks, start, Number(input.durationMinutes)) : null;
       const concerns = typeof input.concerns === "string" ? input.concerns : "";
       requireThat(concerns.length <= 3000, "Condition notes too long");
       const id = randomUUID(),
@@ -248,7 +249,8 @@ export class CloudBookings extends TenantRepository {
             concerns,
             requestedAt: new Date(start).toISOString(),
             location: customer.address,
-            noticeAcceptedAt: now,
+            noticeAcceptedAt: owner ? null : now,
+            source: owner ? "owner" : "website",
           }),
           hash(secret),
           now + 30 * 86400000,
@@ -262,13 +264,16 @@ export class CloudBookings extends TenantRepository {
         "intake",
         null,
       );
-      this.event(commands, id, "booking.requested", "customer", {
-        noticeAcceptedAt: now,
+      if (owner) commands.push(this.command("UPDATE bookings SET status='confirmed',end_ms=?,buffer_minutes=? WHERE business_id=? AND id=?", reservation.end, reservation.buffer, this.tenant, id));
+      this.event(commands, id, owner ? "booking.confirm" : "booking.requested", owner ? "owner" : "customer", {
+        noticeAcceptedAt: owner ? null : now,
+        source: owner ? "owner" : "website",
+        to: owner ? "confirmed" : "pending",
         start_ms: start,
       });
       return {
         id,
-        status: "pending",
+        status: owner ? "confirmed" : "pending",
         requestedAt: new Date(start).toISOString(),
         snapshot: publicBookingSnapshot(snapshot),
         proposal: null,

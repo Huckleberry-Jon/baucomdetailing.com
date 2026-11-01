@@ -699,6 +699,11 @@ export async function route(request, env, ctx) {
           (origin.startsWith("https:") ? "; Secure" : ""),
       });
     }
+    if (path === "/api/owner/appointments" && method === "POST") {
+      const booking = await s.create(body, request.headers.get("Idempotency-Key"), [], true);
+      ctx.waitUntil(drain(s, origin, env).catch((e) => logError(s, e)));
+      return json(booking, booking.duplicate ? 200 : 201);
+    }
     if (path === "/api/owner/booking" && method === "GET") {
       await s.get(id);
       return json(

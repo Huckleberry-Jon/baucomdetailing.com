@@ -9,10 +9,13 @@ class HomeDashboard extends StatelessWidget {
     required this.onAwaitingReview,
     required this.onCustomers,
     this.onWebsite,
+    this.onPayments,
+    this.onInvoices,
+    this.onSchedule,
   });
   final List<Booking> bookings;
   final VoidCallback onCalendar, onCustomers, onAwaitingReview;
-  final VoidCallback? onWebsite;
+  final VoidCallback? onWebsite, onPayments, onInvoices, onSchedule;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +80,37 @@ class HomeDashboard extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (onPayments != null)
+              _summary(
+                context,
+                Icons.payments_outlined,
+                '',
+                'Payments',
+                onPayments!,
+              ),
+            if (onInvoices != null)
+              _summary(
+                context,
+                Icons.receipt_long_outlined,
+                '',
+                'Invoices',
+                onInvoices!,
+              ),
+          ],
+        ),
+        if (onSchedule != null) ...[
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: onSchedule,
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('Schedule appointment'),
+          ),
+        ],
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -127,6 +161,7 @@ class HomeDashboard extends StatelessWidget {
     button: true,
     child: SizedBox(
       width: 150,
+      height: 180 * MediaQuery.textScalerOf(context).scale(1),
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(

@@ -14,6 +14,7 @@ import 'business_time.dart';
 import 'jobs_screen.dart';
 import 'home_dashboard.dart';
 import 'booking_list_screen.dart';
+import 'schedule_appointment.dart';
 import 'website_link.dart';
 
 void main() {
@@ -466,6 +467,33 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
             ),
             HomeDashboard(
               bookings: rows,
+              onPayments: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WorkspaceScreen(
+                    api: widget.api,
+                    section: 'Payment Center',
+                  ),
+                ),
+              ),
+              onInvoices: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WorkspaceScreen(
+                    api: widget.api,
+                    section: 'Estimates & invoices',
+                  ),
+                ),
+              ),
+              onSchedule: () => act(() async {
+                await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ScheduleAppointmentScreen(api: widget.api),
+                  ),
+                );
+                await refresh();
+              }),
               onAwaitingReview: () => openBookingList(history: false),
               onWebsite: widget.api is HttpOwnerApi && !busy
                   ? () => act(

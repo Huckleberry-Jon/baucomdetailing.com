@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'owner_api.dart';
 import 'business_time.dart';
 import 'booking_details.dart';
+import 'schedule_appointment.dart';
 
 class OwnerCalendar extends StatefulWidget {
   const OwnerCalendar({super.key, required this.api});
@@ -289,6 +290,22 @@ class _OwnerCalendarState extends State<OwnerCalendar> {
       appBar: AppBar(
         title: const Text('Calendar'),
         actions: [
+          IconButton(
+            tooltip: 'Schedule appointment',
+            icon: const Icon(Icons.add),
+            onPressed: busy
+                ? null
+                : () async {
+                    await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ScheduleAppointmentScreen(api: widget.api),
+                      ),
+                    );
+                    if (mounted) await load();
+                  },
+          ),
           IconButton(
             tooltip: 'Refresh calendar',
             onPressed: busy ? null : load,
