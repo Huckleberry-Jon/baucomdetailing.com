@@ -383,7 +383,7 @@ export async function drain(s, origin, env) {
           headers: details.headers,
           body: details.body,
           signal: AbortSignal.timeout(10000),
-          redirect: "error",
+          redirect: "manual",
         });
       } else {
         requireThat(
@@ -409,7 +409,7 @@ export async function drain(s, origin, env) {
             ],
           }),
           signal: AbortSignal.timeout(10000),
-          redirect: "error",
+          redirect: "manual",
         });
       }
       if (!response.ok)

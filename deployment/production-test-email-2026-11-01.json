@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-01",
+  "environment": "production",
+  "origin": "https://baucomdetailing.com",
+  "workerVersion": "07c12958-166f-4f0a-a143-b5a5db0e1d5c",
+  "communicationsMode": "test-only",
+  "allowedRecipients": [
+    "huckleberryservices@yahoo.com",
+    "josephhuffman01@gmail.com"
+  ],
+  "publicBookings": false,
+  "pushEnabled": false,
+  "historicalDeliveriesHeld": 32,
+  "confirmation": {
+    "notificationId": "3e966ec1-3c7f-4367-a388-59ba7166cfc1",
+    "providerId": "01a19892-5cb7-7179-a8d0-84355e672d22",
+    "signedReceipts": [
+      "email.sent",
+      "email.delivered"
+    ],
+    "inboxConfirmed": false,
+    "backendStatus": "delivered_to_mail_server",
+    "workerIdempotentReplayVerified": true,
+    "lastTransportError": null
+  },
+  "webhook": {
+    "id": "8c8fc12c-27b6-4c65-95f0-d7f9620a3722",
+    "unsignedRequestStatus": 401
+  },
+  "fix": "Workers supports manual/follow redirects; manual keeps provider redirects unfollowed. Existing delivery key reused for validation.",
+  "tests": {
+    "node": 61,
+    "initialCloudflare": 54,
+    "focusedAfterFix": 21,
+    "realWorkerdRedirect": 1,
+    "finalCloudflare": 55,
+    "failures": 0
+  }
+}
