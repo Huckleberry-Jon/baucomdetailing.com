@@ -19,8 +19,19 @@
     "worker": "docdetailing-site-production",
     "database": "docdetailing-production",
     "privateBucket": "docdetailing-production-private",
-    "created": false,
-    "approvalRequired": true
+    "created": true,
+    "approvalRequired": false,
+    "approvedDate": "2026-11-01",
+    "databaseId": "27bad655-e13c-41e5-9f1d-01f2802d4ade",
+    "migrationsApplied": 7,
+    "workerVersion": "2edfb570-3810-41e8-8b92-fb59f98f7fdc",
+    "publicRoutes": [],
+    "workersDev": false,
+    "crons": [],
+    "siteOpen": false,
+    "communicationsMode": "disabled",
+    "bucketPublicAccess": false,
+    "businessDataTransferred": false
   },
   "dnsImport": {
     "scanRecords": 10,
@@ -32,12 +43,12 @@
     "parkingRecordsRemainUntilProductionReady": true
   },
   "blockers": [
-    "Explicit production resource provisioning approval required by automatic approval review",
     "Prepare reviewed business/media data transfer without synthetic test data",
     "Coordinate current TestFlight backend origin so website bookings appear in the app",
     "Finish booking confirmation email acceptance and unattended backup readiness before public bookings",
     "Validate production HTTPS, authentication, private media, canonical host and rollback before nameserver cutover"
   ],
   "customerEmailMode": "test-only for two approved testers; no change",
-  "publicWebsiteConnected": false
+  "publicWebsiteConnected": false,
+  "next": "Prepare a verified business-data/media transfer and production owner access, coordinate the iOS API_ORIGIN transition, then verify production before exact nameserver cutover."
 }
