@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-01",
+  "repository": "Huckleberry-Jon/baucomdetailing.com",
+  "sourceCommit": "3a5913ef0c43fb3d58f2585a6eb07b85ec4967f1",
+  "productionWorkerVersion": "90c7ce64-64e6-4cd8-b16c-324abd780028",
+  "tests": {
+    "node": 64,
+    "cloudflare": 58,
+    "failed": 0
+  },
+  "backup": {
+    "bucket": "docinc-docdetailing-production-recovery",
+    "private": true,
+    "retention": {
+      "mode": "COMPLIANCE",
+      "days": 30,
+      "perVersionVerified": true
+    },
+    "scheduleUTC": "30 7 * * *",
+    "enabled": true,
+    "hostedRun": 41356775408,
+    "hostedRunConclusion": "success",
+    "receiptArtifact": 13103263711,
+    "backupId": "d866166a-a9d4-42cf-80a4-daf6f35d3ec6",
+    "verifiedAt": "2026-11-01T22:22:49.202Z",
+    "bookings": 7,
+    "mediaObjects": 48,
+    "protectedVersions": 51,
+    "ciphertextBytes": 12663323,
+    "fullRestorationPassed": true,
+    "heartbeatPersisted": true,
+    "receiptRetentionDays": 90,
+    "allVerifiedArchives": 2,
+    "totalCiphertextBytes": 25326646
+  },
+  "monitor": {
+    "enabled": true,
+    "check": "hourly",
+    "overdueHours": 36,
+    "operatorEmail": "huckleberryservices@yahoo.com",
+    "realOverdueEmailTest": false
+  },
+  "sourceAccess": {
+    "snapshot": "tenant-scoped read-only separate credential",
+    "media": "production-bucket read-only",
+    "unusedD1ReadToken": "Removed from GitHub; account token still active, unused. Wrangler OAuth cannot revoke (403); remove via Cloudflare profile UI with action-time approval."
+  },
+  "nativePush": {
+    "enabled": true,
+    "keyId": "M9896AHWYN",
+    "topic": "com.docincorporated.docdetailing",
+    "providerAccepted": true,
+    "physicalReceipt": true,
+    "correctAppointmentOpened": true,
+    "userConfirmed": true,
+    "browserPushEnabled": false
+  },
+  "keyCustody": {
+    "privateLocalKitPrepared": true,
+    "phonePasswordManagerConfirmed": false,
+    "sealedPaperCopyConfirmed": false,
+    "githubSecretsAreNotRecoverableEscrow": true
+  },
+  "limitations": [
+    "Off-PC recovery-key custody needs user confirmation.",
+    "Credential expiry requires renewal before November 2027.",
+    "No automatic backup pruning; review storage monthly.",
+    "Operational production cutover RTO remains provisional; no production restore performed."
+  ],
+  "publicChecks": {
+    "website": 200,
+    "catalog": 200,
+    "anonymousSnapshot": 401,
+    "anonymousOwner": 401
+  }
+}

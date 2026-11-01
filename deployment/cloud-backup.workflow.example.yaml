@@ -1,3 +1,5 @@
+# Historical inactive template. The approved production implementation is
+# .github/workflows/production-backup.yml; use it and docs/cloudflare-recovery-runbook.md.
 # INACTIVE until runner, destination, credentials and external backup uploads are separately approved.
 name: DocDetailing independent encrypted backup
 on:
