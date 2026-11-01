@@ -1,11 +1,13 @@
 {
   "preparedDate": "2026-11-01",
-  "state": "awaiting-specific-credential-creation-confirmation",
+  "state": "connected-diagnostic-delivered",
   "apiKey": {
     "name": "DocDetailing staging send only",
     "permission": "sending_access",
     "domainScope": "all_domains_until_sender_verified",
-    "fullAccess": false
+    "fullAccess": false,
+    "created": true,
+    "installedOn": "docdetailing-site-staging"
   },
   "webhook": {
     "endpoint": "https://docdetailing-site-staging.huckleberryservices.workers.dev/api/webhooks/email",
@@ -16,7 +18,9 @@
       "email.complained",
       "email.failed"
     ],
-    "signatureVerification": "Svix; store RESEND_WEBHOOK_SECRET only in private staging secrets"
+    "signatureVerification": "Svix; store RESEND_WEBHOOK_SECRET only in private staging secrets",
+    "created": true,
+    "signedReceiptVerified": true
   },
   "diagnostic": {
     "from": "onboarding@resend.dev",
@@ -25,7 +29,14 @@
     ],
     "subject": "DocDetailing email connection test",
     "maximumMessages": 1,
-    "customerDataIncluded": false
+    "customerDataIncluded": false,
+    "result": "delivered_to_mail_server",
+    "backendEvents": {
+      "email.sent": 1,
+      "email.delivered": 1
+    },
+    "inboxReceiptConfirmed": false,
+    "actualMessages": 1
   },
   "workerMode": "disabled",
   "drainExistingOutbox": false,

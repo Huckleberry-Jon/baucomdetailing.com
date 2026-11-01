@@ -1,13 +1,28 @@
-# Resend preparation — November 1, 2026
+# Resend connection verification — November 1, 2026
 
-The owner completed Resend signup and is signed into the new account. No paid plan was activated.
+The new Resend account is connected to DocDetailing private staging. No paid plan was activated.
 
-Registered sender: notify.baucomdetailing.com in North Virginia (us-east-1), domain ID 96a252fe-8c9f-4b58-9772-ebea22663c97. Resend reports Not Started because DNS remains unchanged. The exact three provider-supplied sender records are in deployment/resend-dns-plan-2026-11-01.json. They are one public DKIM TXT plus rsend.notify and send.notify CNAMEs; do not substitute the old Amazon SES MX/TXT examples. The optional root DMARC suggestion is excluded. No apex/www, nameserver, mail-forwarding or Netlify changes have been made.
+## Verified
 
-A sending-only key form is prepared in Resend with name DocDetailing staging send only. No key exists yet. All-domains scope is temporary because the custom sender is unverified; the account currently has only the new Baucom sending domain. Restrict the key to that verified domain when available. Never use a Full access key in the Worker.
+- Created DocDetailing staging send only with Sending access, not Full access. Captured and stored the key privately, then installed RESEND_API_KEY, EMAIL_FROM and RESEND_WEBHOOK_SECRET only on docdetailing-site-staging.
+- Created the signed webhook at the existing /api/webhooks/email endpoint, subscribed to email.sent, email.delivered, email.bounced, email.complained and email.failed.
+- Hosted endpoint rejected an unsigned callback with HTTP 401.
+- Sent exactly one approved diagnostic through onboarding@resend.dev to huckleberryservices@yahoo.com, subject DocDetailing email connection test. Used a stable idempotency key and tenant metadata; no booking/customer content was included.
+- Resend reports Delivered. Actual D1 webhook_receipts contains one email.sent and one email.delivered event for the diagnostic provider ID. No historical delivery queue was drained.
+- Owner authentication, private access gate and financial reconciliation checks passed after installing the secrets. Native push remains disabled. Provider delivery is not confirmation that the owner saw the email in the inbox; that confirmation remains pending.
 
-A webhook form is prepared with the existing private staging /api/webhooks/email endpoint. Subscribe only to sent/delivered/bounced/complained/failed events. Store the generated signing secret privately; the backend verifies Svix signatures and tenant ownership before storing receipts. No webhook has been created yet.
+## Sender domain and DNS
 
-The exact connection proposal is in deployment/resend-connection-plan-2026-11-01.json. After credential-creation confirmation, capture secrets without printing them, install only in the DocDetailing staging Worker, and keep COMMUNICATIONS_MODE=disabled and all send flags false. Send one explicitly approved diagnostic email directly through Resend's test sender to the account owner only, with tenant metadata and a stable idempotency key; do not drain historical blocked messages. Verify the signed receipt in the staging backend. Provider acceptance or mail-server delivery is not proof of inbox receipt; ask the owner to confirm the test email arrived.
+Registered sender: notify.baucomdetailing.com, North Virginia (us-east-1), domain ID 96a252fe-8c9f-4b58-9772-ebea22663c97. It remains Not Started because DNS is unchanged. The exact provider-supplied records are in deployment/resend-dns-plan-2026-11-01.json: one DKIM TXT plus rsend.notify and send.notify CNAMEs. Do not substitute older Amazon SES MX/TXT examples. The optional root DMARC suggestion is excluded.
 
-Sending from Baucom's own domain to Joseph or customers remains blocked until the exact sender DNS plan is reviewed/applied with authorization and Resend verifies it. No customer communication activation is implied by account signup or API-key setup.
+Review the authenticated Porkbun zone before applying these three additive sender records under explicit DNS authorization. Preserve root/www, nameservers, forwarding MX/SPF, existing DKIM/DMARC/verification and Netlify. Then verify the sender domain with Resend and restrict the sending key to that verified domain. All-domains Sending access is temporary while the account's sole custom sender is unverified.
+
+## Activation still off
+
+COMMUNICATIONS_MODE=disabled, ALLOW_EMAIL_SEND=false, ALLOW_PUSH_SEND=false and ALLOW_NATIVE_PUSH_SEND=false remain in effect. The diagnostic used a single direct provider call; it did not activate booking emails. No customer email or physical-device notification was sent, and no DNS was changed.
+
+After sender verification, review historical blocked deliveries before activating allowlisted fresh owner/customer acceptance tests. Confirm actual inbox receipt, signed receipts, bounce handling and physical iPhone push/tap behavior before live customer activation.
+
+The exact connection state is recorded in deployment/resend-connection-plan-2026-11-01.json. Private credentials and diagnostic evidence remain under ignored, access-restricted data/resend-private/; do not paste their contents or commit them.
+
+Regression verification: 21 tests passed across test-cloudflare/security.test.mjs and test-cloudflare/integration.test.mjs, covering signed receipts, tenant boundaries, retries and booking persistence. No application source code changed in this connection step.
