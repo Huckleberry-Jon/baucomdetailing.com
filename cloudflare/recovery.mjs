@@ -8,42 +8,8 @@ import {
   createHash,
 } from "node:crypto";
 import { requireThat } from "../src/security.js";
-export const TABLES = [
-  "businesses",
-  "tenant_domains",
-  "services",
-  "customers",
-  "vehicles",
-  "bookings",
-  "history",
-  "notifications",
-  "owners",
-  "sessions",
-  "subscriptions",
-  "native_devices",
-  "deliveries",
-  "delivery_attempts",
-  "webhook_receipts",
-  "worker_errors",
-  "rate_limits",
-  "schedule_blocks",
-  "jobs",
-  "media",
-  "website_photos",
-  "reviews",
-  "review_moderation",
-  "audit_events",
-  "backup_runs",
-  "business_assets",
-  "inventory_receipts",
-  "materials",
-  "job_details",
-  "inventory_balances",
-  "inventory_movements",
-  "financial_documents",
-  "financial_events",
-  "tenant_entitlements",
-];
+import { TABLES } from "./recovery-tables.js";
+export { TABLES } from "./recovery-tables.js";
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 function key(pass, salt) {
   requireThat(

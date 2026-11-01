@@ -1,3 +1,4 @@
+import { verifyObjectRetention } from "./b2-retention.mjs";
 import { createHash } from "node:crypto";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { requireThat } from "../src/security.js";
@@ -8,7 +9,7 @@ export function b2VersionedStorage(
   writer,
   reader,
   bucket,
-  { versions = {}, onVersion = async () => {} } = {},
+  { versions = {}, onVersion = async () => {}, immutableDays = 0 } = {},
 ) {
   const inFlight = new Set();
   const validate = (key) =>
@@ -29,7 +30,9 @@ export function b2VersionedStorage(
       inFlight.add(key);
       try {
         const result = await writer.send(
-          new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes }),
+          new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes,
+            ...(immutableDays ? {ObjectLockMode:'COMPLIANCE',ObjectLockRetainUntilDate:new Date(Date.now()+immutableDays*86400000),ContentMD5:createHash('md5').update(bytes).digest('base64')} : {})
+          }),
         );
         requireThat(
           typeof result.VersionId === "string" &&
@@ -37,10 +40,12 @@ export function b2VersionedStorage(
             result.VersionId.length < 1024,
           "B2 object version missing; recovery not verified",
         );
+        const retention = immutableDays ? await verifyObjectRetention(reader, bucket, key, result.VersionId, immutableDays) : null;
         versions[key] = {
           versionId: result.VersionId,
           sha256: sha(bytes),
           bytes: bytes.length,
+          ...(retention ? {retention} : {}),
         };
         await onVersion(versions, key);
       } finally {

@@ -5,6 +5,7 @@ export async function verifyB2Access({
   bucket,
   purpose,
   fetchImpl = fetch,
+  verifyImmutableRetention,
 }) {
   requireThat(
     ["writer", "reader"].includes(purpose),
@@ -40,6 +41,12 @@ export async function verifyB2Access({
       "readBuckets",
       "readBucketEncryption",
     ];
+    if (verifyImmutableRetention) {
+      const proof = await verifyImmutableRetention();
+      requireThat(proof?.mode === 'COMPLIANCE' && proof.days === 30, 'Verified immutable retention required');
+      // Governance bypass cannot override COMPLIANCE retention, verified before and after every upload.
+      permitted.push('bypassGovernance','deleteFiles','writeBucketEncryption','writeBucketLifecycleRules','writeBucketLogging','writeBucketNotifications','writeBucketReplications','readBucketRetentions','writeBucketRetentions','readFileRetentions','writeFileRetentions','readFileLegalHolds','writeFileLegalHolds');
+    }
     requireThat(
       caps.includes("writeFiles") && caps.every((c) => permitted.includes(c)),
       "Unattended recovery writer must not delete versions, administer buckets or manage keys",

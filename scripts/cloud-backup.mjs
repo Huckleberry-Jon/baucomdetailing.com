@@ -1,3 +1,5 @@
+import {readonlySnapshot} from "./readonly-backup-source.mjs";
+import {verifyImmutableBucket} from "./b2-retention.mjs";
 import { DatabaseSync } from "node:sqlite";
 import {
   S3Client,
@@ -112,6 +114,7 @@ export function recoveryReaderCredentials(env) {
   return id ? { accessKeyId: id, secretAccessKey: secret } : null;
 }
 async function exportSnapshot(env) {
+  if (env.BACKUP_SOURCE_URL) return readonlySnapshot(env);
   requireThat(
     /^[a-f0-9]{32}$/.test(env.CF_ACCOUNT_ID ?? "") &&
       /^[a-f0-9-]{36}$/.test(env.CF_D1_DATABASE_ID ?? "") &&
@@ -353,6 +356,7 @@ async function main() {
     env.RECOVERY_BUCKET,
     {
       versions: versionReceipt.objects,
+      immutableDays: mode === "create" && env.RECOVERY_IMMUTABLE_DAYS === "30" ? 30 : 0,
       onVersion: async (objects, key) => {
         versionReceipt.backupId = key.split("/")[0];
         receiptPath = resolve(
@@ -376,6 +380,7 @@ async function main() {
         applicationKey: env.RECOVERY_SECRET_ACCESS_KEY,
         bucket: env.RECOVERY_BUCKET,
         purpose: "writer",
+        ...(env.RECOVERY_IMMUTABLE_DAYS === "30" ? { verifyImmutableRetention: () => verifyImmutableBucket(readerClient, env.RECOVERY_BUCKET, 30) } : {}),
       });
       requireThat(
         readerCredentials,

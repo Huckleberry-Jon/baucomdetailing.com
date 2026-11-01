@@ -1,21 +1,30 @@
-# Independent D1 / R2 recovery
-October 28, 2026. Implemented locally; external destination not activated.
+# DocDetailing independent production recovery
 
-cloudflare/recovery.mjs exports a consistent D1 batch snapshot and only referenced immutable R2 objects. Each original is checked against its stored checksum. Every file and the metadata manifest are encrypted with AES-256-GCM, fresh nonces and scrypt-derived keys. Authentication binds each ciphertext to its backup ID/path. Encrypted uploads are read back before the final completion marker. No clear customer data or passphrase is in the completion marker.
+Updated November 1, 2026. Applies only to Baucom / DocDetailing.
 
-scripts/cloud-backup.mjs is a Node-side coordinator for a hosted runner, not a Worker request handler. It obtains a consistent D1 SQL export through the official polling export API and reads source R2 using separate read-only credentials. Destination credentials target an independent B2 account/bucket, append/read only without delete permission. Source and recovery credentials must be distinct; escrow the encryption key outside both accounts. D1 exports can briefly block requests; measure the window at Joseph's actual volume.
+## Architecture and controls
 
-Run only after external upload approval:
-- Set approved credentials privately using deployment/cloud-backup.env.example as the field list.
-- Set ALLOW_EXTERNAL_BACKUP_UPLOAD=true and a meaningful BACKUP_APPROVAL_REF.
-- Run node scripts/cloud-backup.mjs create. It prints only the backup ID/object/booking counts.
-- Download/read-back and run node scripts/cloud-backup.mjs restore-local BACKUP_ID data/recovery/NEW_NAME with separately authorized read credentials.
-- The target must be a NEW directory. Existing data is never overwritten.
+The GitHub workflow `.github/workflows/production-backup.yml` runs daily at 07:30 UTC and can be dispatched manually. Activation requires repository variable `DOCDETAILING_BACKUP_APPROVED=true`. Concurrency prevents overlapping runs. Credentials are encrypted Actions secrets; no credentials or recovery passphrase belong in Git or artifacts.
 
-The inactive workflow template has no daily schedule. Approve the destination, least-privilege keys, hosted runner, retention and operator before activation, then configure daily execution and an independent backup-age/failure alarm. The runner exits nonzero on failure; its completion must be monitored. Backup status is not yet reported automatically to the website's backup_runs dashboard; use the runner/independent monitor until that reporting integration is configured. Do not interpret an empty dashboard status as a successful backup.
+The Worker provides a separately authenticated, read-only `/api/recovery/snapshot` endpoint restricted to the configured business. One D1 batch reads its records consistently. Review moderation is scoped through reviews; global transient rate limits are omitted. The runner does not need D1 Write permission. R2 credentials read only the production media bucket, and only referenced media is archived.
 
-Restoration authenticates all files before touching the fresh target. It revokes sessions, disables subscriptions, holds all deliveries, marks restored notifications as already enqueued and detaches production domains. Import is a single batch for the reviewed small initial data set; batches above 10,000 statements are refused and require a reviewed isolated bulk procedure. Recovered storage is quarantined and must never be served as production automatically. Media keys are rewritten to the selected local/staging namespace.
+The destination is private Backblaze B2 bucket `docinc-docdetailing-production-recovery` in us-east-005. Object Lock enforces 30-day COMPLIANCE retention. Each upload also requests COMPLIANCE retention, and its exact returned version is checked before recording success. The bucket-scoped console writer has delete/admin capabilities; immutable retention, rather than a no-delete credential, protects retained versions. Existing buckets and master keys are unchanged. No automatic pruning is configured; review storage growth monthly before approving a lifecycle policy.
 
-Local verification used independent encrypted files outside the Cloudflare runtime, then imported into NEW actual local D1/R2 instances. Booking/customer/vehicle/history/notification/job/settings counts and exact original photo bytes matched. The expanded drill also restores exact materials, issued financial documents, received-payment ledger and complimentary-entitlement records. Wrong passphrase/tampering failed without writing target records, and existing populated targets were refused.
+Every database manifest and photo is encrypted with AES-256-GCM and a scrypt-derived key. Version receipts contain ciphertext hashes, sizes and exact version IDs; they contain no customer records or decryption key. Receipts are preserved in GitHub artifacts for 90 days, outside B2. Preserve selected receipts independently for longer recovery history.
 
-Remote API permissions, B2 conditional writes, hosted scheduling, actual account-loss recovery and the production recovery-time objective are NOT yet verified. Do not claim the local drill establishes off-machine recovery. No retention deletion code is included; approve a policy before pruning anything. Keep RPO <=24h / RTO <=4h as provisional targets until a timed external drill proves them.
+Each run downloads exact archived versions using a separate bucket-scoped reader, authenticates/decrypts everything, restores a fresh SQLite database, and verifies database integrity, foreign keys and media checksums. Sessions are revoked, domains detached and outbound deliveries held in recovery. Only after restoration and artifact upload does the runner send an authenticated heartbeat to the Worker. An hourly independent Worker check alerts the project owner if no verified backup has reported within 36 hours; accepted alerts are deduplicated daily. A stopped GitHub schedule therefore does not silently remain healthy while the Worker and email provider operate.
+
+## Independent recovery key custody
+
+The protected local recovery kit is under ignored `data/backup-key-escrow/`. Save its recovery passphrase and B2 reader details in a phone password manager, with a sealed paper passphrase copy stored separately. Confirm the password-manager entry can be opened without this PC. GitHub Actions secrets cannot be read back and are not a substitute for recoverable custody. Never send the passphrase in chat, email, logs or an issue. B2 credentials expire November 1, 2027; arrange renewal before expiry without replacing unrelated keys.
+
+## Recovery procedure
+
+1. From a trusted replacement machine, obtain the intended source revision from the DocDetailing repository. Install Node 24 and run `npm ci --ignore-scripts`.
+2. Download a successful run's `recovery-version-receipt` artifact. Select its exact backup ID. Get the independently held passphrase and B2 read-only credentials from the recovery kit/password manager.
+3. In a private process environment, set `BACKUP_PASSPHRASE`, `RECOVERY_ENDPOINT=https://s3.us-east-005.backblazeb2.com`, `RECOVERY_REGION=us-east-005`, `RECOVERY_BUCKET=docinc-docdetailing-production-recovery`, `RECOVERY_ACCESS_KEY_ID` and `RECOVERY_SECRET_ACCESS_KEY` to the reader, and `RECOVERY_VERSION_RECEIPT` to the receipt path. Never put secret values in command arguments or shell history.
+4. Run `node scripts/cloud-backup.mjs restore-local BACKUP_ID data/recovery/NEW_UNIQUE_DIRECTORY`. The target must be new. Restoring locally never overwrites production.
+5. Verify counts, financial records, settings, reviews, booking history and original/preview photos. Keep domains detached and communications off. Only a separately approved cutover may reconnect recovered data to production.
+6. Retain the receipt, source revision, timestamp and verification report without customer data or keys. Repeat an independent-machine drill after key custody is confirmed and after material schema changes.
+
+Initial actual round trip on November 1: backup `a78f81e6-f537-4947-8852-36b32339e3d4`, 7 bookings and 48 media objects; full restoration passed. See the deployment verification report for the hosted runner and monitoring activation evidence. RPO is approximately 24 hours when daily runs succeed; overdue alert threshold is 36 hours. A four-hour operational recovery target remains provisional until an independent-machine timed cutover drill proves it.
