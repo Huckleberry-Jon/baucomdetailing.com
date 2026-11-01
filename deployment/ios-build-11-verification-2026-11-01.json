@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "build": 11,
+  "sourceCommit": "c68fff8985ac73969a1b14d7bcfdfd18161fc612",
+  "codemagicBuildId": "6ae79d8cefa74786046fde6e",
+  "codemagicIndex": 26,
+  "codemagicStatus": "finished",
+  "duration": "6m34s",
+  "localFlutterAnalysis": "passed",
+  "localFlutterTests": 78,
+  "sourcePreflight": "passed",
+  "archiveSigningAndEntitlements": "passed",
+  "appleUpload": "succeeded",
+  "appleStatus": "Processing",
+  "appleReceived": "2026-11-01 14:20 America/Chicago",
+  "artifacts": [
+    "Runner.xcarchive.zip",
+    "docdetailing_owner.ipa",
+    "baucomdetailing.com_26_artifacts.zip"
+  ],
+  "publicRelease": false,
+  "signingAssetsChanged": false
+}
