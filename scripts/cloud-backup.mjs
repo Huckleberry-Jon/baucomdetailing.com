@@ -4,7 +4,7 @@ import {
   GetObjectCommand,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
-import { mkdir, readFile, writeFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile, readdir, rename } from "node:fs/promises";
 import { resolve, sep, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -12,6 +12,9 @@ import {
   restoreCloudBackup,
   TABLES,
 } from "../cloudflare/recovery.mjs";
+import { verifyB2Access } from "./b2-access.mjs";
+import { b2VersionedStorage } from "./b2-versioned-storage.mjs";
+import { protectPrivateDirectory } from "../src/private-files.js";
 import { requireThat } from "../src/security.js";
 export function sqliteAdapter(sqlite) {
   const statement = (sql, args = []) => ({
@@ -286,6 +289,8 @@ async function main() {
   );
   const readerCredentials = recoveryReaderCredentials(env);
   const destinationClient = new S3Client({
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     endpoint: env.RECOVERY_ENDPOINT,
     region: env.RECOVERY_REGION,
     credentials: {
@@ -295,15 +300,68 @@ async function main() {
   });
   const readerClient = readerCredentials
     ? new S3Client({
+        requestChecksumCalculation: "WHEN_REQUIRED",
+        responseChecksumValidation: "WHEN_REQUIRED",
         endpoint: env.RECOVERY_ENDPOINT,
         region: env.RECOVERY_REGION,
         credentials: readerCredentials,
       })
     : destinationClient;
-  const archive = s3Storage(
+  let versionReceipt = {
+    format: "docdetailing-b2-versions",
+    version: 1,
+    bucket: env.RECOVERY_BUCKET,
+    objects: {},
+  };
+  let receiptPath;
+  const saveReceipt = async () => {
+    requireThat(receiptPath, "Receipt path unavailable");
+    await writeFile(
+      receiptPath + ".pending",
+      JSON.stringify(versionReceipt, null, 2),
+      { flag: "wx", mode: 0o600 },
+    );
+    await rename(receiptPath + ".pending", receiptPath);
+  };
+  if (mode === "restore-local") {
+    requireThat(
+      env.RECOVERY_VERSION_RECEIPT,
+      "Exact B2 version receipt required for restoration",
+    );
+    versionReceipt = JSON.parse(
+      await readFile(env.RECOVERY_VERSION_RECEIPT, "utf8"),
+    );
+    requireThat(
+      versionReceipt.format === "docdetailing-b2-versions" &&
+        versionReceipt.version === 1 &&
+        versionReceipt.bucket === env.RECOVERY_BUCKET &&
+        versionReceipt.backupId === process.argv[3] &&
+        versionReceipt.objects &&
+        typeof versionReceipt.objects === "object",
+      "Recovery version receipt mismatch",
+    );
+  } else {
+    await mkdir(resolve("data/backup-receipts"), {
+      recursive: true,
+      mode: 0o700,
+    });
+    protectPrivateDirectory("data/backup-receipts");
+  }
+  const archive = b2VersionedStorage(
     destinationClient,
-    env.RECOVERY_BUCKET,
     readerClient,
+    env.RECOVERY_BUCKET,
+    {
+      versions: versionReceipt.objects,
+      onVersion: async (objects, key) => {
+        versionReceipt.backupId = key.split("/")[0];
+        receiptPath = resolve(
+          "data/backup-receipts",
+          versionReceipt.backupId + ".json",
+        );
+        await saveReceipt();
+      },
+    },
   );
   let sqlite, sourceClient;
   try {
@@ -313,6 +371,22 @@ async function main() {
           env.BACKUP_APPROVAL_REF?.length >= 8,
         "External upload is disabled until separately approved",
       );
+      await verifyB2Access({
+        keyId: env.RECOVERY_ACCESS_KEY_ID,
+        applicationKey: env.RECOVERY_SECRET_ACCESS_KEY,
+        bucket: env.RECOVERY_BUCKET,
+        purpose: "writer",
+      });
+      requireThat(
+        readerCredentials,
+        "Separate read-only recovery credentials required",
+      );
+      await verifyB2Access({
+        keyId: readerCredentials.accessKeyId,
+        applicationKey: readerCredentials.secretAccessKey,
+        bucket: env.RECOVERY_BUCKET,
+        purpose: "reader",
+      });
       requireThat(
         env.R2_ACCOUNT_ID &&
           env.R2_BUCKET &&
@@ -365,8 +439,12 @@ async function main() {
         ),
         "Recovery verification read-back failed",
       );
+      versionReceipt.restoreVerified = true;
+      versionReceipt.verifiedAt = verification.verifiedAt;
+      await saveReceipt();
       console.log(
         JSON.stringify({
+          versionReceipt: receiptPath,
           ...backup,
           restoreVerified: true,
           verifiedAt: verification.verifiedAt,
@@ -379,6 +457,7 @@ async function main() {
         "Restore target must be a new child of data/recovery",
       );
       await mkdir(resolve("data/recovery"), { recursive: true, mode: 0o700 });
+      protectPrivateDirectory("data/recovery");
       await mkdir(target, { mode: 0o700 });
       await mkdir(resolve(target, "media"), { mode: 0o700 });
       sqlite = new DatabaseSync(resolve(target, "restored.sqlite"));

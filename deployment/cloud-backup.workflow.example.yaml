@@ -36,3 +36,4 @@ jobs:
           SOURCE_NAMESPACE: production
 # Pin actions to reviewed commit SHAs before activation. Add daily schedule only after approval.
 # Runner failure must page the approved operator. Configure an independent backup-age check too.
+# Before activation, persist every data/backup-receipts/*.json outside B2 for the full archive retention period. Ephemeral runner disks alone are insufficient.
