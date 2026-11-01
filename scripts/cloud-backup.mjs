@@ -10,6 +10,7 @@ import { pathToFileURL } from "node:url";
 import {
   createCloudBackup,
   restoreCloudBackup,
+  TABLES,
 } from "../cloudflare/recovery.mjs";
 import { requireThat } from "../src/security.js";
 export function sqliteAdapter(sqlite) {
@@ -172,6 +173,85 @@ async function exportSnapshot(env) {
   }
   throw Error("D1 export did not complete in the allowed window");
 }
+// Each scheduled backup must prove recovery from destination reads, never source bytes.
+export async function verifyArchiveRestore({
+  source,
+  id,
+  passphrase,
+  migrationsDirectory = "cloudflare/migrations",
+}) {
+  const sqlite = new DatabaseSync(":memory:");
+  const objects = new Map();
+  try {
+    sqlite.exec(
+      "PRAGMA foreign_keys=ON;" +
+        (
+          await Promise.all(
+            (await readdir(migrationsDirectory))
+              .filter((f) => f.endsWith(".sql"))
+              .sort()
+              .map((f) => readFile(resolve(migrationsDirectory, f), "utf8")),
+          )
+        ).join("\n"),
+    );
+    const restored = await restoreCloudBackup({
+      db: sqliteAdapter(sqlite),
+      source,
+      id,
+      passphrase,
+      namespace: "local",
+      media: {
+        list: async () => ({
+          objects: [...objects.keys()].map((key) => ({ key })),
+        }),
+        put: async (key, bytes) => {
+          requireThat(!objects.has(key), "Duplicate restored object");
+          objects.set(key, Buffer.from(bytes));
+        },
+      },
+    });
+    requireThat(
+      sqlite.prepare("PRAGMA integrity_check").get().integrity_check === "ok",
+      "Restored database integrity failed",
+    );
+    requireThat(
+      objects.size === restored.mediaObjects,
+      "Restored media count mismatch",
+    );
+    requireThat(
+      sqlite.prepare("SELECT count(*) n FROM sessions").get().n === 0,
+      "Recovery sessions must be revoked",
+    );
+    requireThat(
+      sqlite.prepare("SELECT count(*) n FROM tenant_domains").get().n === 0,
+      "Recovery domains must be detached",
+    );
+    requireThat(
+      sqlite
+        .prepare("SELECT count(*) n FROM businesses WHERE delivery_hold<>1")
+        .get().n === 0,
+      "Recovery communications must be held",
+    );
+    const counts = Object.fromEntries(
+      TABLES.map((t) => [
+        t,
+        sqlite.prepare('SELECT count(*) n FROM "' + t + '"').get().n,
+      ]),
+    );
+    return {
+      ...restored,
+      restoreVerified: true,
+      integrity: "ok",
+      verifiedAt: new Date().toISOString(),
+      counts,
+    };
+  } finally {
+    sqlite.close();
+    for (const bytes of objects.values()) bytes.fill(0);
+    objects.clear();
+  }
+}
+
 async function main() {
   const env = process.env,
     mode = process.argv[2];
@@ -235,16 +315,41 @@ async function main() {
           },
         };
       sqlite = await exportSnapshot(env);
-      console.log(
-        JSON.stringify(
-          await createCloudBackup({
-            db: sqliteAdapter(sqlite),
-            media,
-            destination: archive,
-            passphrase: env.BACKUP_PASSPHRASE,
-            namespace: env.SOURCE_NAMESPACE,
-          }),
+      const backup = await createCloudBackup({
+        db: sqliteAdapter(sqlite),
+        media,
+        destination: archive,
+        passphrase: env.BACKUP_PASSPHRASE,
+        namespace: env.SOURCE_NAMESPACE,
+      });
+      const verification = await verifyArchiveRestore({
+        source: archive,
+        id: backup.id,
+        passphrase: env.BACKUP_PASSPHRASE,
+      });
+      // Runner must fail if this marker cannot be written and read back.
+      const marker = Buffer.from(
+        JSON.stringify({
+          id: backup.id,
+          restoreVerified: true,
+          verifiedAt: verification.verifiedAt,
+          records: backup.records,
+          objects: backup.objects,
+        }),
+      );
+      await archive.put(backup.id + "/verified.json", marker);
+      requireThat(
+        Buffer.from(await archive.get(backup.id + "/verified.json")).equals(
+          marker,
         ),
+        "Recovery verification read-back failed",
+      );
+      console.log(
+        JSON.stringify({
+          ...backup,
+          restoreVerified: true,
+          verifiedAt: verification.verifiedAt,
+        }),
       );
     } else {
       const target = resolve(process.argv[4] ?? "");

@@ -1,3 +1,5 @@
+> HISTORICAL — superseded for the current Cloudflare release by [cloudflare-launch-checklist.md](cloudflare-launch-checklist.md). Do not apply the old Render DNS records or Node backup activation steps below.
+
 # Off-machine encrypted development backups — prepared only
 
 ## Proposed storage and approval boundary

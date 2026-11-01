@@ -3,9 +3,7 @@
   "account_id": "REPLACE_WITH_APPROVED_DOCDETAILING_ACCOUNT",
   "main": "../data/cloudflare-build/worker.mjs",
   "compatibility_date": "2026-10-23",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
   "assets": {
@@ -42,9 +40,7 @@
     "binding": "IMAGES"
   },
   "triggers": {
-    "crons": [
-      "* * * * *"
-    ]
+    "crons": ["* * * * *"]
   },
   "observability": {
     "enabled": true
@@ -55,6 +51,12 @@
     "SITE_OPEN": "false",
     "COMMUNICATIONS_MODE": "disabled",
     "ALLOW_EMAIL_SEND": "false",
-    "ALLOW_PUSH_SEND": "false"
+    "ALLOW_PUSH_SEND": "false",
+    "ALLOW_NATIVE_PUSH_SEND": "false",
+    "APNS_ENVIRONMENT": "production",
+    "APNS_TOPIC": "com.docincorporated.docdetailing",
+    "APNS_TEAM_ID": "UDDPKPR3CJ",
+    "TEST_EMAIL_RECIPIENTS": "",
+    "TEST_NATIVE_OWNER_IDS": ""
   }
 }

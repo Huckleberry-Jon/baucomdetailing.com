@@ -1,3 +1,5 @@
+> HISTORICAL — superseded for the current Cloudflare release by [cloudflare-launch-checklist.md](cloudflare-launch-checklist.md). Do not apply the old Render DNS records or Node backup activation steps below.
+
 # Porkbun DNS — review only
 
 No records changed. deployment/dns-observed-2026-10-28.json contains public observations, not a complete authenticated zone export.

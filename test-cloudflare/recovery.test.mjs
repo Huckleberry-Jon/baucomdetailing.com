@@ -11,7 +11,7 @@ import {
   restoreCloudBackup,
   TABLES,
 } from "../cloudflare/recovery.mjs";
-import { fileStorage } from "../scripts/cloud-backup.mjs";
+import { fileStorage, verifyArchiveRestore } from "../scripts/cloud-backup.mjs";
 
 test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed on tampering", async () => {
   const source = await runtime(),
@@ -280,6 +280,26 @@ test("full encrypted cloud recovery restores fresh actual D1/R2 and fails closed
       passphrase,
       namespace: "local",
     });
+    const verified = await verifyArchiveRestore({
+      source: storage,
+      id: backup.id,
+      passphrase,
+    });
+    assert.equal(verified.restoreVerified, true);
+    assert.equal(verified.integrity, "ok");
+    assert.equal(verified.bookings, backup.records);
+    assert.equal(verified.mediaObjects, backup.objects);
+    assert.equal(verified.counts.sessions, 0);
+    assert.equal(verified.counts.tenant_domains, 0);
+    assert.ok(verified.counts.inventory_receipts > 0);
+    assert.ok(verified.counts.financial_events > 0);
+    await assert.rejects(
+      verifyArchiveRestore({
+        source: storage,
+        id: backup.id,
+        passphrase: "Wrong-verification-passphrase-2026",
+      }),
+    );
     const encrypted = await storage.get(backup.id + "/manifest.enc");
     assert.ok(!encrypted.includes(Buffer.from("customer@example.invalid")));
     await assert.rejects(

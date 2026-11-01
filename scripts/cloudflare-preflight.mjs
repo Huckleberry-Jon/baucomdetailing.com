@@ -10,10 +10,11 @@ if (
   config.vars?.SITE_OPEN !== "false" ||
   config.vars?.COMMUNICATIONS_MODE !== "disabled" ||
   config.vars?.ALLOW_EMAIL_SEND !== "false" ||
-  config.vars?.ALLOW_PUSH_SEND !== "false"
+  config.vars?.ALLOW_PUSH_SEND !== "false" ||
+  config.vars?.ALLOW_NATIVE_PUSH_SEND !== "false"
 )
   blockers.push(
-    "Preparation must stay private with both communication channels disabled",
+    "Preparation must stay private with all communication channels disabled",
   );
 if (!config.assets?.run_worker_first || config.assets?.html_handling !== "none")
   blockers.push("All assets must pass the Worker security gate");

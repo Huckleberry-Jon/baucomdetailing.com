@@ -1,3 +1,5 @@
+> HISTORICAL — superseded for the current Cloudflare release by [cloudflare-launch-checklist.md](cloudflare-launch-checklist.md). Do not apply the old Render DNS records or Node backup activation steps below.
+
 # Production preparation — October 28, 2026
 
 > CURRENT DECISION: The Render-first $110–150 initial hosting recommendation is withdrawn. Follow minimum-production-budget.md and cloudflare-migration-plan.md. Earlier cost/scaling figures below are historical planning scenarios, not purchase recommendations.

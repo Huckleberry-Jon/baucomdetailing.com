@@ -17,6 +17,9 @@ test("offline release candidate stays gated, isolated and complimentary without 
       DOCDETAILING_ORIGIN: "https://baucomdetailing.com",
     });
   assert.equal(a.config.vars.SITE_OPEN, "false");
+  assert.equal(b.config.vars.ALLOW_NATIVE_PUSH_SEND, "false");
+  assert.equal(b.config.vars.APNS_TOPIC, "com.docincorporated.docdetailing");
+  assert.equal(b.config.vars.APNS_ENVIRONMENT, "production");
   assert.equal(a.config.vars.COMMUNICATIONS_MODE, "disabled");
   assert.equal(a.config.vars.ALLOW_PUSH_SEND, "false");
   assert.equal(a.config.vars.ALLOW_EMAIL_SEND, "false");

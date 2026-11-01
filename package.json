@@ -21,7 +21,8 @@
     "cloud:build": "node scripts/build-cloudflare.mjs",
     "cloud:preflight": "node scripts/cloudflare-preflight.mjs",
     "cloud:prepare": "node scripts/prepare-cloudflare-local.mjs",
-    "cloud:dev": "wrangler dev --local --config data/cloudflare-local/wrangler.json --port 4334 --persist-to data/cloudflare-local/persist --ip 127.0.0.1"
+    "cloud:dev": "wrangler dev --local --config data/cloudflare-local/wrangler.json --port 4334 --persist-to data/cloudflare-local/persist --ip 127.0.0.1",
+    "launch:readiness": "node scripts/launch-readiness.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1159.0",
