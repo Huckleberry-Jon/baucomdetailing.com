@@ -486,6 +486,21 @@ export async function report(s, from, to) {
     (n, r) => n + JSON.parse(r.data).totalCents - r.paid_cents,
     0,
   );
+  const used = await s.all(
+    "SELECT * FROM inventory_movements WHERE business_id=? AND job_id IS NOT NULL AND quantity_millis<0 AND created_at>=? AND created_at<?",
+    s.tenant,
+    a,
+    z,
+  );
+  const consumablesUsedCents = used.reduce((n, r) => n + r.cost_cents, 0),
+    includedConsumablesUsedCents = used
+      .filter((r) => JSON.parse(r.data).billSeparately === false)
+      .reduce((n, r) => n + r.cost_cents, 0);
+  const jobMaterialCosts = await s.all(
+      "SELECT job_id,sum(cost_cents) cost FROM inventory_movements WHERE business_id=? AND job_id IS NOT NULL AND quantity_millis<0 GROUP BY job_id",
+      s.tenant,
+    ),
+    jobCosts = new Map(jobMaterialCosts.map((r) => [r.job_id, r.cost]));
   const jobProfitability = invoices
     .filter(
       (r) => r.created_at >= a && r.created_at < z && JSON.parse(r.data).jobId,
@@ -498,12 +513,18 @@ export async function report(s, from, to) {
         number: r.number,
         revenueExcludingTaxCents: d.totalCents - d.taxCents,
         costCents: d.jobCostCents,
+        consumablesCostCents: jobCosts.get(d.jobId) ?? 0,
         profitCents: d.totalCents - d.taxCents - d.jobCostCents,
       };
     });
   return {
     outstandingCents,
     jobProfitability,
+    consumablesUsedCents,
+    includedConsumablesUsedCents,
+    separatelyBilledConsumablesUsedCents:
+      consumablesUsedCents - includedConsumablesUsedCents,
+    jobProfitCents: jobProfitability.reduce((n, j) => n + j.profitCents, 0),
     from: new Date(a).toISOString(),
     to: new Date(z).toISOString(),
     currency: "USD",

@@ -1,3 +1,4 @@
+import 'service_shortcuts.dart';
 import 'service_supplies_screen.dart';
 import 'business_settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -259,7 +260,11 @@ class _OwnerHomeState extends State<OwnerHome> with WidgetsBindingObserver {
             child: SafeArea(
               child: ListView(
                 children: [
-                  const DrawerHeader(child: Text('Business workspace')),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Business workspace'),
+                  ),
+                  ServiceShortcuts(api: widget.api),
                   if (widget.api is HttpOwnerApi)
                     ListTile(
                       leading: const Icon(Icons.web),

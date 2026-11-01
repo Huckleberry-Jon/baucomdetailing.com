@@ -4,7 +4,8 @@ import 'owner_api.dart';
 import 'business_forms.dart';
 
 class ServiceSuppliesScreen extends StatefulWidget {
-  const ServiceSuppliesScreen({super.key, required this.api});
+  const ServiceSuppliesScreen({super.key, required this.api, this.serviceId});
+  final String? serviceId;
   final OwnerApi api;
   @override
   State<ServiceSuppliesScreen> createState() => _ServiceSuppliesState();
@@ -32,6 +33,9 @@ class _ServiceSuppliesState extends State<ServiceSuppliesScreen> {
       if (mounted) {
         setState(() {
           services = (d['services'] as List)
+              .where(
+                (s) => widget.serviceId == null || s['id'] == widget.serviceId,
+              )
               .map((s) => Map<String, dynamic>.from(s as Map))
               .toList();
           materials = (m['records'] as List).cast<Map>();

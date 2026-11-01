@@ -276,6 +276,25 @@ test("actual consumables deduct once, affect profit, and do not increase invoice
       .first();
     assert.equal(JSON.parse(doc.data).totalCents, 10000);
     assert.equal(JSON.parse(doc.data).jobCostCents, 50);
+    const report = (
+      await call(
+        f.mf,
+        "/api/owner/finance/report?from=" +
+          new Date(Date.now() - 86400000).toISOString() +
+          "&to=" +
+          new Date(Date.now() + 86400000).toISOString(),
+        { cookie: f.cookie },
+      )
+    ).data;
+    assert.equal(report.consumablesUsedCents, 50);
+    assert.equal(report.includedConsumablesUsedCents, 50);
+    assert.equal(report.separatelyBilledConsumablesUsedCents, 0);
+    assert.equal(report.jobProfitCents, 9950);
+    assert.equal(report.jobProfitability[0].consumablesCostCents, 50);
+    assert.equal(report.receiptsCents, 0);
+    assert.equal(report.expenseCents, 0);
+    assert.equal(report.cashFlowCents, 0);
+
     assert.equal(
       (
         await call(f.mf, "/api/owner/materials", { cookie: f.cookie })

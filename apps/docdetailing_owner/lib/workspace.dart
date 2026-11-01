@@ -519,11 +519,39 @@ class _WorkspaceState extends State<WorkspaceScreen> {
                 Text(
                   'Quarter boundaries use ${clock.zone}. Cash figures reflect entered records. Job profitability below uses issued job invoices created in this period and saved job costs.',
                 ),
+                const Divider(),
+                const Text('Job costing · not an additional cash expense'),
+                ListTile(
+                  title: const Text('Consumables used this period'),
+                  trailing: Text(
+                    dollars((data as Map)['consumablesUsedCents']),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Included in service prices'),
+                  trailing: Text(
+                    dollars((data as Map)['includedConsumablesUsedCents']),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Separately billed consumables · cost'),
+                  trailing: Text(
+                    dollars(
+                      (data as Map)['separatelyBilledConsumablesUsedCents'],
+                    ),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('Issued job profit before overhead'),
+                  trailing: Text(dollars((data as Map)['jobProfitCents'])),
+                ),
                 for (final j
                     in (data as Map)['jobProfitability'] as List? ?? [])
                   ListTile(
                     title: Text(j['number'] as String),
-                    subtitle: Text('Job margin before overhead'),
+                    subtitle: Text(
+                      'Revenue ${dollars(j['revenueExcludingTaxCents'])} · total job cost ${dollars(j['costCents'])}\nConsumables included in job cost: ${dollars(j['consumablesCostCents'])}',
+                    ),
                     trailing: Text(dollars(j['profitCents'])),
                   ),
                 for (final e in ((data as Map)['events'] as List? ?? []))
