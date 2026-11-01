@@ -49,7 +49,7 @@
     "verifiedDate": "2026-11-01"
   },
   "senderAcceptanceTest": {
-    "state": "prepared_pending_send_approval",
+    "state": "delivered_pending_inbox_confirmation",
     "from": "Baucom's Mobile Detailing <bookings@notify.baucomdetailing.com>",
     "to": [
       "huckleberryservices@yahoo.com"
@@ -58,6 +58,14 @@
     "text": "This is a controlled sender verification test for Baucom's Mobile Detailing. No appointment was created, no payment is requested, and live customer booking alerts remain disabled. Please confirm that this message reached your inbox.",
     "maximumMessages": 1,
     "customerDataIncluded": false,
-    "drainExistingOutbox": false
+    "drainExistingOutbox": false,
+    "actualMessages": 1,
+    "providerId": "01a197ab-8f42-72ca-88e5-21e6f645bda9",
+    "providerStatus": "Delivered",
+    "backendEvents": {
+      "email.sent": 1,
+      "email.delivered": 1
+    },
+    "inboxReceiptConfirmed": false
   }
 }
