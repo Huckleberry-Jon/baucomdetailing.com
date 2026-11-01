@@ -73,13 +73,13 @@ workflows:
           flutter pub get
           flutter analyze
           flutter test
-          flutter build ios --release --no-codesign --dart-define-from-file=config/staging.json
+          flutter build ios --release --no-codesign --dart-define-from-file=config/production.json
 
   ios-signed-staging:
     name: Controlled DocDetailing build and approved upload
     inputs:
       approval:
-        description: Use archive-only to build; upload-build-9 authorizes upload only
+        description: Use archive-only to build; upload-build-10 authorizes upload only
         type: string
         default: "archive-only"
     integrations:
@@ -92,7 +92,7 @@ workflows:
         IOS_BUILD_APPROVED: "true"
         SHARED_BACKEND_ACCEPTED: "true"
         IOS_SIGNING_APPROVED: "true"
-        APP_BUILD_NUMBER: "9"
+        APP_BUILD_NUMBER: "10"
         APPROVED_BUILD_UPLOAD: ${{ inputs.approval }}
       ios_signing:
         certificates:
@@ -116,7 +116,7 @@ workflows:
           set -eu
           cd apps/docdetailing_owner
           xcode-project use-profiles
-      - name: Archive staging client without publishing
+      - name: Archive production client without publishing
         script: |
           set -eu
           env -u APP_STORE_CONNECT_PRIVATE_KEY -u APP_STORE_CONNECT_ISSUER_ID -u APP_STORE_CONNECT_KEY_IDENTIFIER bash scripts/ci-archive-ios.sh

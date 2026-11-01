@@ -20,16 +20,16 @@ assert.equal(
   [...project.matchAll(/DEVELOPMENT_TEAM = UDDPKPR3CJ;/g)].length,
   6,
 );
-assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+9$/m);
+assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+10$/m);
 assert.match(
   read(app + "ios/Runner/Info.plist"),
   /<key>CFBundleDisplayName<\/key>\s*<string>DocDetailing<\/string>/,
 );
-assert.deepEqual(JSON.parse(read(app + "config/staging.json")), {
+assert.deepEqual(JSON.parse(read(app + "config/production.json")), {
   DEMO_MODE: false,
   APNS_ENVIRONMENT: "production",
   API_ORIGIN:
-    "https://docdetailing-site-staging.huckleberryservices.workers.dev",
+    "https://baucomdetailing.com",
 });
 assert.equal(
   [
@@ -69,7 +69,7 @@ assert(
 assert(yaml.includes("node scripts/verify-ios-archive.mjs"));
 assert(yaml.includes("node scripts/verify-ios-ipa.mjs"));
 assert(!yaml.includes("--signing-only"));
-assert(yaml.includes('APP_BUILD_NUMBER: "9"'));
+assert(yaml.includes('APP_BUILD_NUMBER: "10"'));
 assert(yaml.includes("artifacts/**"));
 
 for (const flag of [
@@ -78,8 +78,9 @@ for (const flag of [
   "IOS_SIGNING_APPROVED",
 ])
   assert(yaml.includes('test "$' + flag + '" = true'));
-assert(yaml.includes("--dart-define-from-file=config/staging.json"));
+assert(yaml.includes("--dart-define-from-file=config/production.json"));
+assert(read("scripts/ci-archive-ios.sh").includes("--dart-define-from-file=config/production.json"));
 console.log(
-  "iOS source preflight passed: registered identity, team, isolated staging origin and manual workflow with explicit upload approval. Signing/Xcode/device verification still required.",
+  "iOS source preflight passed: registered identity, team, verified production origin and manual workflow with explicit upload approval. Signing/Xcode/device verification still required.",
 );
 
