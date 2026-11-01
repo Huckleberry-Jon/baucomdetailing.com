@@ -3,7 +3,7 @@
   "domain": "notify.baucomdetailing.com",
   "provider": "Resend",
   "region": "us-east-1",
-  "applied": false,
+  "applied": true,
   "records": [
     {
       "type": "TXT",
@@ -34,9 +34,9 @@
     "all existing DKIM/DMARC/verification records",
     "Netlify"
   ],
-  "next": "Authenticated Porkbun zone review and approval of these exact additive sender-only records; then confirm provider verification.",
+  "next": "Restrict the existing sending key to the verified sender domain, configure the approved From address and run a separately authorized allowlisted acceptance test; keep live delivery disabled and do not drain historical messages.",
   "resendDomainId": "96a252fe-8c9f-4b58-9772-ebea22663c97",
-  "verificationStatus": "not_started",
+  "verificationStatus": "verified",
   "authenticatedReview": {
     "date": "2026-11-01",
     "existingRecords": 7,
@@ -44,6 +44,16 @@
     "rootMailForwardingPreserved": true,
     "certificateValidationRecordsPreserved": true,
     "changeType": "additive_sender_verification_only",
-    "applied": false
+    "applied": true
+  },
+  "verification": {
+    "date": "2026-11-01",
+    "originalRecordsPreserved": 7,
+    "totalRecordsAfter": 10,
+    "authoritativeChecksPassed": 12,
+    "authoritativeChecksTotal": 12,
+    "providerRecordsVerified": 3,
+    "providerStatus": "Verified",
+    "recordIds": "Not exposed by authenticated drawer; records identified by exact type, host and value"
   }
 }

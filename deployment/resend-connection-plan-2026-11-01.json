@@ -1,10 +1,10 @@
 {
   "preparedDate": "2026-11-01",
-  "state": "connected-diagnostic-delivered",
+  "state": "connected-diagnostic-delivered-sender-verified",
   "apiKey": {
     "name": "DocDetailing staging send only",
     "permission": "sending_access",
-    "domainScope": "all_domains_until_sender_verified",
+    "domainScope": "all_domains_pending_scope_restriction",
     "fullAccess": false,
     "created": true,
     "installedOn": "docdetailing-site-staging"
@@ -35,11 +35,16 @@
       "email.sent": 1,
       "email.delivered": 1
     },
-    "inboxReceiptConfirmed": false,
+    "inboxReceiptConfirmed": true,
     "actualMessages": 1
   },
   "workerMode": "disabled",
   "drainExistingOutbox": false,
   "liveCustomerEmailEnabled": false,
-  "dnsChangesApplied": false
+  "dnsChangesApplied": true,
+  "senderDomain": {
+    "name": "notify.baucomdetailing.com",
+    "status": "verified",
+    "verifiedDate": "2026-11-01"
+  }
 }

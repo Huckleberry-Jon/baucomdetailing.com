@@ -9,17 +9,17 @@ The new Resend account is connected to DocDetailing private staging. No paid pla
 - Hosted endpoint rejected an unsigned callback with HTTP 401.
 - Sent exactly one approved diagnostic through onboarding@resend.dev to huckleberryservices@yahoo.com, subject DocDetailing email connection test. Used a stable idempotency key and tenant metadata; no booking/customer content was included.
 - Resend reports Delivered. Actual D1 webhook_receipts contains one email.sent and one email.delivered event for the diagnostic provider ID. No historical delivery queue was drained.
-- Owner authentication, private access gate and financial reconciliation checks passed after installing the secrets. Native push remains disabled. Provider delivery is not confirmation that the owner saw the email in the inbox; that confirmation remains pending.
+- Owner authentication, private access gate and financial reconciliation checks passed after installing the secrets. Native push remains disabled. The owner subsequently confirmed inbox receipt with a screenshot of the diagnostic email.
 
 ## Sender domain and DNS
 
-Registered sender: notify.baucomdetailing.com, North Virginia (us-east-1), domain ID 96a252fe-8c9f-4b58-9772-ebea22663c97. It remains Not Started because DNS is unchanged. The exact provider-supplied records are in deployment/resend-dns-plan-2026-11-01.json: one DKIM TXT plus rsend.notify and send.notify CNAMEs. Do not substitute older Amazon SES MX/TXT examples. The optional root DMARC suggestion is excluded.
+Registered sender: notify.baucomdetailing.com, North Virginia (us-east-1), domain ID 96a252fe-8c9f-4b58-9772-ebea22663c97. The three explicitly approved sender records are now applied; Resend reports the domain and all three records Verified. The exact provider-supplied records are in deployment/resend-dns-plan-2026-11-01.json: one DKIM TXT plus rsend.notify and send.notify CNAMEs. Do not substitute older Amazon SES MX/TXT examples. The optional root DMARC suggestion is excluded.
 
-Review the authenticated Porkbun zone before applying these three additive sender records under explicit DNS authorization. Preserve root/www, nameservers, forwarding MX/SPF, existing DKIM/DMARC/verification and Netlify. Then verify the sender domain with Resend and restrict the sending key to that verified domain. All-domains Sending access is temporary while the account's sole custom sender is unverified.
+The authenticated Porkbun comparison preserved all seven original records, and all twelve exact-value checks across four authoritative nameservers passed. Root/www routing, nameservers, forwarding MX/SPF, existing verification records and Netlify were preserved. Restrict the existing sending key to the now-verified domain before customer activation; it still has temporary all-domains Sending access.
 
 ## Activation still off
 
-COMMUNICATIONS_MODE=disabled, ALLOW_EMAIL_SEND=false, ALLOW_PUSH_SEND=false and ALLOW_NATIVE_PUSH_SEND=false remain in effect. The diagnostic used a single direct provider call; it did not activate booking emails. No customer email or physical-device notification was sent, and no DNS was changed.
+COMMUNICATIONS_MODE=disabled, ALLOW_EMAIL_SEND=false, ALLOW_PUSH_SEND=false and ALLOW_NATIVE_PUSH_SEND=false remain in effect. The diagnostic used a single direct provider call; it did not activate booking emails. No customer email or physical-device notification was sent, The only DNS changes were the three approved additive sender records.
 
 After sender verification, review historical blocked deliveries before activating allowlisted fresh owner/customer acceptance tests. Confirm actual inbox receipt, signed receipts, bounce handling and physical iPhone push/tap behavior before live customer activation.
 
