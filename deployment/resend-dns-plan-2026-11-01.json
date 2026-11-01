@@ -36,5 +36,14 @@
   ],
   "next": "Authenticated Porkbun zone review and approval of these exact additive sender-only records; then confirm provider verification.",
   "resendDomainId": "96a252fe-8c9f-4b58-9772-ebea22663c97",
-  "verificationStatus": "not_started"
+  "verificationStatus": "not_started",
+  "authenticatedReview": {
+    "date": "2026-11-01",
+    "existingRecords": 7,
+    "exactHostConflicts": 0,
+    "rootMailForwardingPreserved": true,
+    "certificateValidationRecordsPreserved": true,
+    "changeType": "additive_sender_verification_only",
+    "applied": false
+  }
 }
