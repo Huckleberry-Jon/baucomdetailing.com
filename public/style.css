@@ -552,6 +552,10 @@ summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
+.work-photo-grid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 900px;
+}
 .package-photo {
   margin-bottom: 22px;
 }

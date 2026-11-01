@@ -9,7 +9,6 @@ export const websiteSlots = [
   { slot: "package-dustoff", label: "The Dust Off package", ratio: "3:2" },
   { slot: "package-finalmile", label: "The Final Mile package", ratio: "3:2" },
   { slot: "action-1", label: "Owner portrait", ratio: "3:2" },
-  { slot: "action-2", label: "Owner truck", ratio: "3:2" },
   { slot: "branding-logo", label: "Business logo / branding", ratio: "1:1" },
   ...["1", "2", "3", "4"].flatMap((n) =>
     ["before", "after"].map((kind) => ({

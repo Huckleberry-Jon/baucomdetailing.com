@@ -13,7 +13,6 @@ export function slots(catalog) {
         ratio: "3:2",
       })),
     { slot: "action-1", label: "Owner portrait", ratio: "3:2" },
-    { slot: "action-2", label: "Owner truck", ratio: "3:2" },
     { slot: "branding-logo", label: "Business branding", ratio: "1:1" },
     ...["1", "2", "3", "4"].flatMap((n) =>
       ["before", "after"].map((kind) => ({
