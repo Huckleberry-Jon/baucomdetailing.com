@@ -20,7 +20,7 @@ assert.equal(
   [...project.matchAll(/DEVELOPMENT_TEAM = UDDPKPR3CJ;/g)].length,
   6,
 );
-assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+12$/m);
+assert.match(read(app + "pubspec.yaml"), /^version: 1\.0\.0\+13$/m);
 assert.match(
   read(app + "ios/Runner/Info.plist"),
   /<key>CFBundleDisplayName<\/key>\s*<string>DocDetailing<\/string>/,
