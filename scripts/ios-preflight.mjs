@@ -69,7 +69,7 @@ assert(
 assert(yaml.includes("node scripts/verify-ios-archive.mjs"));
 assert(yaml.includes("node scripts/verify-ios-ipa.mjs"));
 assert(!yaml.includes("--signing-only"));
-assert(yaml.includes('APP_BUILD_NUMBER: "12"'));
+assert(yaml.includes('APP_BUILD_NUMBER: "13"'));
 assert(yaml.includes("artifacts/**"));
 
 for (const flag of [
