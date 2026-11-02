@@ -1,3 +1,4 @@
+import 'owner_theme.dart';
 import 'service_shortcuts.dart';
 import 'service_supplies_screen.dart';
 import 'business_settings_screen.dart';
@@ -31,24 +32,7 @@ class OwnerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'DocDetailing — development',
-    theme: ThemeData(
-      colorScheme:
-          ColorScheme.fromSeed(
-            seedColor: const Color(0xffd4ad60),
-            brightness: Brightness.dark,
-          ).copyWith(
-            primary: const Color(0xffe4bf73),
-            onPrimary: const Color(0xff211907),
-            surface: const Color(0xff191711),
-            onSurface: const Color(0xfff5eddc),
-          ),
-      scaffoldBackgroundColor: const Color(0xff100f0c),
-      inputDecorationTheme: const InputDecorationTheme(
-        filled: true,
-        border: OutlineInputBorder(),
-      ),
-      useMaterial3: true,
-    ),
+    theme: ownerTheme(),
     home: OwnerHome(api: api),
   );
 }

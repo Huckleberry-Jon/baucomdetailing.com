@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-01",
+  "scope": "Native owner app only",
+  "appearance": "Warm cream background, light cards, dark text and gold buttons",
+  "themeMode": "Light even when device preference is dark",
+  "tests": {
+    "flutter": 83,
+    "analysis": "No issues",
+    "contrast": "AA 4.5:1 text/labels/actions/errors; 3:1 field outlines",
+    "iPhone": "390x844 dashboard and materials form including 1.3x text",
+    "visualReview": "Synthetic dashboard rendered and inspected"
+  },
+  "files": [
+    "apps/docdetailing_owner/lib/main.dart",
+    "apps/docdetailing_owner/lib/owner_theme.dart",
+    "apps/docdetailing_owner/test/owner_theme_test.dart"
+  ],
+  "nativeRelease": {
+    "newBuildRequired": true,
+    "uploadedWithThisChange": false
+  },
+  "backendChanged": false,
+  "websiteChanged": false
+}
